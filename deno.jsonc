@@ -5,7 +5,8 @@
     "dev": "deno run -A --watch=static/,routes/ dev.ts",
     "build": "deno run -A dev.ts build",
     "start": "deno serve -A _fresh/server.js",
-    "update": "deno run -A -r jsr:@fresh/update ."
+    "update": "deno run -A -r jsr:@fresh/update .",
+    "gen-gql": "bash ./gen-gql.sh"
   },
   "lint": {
     "rules": {
@@ -14,6 +15,10 @@
   },
   "exclude": ["**/_fresh/*"],
   "imports": {
+    "webawesome": "npm:@awesome.me/webawesome@^3.0.0-beta.3",
+    "@graphql-typed-document-node/core": "npm:@graphql-typed-document-node/core@^3.2.0",
+    "@urql/preact": "npm:@urql/preact@^4.1.2",
+    "graphql-tag": "npm:graphql-tag@^2.12.6",
     "~/": "./",
     "fresh": "jsr:@fresh/core@^2.0.0-alpha.50",
     "preact": "npm:preact@^10.27.0",
@@ -23,7 +28,8 @@
     "lib": ["dom", "dom.asynciterable", "dom.iterable", "deno.ns"],
     "jsx": "precompile",
     "jsxImportSource": "preact",
-    "jsxPrecompileSkipElements": ["a", "img", "source", "body", "html", "head"]
+    "jsxPrecompileSkipElements": ["a", "img", "source", "body", "html", "head"],
+    "types": ["./types/webawesome.d.ts"]
   },
   "fmt": {
     "semiColons": false,
