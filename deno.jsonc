@@ -15,6 +15,7 @@
   },
   "exclude": ["**/_fresh/*"],
   "imports": {
+    "openid-client": "jsr:@panva/openid-client@^6.6.2",
     "webawesome": "npm:@awesome.me/webawesome@^3.0.0-beta.3",
     "@graphql-typed-document-node/core": "npm:@graphql-typed-document-node/core@^3.2.0",
     "@urql/preact": "npm:@urql/preact@^4.1.2",

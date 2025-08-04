@@ -1,27 +1,62 @@
 import type { ComponentChildren } from "preact"
+import type { SessionData } from "~/utils/session.ts"
 
 interface LayoutProps {
   children: ComponentChildren
   title?: string
   currentPath?: string
+  session?: SessionData | null
 }
 
-export default function Layout({ children, title = "Buildkite Overview", currentPath }: LayoutProps) {
+export default function Layout({ children, title = "Buildkite Overview", currentPath, session }: LayoutProps) {
   return (
     <wa-page mobile-breakpoint="768">
       <header slot="header" class="wa-split">
         <div class="wa-cluster">
-          <wa-icon name="building" style="color: var(--wa-color-brand-fill-loud); font-size: 1.5em"></wa-icon>
+          <wa-icon name="building" style={"color: var(--wa-color-brand-fill-loud); font-size: 1.5em" as any}></wa-icon>
           <span class="wa-heading-s wa-desktop-only">Divvun Buildkite</span>
           <a href="/" class={currentPath === "/" ? "active" : ""}>Overview</a>
           <a href="/pipelines" class={currentPath === "/pipelines" ? "active" : ""}>Pipelines</a>
           <a href="/settings" class={currentPath === "/settings" ? "active" : ""}>Settings</a>
         </div>
         <div class="wa-cluster wa-gap-xs">
-          <wa-button size="small" variant="brand" appearance="outlined">
-            <wa-icon slot="prefix" name="github"></wa-icon>
-            Sign In
-          </wa-button>
+          {session ? (
+            <wa-dropdown>
+              <wa-button slot="trigger" size="small" appearance="plain" class="wa-cluster wa-gap-xs">
+                <img 
+                  src={session.user.avatar_url} 
+                  alt={session.user.name || session.user.login}
+                  style="width: 24px; height: 24px; border-radius: 50%"
+                />
+                <span class="wa-desktop-only">{session.user.name || session.user.login}</span>
+                <wa-icon name="chevron-down"></wa-icon>
+              </wa-button>
+              <wa-dropdown-item>
+                <wa-icon slot="prefix" name="user"></wa-icon>
+                Profile
+              </wa-dropdown-item>
+              <wa-dropdown-item>
+                <wa-icon slot="prefix" name="gear"></wa-icon>
+                Settings
+              </wa-dropdown-item>
+              <wa-divider></wa-divider>
+              <wa-dropdown-item>
+                <form method="POST" action="/auth/logout" style="width: 100%">
+                  <button type="submit" style="background: none; border: none; width: 100%; text-align: left; padding: 0">
+                    <wa-icon slot="prefix" name="arrow-right-from-bracket"></wa-icon>
+                    Sign Out
+                  </button>
+                </form>
+              </wa-dropdown-item>
+            </wa-dropdown>
+          ) : (
+            <wa-button size="small" variant="brand" appearance="outlined">
+              <wa-icon slot="prefix" name="github"></wa-icon>
+              <a href="/auth/login" style="text-decoration: none; color: inherit">
+                Sign In
+              </a>
+            </wa-button>
+          )}
         </div>
       </header>
 
@@ -30,7 +65,7 @@ export default function Layout({ children, title = "Buildkite Overview", current
           <wa-button data-toggle-nav appearance="plain" size="small">
             <wa-icon name="bars" label="Menu"></wa-icon>
           </wa-button>
-          <wa-breadcrumb style="font-size: var(--wa-font-size-s)">
+          <wa-breadcrumb style={"font-size: var(--wa-font-size-s)" as any}>
             <wa-breadcrumb-item>Divvun</wa-breadcrumb-item>
             <wa-breadcrumb-item>{title}</wa-breadcrumb-item>
           </wa-breadcrumb>
@@ -39,7 +74,7 @@ export default function Layout({ children, title = "Buildkite Overview", current
           class="wa-desktop-only" 
           placeholder="Search pipelines..." 
           size="small" 
-          style="max-inline-size: 16rem"
+          style={"max-inline-size: 16rem" as any}
         >
           <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
         </wa-input>
@@ -93,7 +128,7 @@ export default function Layout({ children, title = "Buildkite Overview", current
 
       <footer slot="footer" class="wa-grid wa-gap-xl">
         <div class="wa-cluster" style="flex-wrap: nowrap">
-          <wa-icon name="building" style="font-size: 1.5em"></wa-icon>
+          <wa-icon name="building" style={"font-size: 1.5em" as any}></wa-icon>
           <span class="wa-heading-s">Divvun Buildkite Overview</span>
         </div>
         <div class="wa-stack">

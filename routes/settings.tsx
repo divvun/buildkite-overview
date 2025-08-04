@@ -1,9 +1,24 @@
-import { define } from "~/utils.ts"
+import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
+import { type AppState } from "~/utils/middleware.ts"
+import { requireAuth, type SessionData } from "~/utils/session.ts"
 
-export default define.page(function Settings() {
+interface SettingsProps {
+  session: SessionData
+}
+
+export const handler = {
+  GET(ctx: Context<AppState>) {
+    // Settings requires authentication
+    const session = requireAuth(ctx.req)
+    
+    return page({ session } satisfies SettingsProps)
+  },
+}
+
+export default function Settings({ session }: SettingsProps) {
   return (
-    <Layout title="Settings" currentPath="/settings">
+    <Layout title="Settings" currentPath="/settings" session={session}>
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
         <header>
           <h1 class="wa-heading-l">Settings</h1>
@@ -154,4 +169,4 @@ export default define.page(function Settings() {
       </div>
     </Layout>
   )
-})
+}

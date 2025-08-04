@@ -1,5 +1,8 @@
-import { define } from "~/utils.ts"
+/// <reference path="../types/webawesome.d.ts" />
+import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
+import { type AppState } from "~/utils/middleware.ts"
+import { type SessionData } from "~/utils/session.ts"
 
 // Mock data for testing
 const mockBuilds = [
@@ -19,9 +22,21 @@ function getBadgeVariant(status: string) {
   }
 }
 
-export default define.page(function Home() {
+interface HomeProps {
+  session?: SessionData | null
+}
+
+export const handler = {
+  GET(ctx: Context<AppState>) {
+    return page({ session: ctx.state.session } satisfies HomeProps)
+  },
+}
+
+export default function Home(props: { data: HomeProps, state: AppState }) {
+  const session = props.data.session
+  
   return (
-    <Layout title="Build Overview" currentPath="/">
+    <Layout title="Build Overview" currentPath="/" session={session}>
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
         <header>
           <h1 class="wa-heading-l">Build Overview</h1>
@@ -89,4 +104,4 @@ export default define.page(function Home() {
       </div>
     </Layout>
   )
-})
+}

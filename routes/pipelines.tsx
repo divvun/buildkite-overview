@@ -1,5 +1,7 @@
-import { define } from "~/utils.ts"
+import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
+import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
+import { type SessionData } from "~/utils/session.ts"
 
 // Mock pipeline data for testing
 const mockPipelines = [
@@ -47,6 +49,26 @@ const mockPipelines = [
     lastBuild: "6 hours ago",
     tags: ["language", "sami", "fst"],
     builds: { total: 156, passed: 145, failed: 11 }
+  },
+  { 
+    id: "6", 
+    name: "internal-tools", 
+    repo: "divvun/internal-tools", 
+    status: "passed", 
+    lastBuild: "1 hour ago",
+    tags: ["private", "internal", "tools"],
+    visibility: "private",
+    builds: { total: 23, passed: 20, failed: 3 }
+  },
+  { 
+    id: "7", 
+    name: "secret-project", 
+    repo: "necessary-nu/secret-project", 
+    status: "running", 
+    lastBuild: "30 minutes ago",
+    tags: ["experimental", "private"],
+    visibility: "private",
+    builds: { total: 8, passed: 5, failed: 3 }
   }
 ]
 
@@ -68,9 +90,26 @@ function getStatusIcon(status: string) {
   }
 }
 
-export default define.page(function Pipelines() {
+interface PipelinesProps {
+  session?: SessionData | null
+  pipelines: typeof mockPipelines
+}
+
+export const handler = {
+  GET(ctx: Context<AppState>) {
+    // Filter pipelines based on user access
+    const visiblePipelines = filterPipelinesForUser(mockPipelines, ctx.state.session)
+    
+    return page({ 
+      session: ctx.state.session, 
+      pipelines: visiblePipelines 
+    } satisfies PipelinesProps)
+  },
+}
+
+export default function Pipelines({ session, pipelines }: PipelinesProps) {
   return (
-    <Layout title="All Pipelines" currentPath="/pipelines">
+    <Layout title="All Pipelines" currentPath="/pipelines" session={session}>
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
         <header class="wa-flank">
           <div>
@@ -92,7 +131,7 @@ export default define.page(function Pipelines() {
         </header>
 
         <div class="wa-cluster wa-gap-m">
-          <wa-input placeholder="Filter pipelines..." style="min-width: 300px">
+          <wa-input placeholder="Filter pipelines..." style={"min-width: 300px" as any}>
             <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
           </wa-input>
           <wa-select placeholder="Organization">
@@ -111,14 +150,14 @@ export default define.page(function Pipelines() {
         </div>
 
         <div class="wa-grid wa-gap-m">
-          {mockPipelines.map((pipeline) => (
+          {pipelines.map((pipeline) => (
             <wa-card key={pipeline.id}>
               <div class="wa-stack wa-gap-s">
                 <div class="wa-flank">
                   <div class="wa-stack wa-gap-3xs">
                     <div class="wa-flank wa-gap-xs">
                       <wa-icon name={getStatusIcon(pipeline.status)} 
-                               style={`color: var(--wa-color-${getBadgeVariant(pipeline.status)}-fill-loud)`}>
+                               style={`color: var(--wa-color-${getBadgeVariant(pipeline.status)}-fill-loud)` as any}>
                       </wa-icon>
                       <span class="wa-heading-s">{pipeline.name}</span>
                     </div>
@@ -131,7 +170,7 @@ export default define.page(function Pipelines() {
 
                 <div class="wa-cluster wa-gap-xs" style="flex-wrap: wrap">
                   {pipeline.tags.map((tag) => (
-                    <wa-tag key={tag} size="small">{tag}</wa-tag>
+                    <wa-tag key={tag}>{tag}</wa-tag>
                   ))}
                 </div>
 
@@ -142,10 +181,10 @@ export default define.page(function Pipelines() {
                     <div class="wa-caption-s">Build Stats</div>
                     <div class="wa-cluster wa-gap-s">
                       <span class="wa-caption-xs">
-                        <wa-badge variant="success" size="small">{pipeline.builds.passed}</wa-badge> passed
+                        <wa-badge variant="success">{pipeline.builds.passed}</wa-badge> passed
                       </span>
                       <span class="wa-caption-xs">
-                        <wa-badge variant="danger" size="small">{pipeline.builds.failed}</wa-badge> failed
+                        <wa-badge variant="danger">{pipeline.builds.failed}</wa-badge> failed
                       </span>
                     </div>
                   </div>
@@ -161,4 +200,4 @@ export default define.page(function Pipelines() {
       </div>    
     </Layout>
   )
-})
+}

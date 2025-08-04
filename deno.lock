@@ -4,7 +4,11 @@
     "jsr:@deno/esbuild-plugin@^1.1.1": "1.1.1",
     "jsr:@deno/loader@~0.2.1": "0.2.1",
     "jsr:@fresh/core@^2.0.0-alpha.50": "2.0.0-alpha.50",
+    "jsr:@panva/jose@^6.0.11": "6.0.12",
+    "jsr:@panva/oauth4webapi@^3.5.4": "3.6.1",
+    "jsr:@panva/openid-client@^6.6.2": "6.6.2",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
+    "jsr:@std/dotenv@*": "0.225.5",
     "jsr:@std/encoding@1": "1.0.10",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/fmt@^1.0.7": "1.0.8",
@@ -68,8 +72,24 @@
         "npm:preact-render-to-string"
       ]
     },
+    "@panva/jose@6.0.12": {
+      "integrity": "b228cf79558ccc979046855bb140cd5d7bd86564dc047e563632a686b1346dcc"
+    },
+    "@panva/oauth4webapi@3.6.1": {
+      "integrity": "2ff2fc8cf067f21010cc11720d439c8f3900435b01dd6c77d23b327fe9db8877"
+    },
+    "@panva/openid-client@6.6.2": {
+      "integrity": "0d783bd2d9d2d6df3b4e45517ce8116eeb96747799be44a3a86bb51892c82c68",
+      "dependencies": [
+        "jsr:@panva/jose",
+        "jsr:@panva/oauth4webapi"
+      ]
+    },
     "@std/bytes@1.0.6": {
       "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
+    },
+    "@std/dotenv@0.225.5": {
+      "integrity": "9ce6f9d0ec3311f74a32535aa1b8c62ed88b1ab91b7f0815797d77a6f60c922f"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -455,6 +475,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@fresh/core@^2.0.0-alpha.50",
+      "jsr:@panva/openid-client@^6.6.2",
       "npm:@awesome.me/webawesome@^3.0.0-beta.3",
       "npm:@graphql-typed-document-node/core@^3.2.0",
       "npm:@preact/signals@^2.2.1",
