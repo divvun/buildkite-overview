@@ -17,7 +17,7 @@ export function getSessionFromRequest(request: Request): SessionData | null {
   try {
     const sessionCookie = request.headers.get("cookie")
       ?.split("; ")
-      .find(c => c.startsWith("session="))
+      .find((c) => c.startsWith("session="))
       ?.split("=")[1]
 
     if (!sessionCookie) {
@@ -55,4 +55,15 @@ export function getOptionalSession(request: Request): SessionData | null {
 
 export function hasOrgAccess(session: SessionData, org: string): boolean {
   return session.organizations.includes(org)
+}
+
+export function requireDivvunOrgAccess(request: Request): SessionData {
+  const session = requireAuth(request)
+  if (!hasOrgAccess(session, "divvun")) {
+    throw new Response(null, {
+      status: 403,
+      headers: { "Location": "/auth/login?error=insufficient_access" },
+    })
+  }
+  return session
 }

@@ -11,16 +11,17 @@
   "lint": {
     "rules": {
       "tags": ["fresh", "recommended"]
-    }
+    },
+    "exclude": ["node_modules"]
   },
   "exclude": ["**/_fresh/*"],
   "imports": {
+    "~/": "./",
     "openid-client": "jsr:@panva/openid-client@^6.6.2",
-    "webawesome": "npm:@awesome.me/webawesome@^3.0.0-beta.3",
+    "webawesome": "npm:@awesome.me/webawesome@^3.0.0-beta.4",
     "@graphql-typed-document-node/core": "npm:@graphql-typed-document-node/core@^3.2.0",
     "@urql/preact": "npm:@urql/preact@^4.1.2",
-    "graphql-tag": "npm:graphql-tag@^2.12.6",
-    "~/": "./",
+    "graphql-tag": "jsr:@necessary/graphql-tag@^2.12.6-test.2",
     "fresh": "jsr:@fresh/core@^2.0.0-alpha.50",
     "preact": "npm:preact@^10.27.0",
     "@preact/signals": "npm:@preact/signals@^2.2.1"

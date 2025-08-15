@@ -138,3 +138,83 @@ html {
     rgb(254, 249, 195)
   );
 }
+
+/* Buildkite overview improvements for better UX */
+
+/* Increase badge text size for better readability */
+wa-badge {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  min-height: 24px !important;
+  padding: 4px 8px !important;
+}
+
+/* Ensure small text is readable */
+.wa-caption-xs {
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+}
+
+.wa-caption-s {
+  font-size: 0.875rem !important;
+  line-height: 1.4 !important;
+}
+
+/* Build stats badges in pipeline cards */
+.wa-grid .wa-card wa-badge {
+  min-width: 28px !important;
+  text-align: center !important;
+}
+
+/* Improve button hover states */
+wa-button {
+  transition: all 0.2s ease !important;
+}
+
+wa-button:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Pipeline card hover effects */
+wa-card {
+  transition: all 0.2s ease !important;
+}
+
+/* Only apply hover effects to clickable cards */
+wa-card.clickable-card {
+  cursor: pointer;
+}
+
+wa-card.clickable-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Non-clickable cards should not have hover effects */
+wa-card:not(.clickable-card):hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Better focus indicators for clickable cards */
+wa-card.clickable-card:focus-within {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  outline: 2px solid var(--wa-color-brand-fill-loud);
+  outline-offset: 2px;
+}
+
+/* Better link hover states */
+a:hover {
+  color: var(--wa-color-brand-fill-loud) !important;
+  transition: color 0.2s ease !important;
+}
+
+/* Improve form element hover states */
+wa-select:hover {
+  border-color: var(--wa-color-brand-fill-loud) !important;
+}
+
+wa-input:hover {
+  border-color: var(--wa-color-brand-fill-loud) !important;
+}

@@ -1,12 +1,12 @@
-import { 
-  discovery, 
-  authorizationCodeGrant, 
-  randomPKCECodeVerifier, 
-  calculatePKCECodeChallenge, 
-  randomState,
+import {
+  authorizationCodeGrant,
+  calculatePKCECodeChallenge,
+  type ClientMetadata,
   Configuration,
+  discovery,
+  randomPKCECodeVerifier,
+  randomState,
   type ServerMetadata,
-  type ClientMetadata 
 } from "openid-client"
 
 // Environment variables for GitHub OAuth
@@ -35,7 +35,9 @@ let config: Configuration | null = null
 export function getOAuthConfig(): Configuration {
   if (!config) {
     if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-      throw new Error("GitHub OAuth credentials not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.")
+      throw new Error(
+        "GitHub OAuth credentials not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
+      )
     }
 
     config = new Configuration(GITHUB_SERVER_METADATA, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET)
@@ -75,17 +77,17 @@ export interface GitHubUser {
 
 export async function exchangeCodeForTokens(code: string, codeVerifier: string, state: string, storedState: string) {
   const config = getOAuthConfig()
-  
+
   // Create a mock callback URL with the authorization code
   const callbackUrl = new URL(`${BASE_URL}/auth/callback`)
   callbackUrl.searchParams.set("code", code)
   callbackUrl.searchParams.set("state", state)
-  
+
   const tokenSet = await authorizationCodeGrant(
     config,
     callbackUrl,
     { expectedState: storedState },
-    { code_verifier: codeVerifier }
+    { code_verifier: codeVerifier },
   )
 
   return tokenSet
@@ -126,17 +128,21 @@ export async function getUserOrganizations(accessToken: string): Promise<string[
 
 export function hasRequiredOrgAccess(userOrgs: string[]): boolean {
   const requiredOrgs = ["divvun", "giellalt"]
-  
+
   // Allow bypass for development if BYPASS_ORG_CHECK is set
   if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
     console.log("⚠️  Organization check bypassed for development")
     return true
   }
-  
-  const hasAccess = requiredOrgs.some(org => userOrgs.includes(org))
-  
+
+  const hasAccess = requiredOrgs.some((org) => userOrgs.includes(org))
+
   // Log for debugging
-  console.log(`Organization check: User orgs: [${userOrgs.join(", ")}], Required: [${requiredOrgs.join(", ")}], Access: ${hasAccess}`)
-  
+  console.log(
+    `Organization check: User orgs: [${userOrgs.join(", ")}], Required: [${
+      requiredOrgs.join(", ")
+    }], Access: ${hasAccess}`,
+  )
+
   return hasAccess
 }

@@ -35,12 +35,12 @@ export const handler = {
       const cookieHeader = ctx.req.headers.get("cookie")
       const storedState = cookieHeader
         ?.split("; ")
-        .find(c => c.startsWith("oauth_state="))
+        .find((c) => c.startsWith("oauth_state="))
         ?.split("=")[1]
 
       const storedCodeVerifier = cookieHeader
         ?.split("; ")
-        .find(c => c.startsWith("oauth_code_verifier="))
+        .find((c) => c.startsWith("oauth_code_verifier="))
         ?.split("=")[1]
 
       // Validate state parameter
@@ -66,7 +66,7 @@ export const handler = {
 
       // Exchange code for tokens
       const tokenSet = await exchangeCodeForTokens(code, storedCodeVerifier, state, storedState)
-      
+
       if (!tokenSet.access_token) {
         throw new Error("No access token received")
       }
@@ -105,11 +105,11 @@ export const handler = {
 
       const headers = new Headers()
       headers.set("Location", "/")
-      
+
       // Set session cookie (expires in 7 days)
       const isProduction = Deno.env.get("DENO_ENV") === "production"
       const cookieFlags = `HttpOnly; ${isProduction ? "Secure; " : ""}SameSite=Lax`
-      
+
       headers.append("Set-Cookie", `session=${sessionCookie}; ${cookieFlags}; Max-Age=${7 * 24 * 60 * 60}; Path=/`)
       headers.append("Set-Cookie", `oauth_state=; ${cookieFlags}; Max-Age=0; Path=/`)
       headers.append("Set-Cookie", `oauth_code_verifier=; ${cookieFlags}; Max-Age=0; Path=/`)
@@ -118,7 +118,6 @@ export const handler = {
         status: 302,
         headers,
       })
-
     } catch (error) {
       console.error("OAuth callback error:", error)
       return new Response(null, {

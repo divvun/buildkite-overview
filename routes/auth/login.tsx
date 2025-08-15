@@ -18,7 +18,7 @@ export const handler = {
     // If already authenticated, redirect to home
     const sessionCookie = ctx.req.headers.get("cookie")
       ?.split("; ")
-      .find(c => c.startsWith("session="))
+      .find((c) => c.startsWith("session="))
 
     if (sessionCookie) {
       return new Response(null, {
@@ -36,11 +36,11 @@ export const handler = {
 
       const headers = new Headers()
       headers.set("Location", url)
-      
+
       // Store OAuth state and code verifier in cookies (expires in 10 minutes)
       const isProduction = Deno.env.get("DENO_ENV") === "production"
       const cookieFlags = `HttpOnly; ${isProduction ? "Secure; " : ""}SameSite=Lax; Max-Age=600; Path=/`
-      
+
       headers.append("Set-Cookie", `oauth_state=${state}; ${cookieFlags}`)
       headers.append("Set-Cookie", `oauth_code_verifier=${codeVerifier}; ${cookieFlags}`)
 
@@ -74,7 +74,8 @@ export default function Login(props: { data: LoginProps }) {
       errorMessage = "Security validation failed. Please try again."
       break
     case "insufficient_access":
-      errorMessage = "You don't have access to the required GitHub organizations (divvun or giellalt). You may need to re-authenticate to update your organization permissions."
+      errorMessage =
+        "You don't have access to the required GitHub organizations (divvun or giellalt). You may need to re-authenticate to update your organization permissions."
       break
     case "callback_error":
       errorMessage = "Authentication error occurred. Please try again."
@@ -95,7 +96,8 @@ export default function Login(props: { data: LoginProps }) {
           <wa-card style={"max-width: 400px; width: 100%" as any}>
             <div class="wa-stack wa-gap-l wa-align-items-center" style="padding: var(--wa-space-l)">
               <div class="wa-stack wa-gap-s wa-align-items-center">
-                <wa-icon name="building" style={"font-size: 3rem; color: var(--wa-color-brand-fill-loud)" as any}></wa-icon>
+                <wa-icon name="building" style={"font-size: 3rem; color: var(--wa-color-brand-fill-loud)" as any}>
+                </wa-icon>
                 <h1 class="wa-heading-l">Divvun Buildkite</h1>
                 <p class="wa-body-m wa-color-text-quiet wa-text-center">
                   Sign in with your GitHub account to access the build overview dashboard
@@ -112,7 +114,12 @@ export default function Login(props: { data: LoginProps }) {
               <div class="wa-stack wa-gap-s wa-align-items-center">
                 <form method="POST" style="width: 100%">
                   <wa-button type="submit" variant="brand" style={"width: 100%; justify-content: center" as any}>
-                    <wa-icon slot="prefix" name={error === "insufficient_access" ? "arrow-rotate-right" : "github"} style={"font-size: 1.2em" as any}></wa-icon>
+                    <wa-icon
+                      slot="prefix"
+                      name={error === "insufficient_access" ? "arrow-rotate-right" : "github"}
+                      style={"font-size: 1.2em" as any}
+                    >
+                    </wa-icon>
                     {error === "insufficient_access" ? "Try Different Account" : "Sign in with GitHub"}
                   </wa-button>
                 </form>
@@ -122,11 +129,23 @@ export default function Login(props: { data: LoginProps }) {
                       Choose a different account or re-authorize to update organization permissions
                     </p>
                     <p class="wa-caption-xs wa-color-text-quiet wa-text-center">
-                      You can also <a href={`https://github.com/settings/connections/applications/${Deno.env.get("GITHUB_CLIENT_ID")}`} target="_blank" rel="noopener noreferrer" style="color: var(--wa-color-brand-fill-loud)">review app permissions on GitHub</a>
+                      You can also{" "}
+                      <a
+                        href={`https://github.com/settings/connections/applications/${
+                          Deno.env.get("GITHUB_CLIENT_ID")
+                        }`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style="color: var(--wa-color-brand-fill-loud)"
+                        class="wa-cluster wa-gap-xs"
+                      >
+                        review app permissions on GitHub
+                        <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+                      </a>
                     </p>
                   </div>
                 )}
-                
+
                 <div class="wa-stack wa-gap-xs wa-align-items-center">
                   <p class="wa-caption-s wa-color-text-quiet wa-text-center">
                     Requires access to divvun or giellalt organizations

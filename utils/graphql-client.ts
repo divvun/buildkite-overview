@@ -1,4 +1,3 @@
-
 // query {
 //   organization(slug: "divvun") {
 //     id
