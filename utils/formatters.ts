@@ -163,20 +163,9 @@ export function formatLastSeen(date?: Date): string {
   return `${diffDays}d ago`
 }
 
-// Organization handling utilities
-export const ORGANIZATIONS = ["divvun", "giellalt", "necessary-nu", "bbqsrc"] as const
+// Buildkite organization(s) - these are the actual Buildkite orgs we fetch pipelines from
+export const ORGANIZATIONS = ["divvun"] as const
 export type Organization = typeof ORGANIZATIONS[number]
-
-export function getOrgFromRepo(repo?: string): string {
-  if (!repo || typeof repo !== "string") return "unknown"
-  const parts = repo.split("/")
-  return parts[0]?.trim() || "unknown"
-}
-
-export function getOrgFromPipelineSlug(slug: string): string {
-  // Extract org from pipeline slug (format: "org/pipeline" or just "pipeline")
-  return slug.includes("/") ? slug.split("/")[0] : "divvun"
-}
 
 export function isValidOrganization(org: string): org is Organization {
   return ORGANIZATIONS.includes(org as Organization)

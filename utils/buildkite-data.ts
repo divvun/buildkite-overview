@@ -9,6 +9,7 @@ import {
 import type { SessionData } from "./session.ts"
 import { apiCache, withRetry } from "./retry-helper.ts"
 import { normalizeStatus, ORGANIZATIONS } from "./formatters.ts"
+import { getCacheManager } from "./cache/cache-manager.ts"
 
 export interface AppPipeline {
   id: string
@@ -232,49 +233,8 @@ function mapBuildkiteBuildToApp(build: any, pipelineName: string, pipelineSlug: 
 }
 
 export async function fetchAllPipelines(): Promise<AppPipeline[]> {
-  const cacheKey = "all-pipelines"
-  const cached = apiCache.get(cacheKey)
-  if (cached) {
-    console.log("Using cached pipeline data")
-    return cached as AppPipeline[]
-  }
-
-  const allPipelines: AppPipeline[] = []
-
-  for (const orgSlug of ORGANIZATIONS) {
-    try {
-      console.log(`Fetching pipelines for organization: ${orgSlug}`)
-
-      const result = await withRetry(
-        async () => await buildkiteClient.query(GET_ORGANIZATION_PIPELINES, { slug: orgSlug }).toPromise(),
-        { maxRetries: 2, initialDelay: 5000 },
-      ) as any
-
-      if (result.error) {
-        console.error(`Error fetching pipelines for ${orgSlug}:`, result.error)
-        continue
-      }
-
-      if (result.data?.organization?.pipelines) {
-        const orgPipelines = result.data.organization.pipelines.edges
-          .map((edge: any) => mapBuildkitePipelineToApp(edge.node))
-
-        allPipelines.push(...orgPipelines)
-        console.log(`Fetched ${orgPipelines.length} pipelines from ${orgSlug}`)
-      }
-    } catch (error) {
-      console.error(`Failed to fetch pipelines for ${orgSlug}:`, error)
-    }
-  }
-
-  console.log(`Total pipelines fetched: ${allPipelines.length}`)
-
-  // Cache the result for 5 minutes to avoid repeated API calls
-  if (allPipelines.length > 0) {
-    apiCache.set(cacheKey, allPipelines, 300)
-  }
-
-  return allPipelines
+  const cacheManager = getCacheManager()
+  return await cacheManager.getPipelines()
 }
 
 export async function fetchRecentBuilds(limit: number = 20): Promise<AppBuild[]> {
@@ -332,46 +292,11 @@ export async function fetchRecentBuilds(limit: number = 20): Promise<AppBuild[]>
 
 export async function enrichPipelinesWithGitHubData(
   pipelines: AppPipeline[],
-  session?: SessionData | null,
 ): Promise<AppPipeline[]> {
-  if (!session?.access_token) {
-    return pipelines
-  }
-
-  const enrichedPipelines = [...pipelines]
-
-  for (const pipeline of enrichedPipelines) {
-    if (pipeline.repo && session.access_token) {
-      try {
-        const [owner, repoName] = pipeline.repo.split("/")
-        const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}`, {
-          headers: {
-            "Authorization": `Bearer ${session.access_token}`,
-            "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "Divvun-Buildkite-Overview",
-          },
-        })
-
-        if (response.ok) {
-          const repoData = await response.json()
-          pipeline.visibility = repoData.private ? "private" : "public"
-
-          if (repoData.private && !pipeline.tags.includes("private")) {
-            pipeline.tags.push("private")
-          }
-        } else if (response.status === 404) {
-          pipeline.visibility = "private"
-          if (!pipeline.tags.includes("private")) {
-            pipeline.tags.push("private")
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to fetch GitHub data for ${pipeline.repo}:`, error)
-      }
-    }
-  }
-
-  return enrichedPipelines
+  // This function is now deprecated - GitHub enrichment is handled
+  // automatically by the cache manager using the GITHUB_APP_TOKEN
+  // Just return the pipelines as they already contain GitHub data
+  return pipelines
 }
 
 function findFailingSince(builds: any[]): Date | null {
@@ -459,49 +384,8 @@ function mapBuildkiteAgentToApp(agent: BuildkiteAgent, orgSlug: string): AppAgen
 }
 
 export async function fetchAllAgents(): Promise<AppAgent[]> {
-  const cacheKey = "all-agents"
-  const cached = apiCache.get(cacheKey)
-  if (cached) {
-    console.log("Using cached agents data")
-    return cached as AppAgent[]
-  }
-
-  const allAgents: AppAgent[] = []
-
-  for (const orgSlug of ORGANIZATIONS) {
-    try {
-      console.log(`Fetching agents for organization: ${orgSlug}`)
-
-      const result = await withRetry(
-        async () => await buildkiteClient.query(GET_ORGANIZATION_AGENTS, { slug: orgSlug }).toPromise(),
-        { maxRetries: 2, initialDelay: 5000 },
-      ) as any
-
-      if (result.error) {
-        console.error(`Error fetching agents for ${orgSlug}:`, result.error)
-        continue
-      }
-
-      if (result.data?.organization?.agents) {
-        const orgAgents = result.data.organization.agents.edges
-          .map((edge: any) => mapBuildkiteAgentToApp(edge.node, orgSlug))
-
-        allAgents.push(...orgAgents)
-        console.log(`Fetched ${orgAgents.length} agents from ${orgSlug}`)
-      }
-    } catch (error) {
-      console.error(`Failed to fetch agents for ${orgSlug}:`, error)
-    }
-  }
-
-  console.log(`Total agents fetched: ${allAgents.length}`)
-
-  // Cache the result for 2 minutes (agents data changes more frequently)
-  if (allAgents.length > 0) {
-    apiCache.set(cacheKey, allAgents, 120)
-  }
-
-  return allAgents
+  const cacheManager = getCacheManager()
+  return await cacheManager.getAgents()
 }
 
 export async function fetchRunningBuilds(): Promise<AppBuild[]> {

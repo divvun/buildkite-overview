@@ -141,6 +141,53 @@ export const GET_ORGANIZATION_PIPELINES: TypedDocumentNode<
   }
 `
 
+export const GET_ORGANIZATION_PIPELINES_PAGINATED: TypedDocumentNode<
+  { organization: BuildkiteOrganization },
+  { slug: string; first: number; after?: string }
+> = gql`
+  query GetOrganizationPipelinesPaginated($slug: ID!, $first: Int!, $after: String) {
+    organization(slug: $slug) {
+      id
+      slug
+      name
+      pipelines(first: $first, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          node {
+            id
+            name
+            slug
+            url
+            visibility
+            repository {
+              url
+            }
+            tags {
+              label
+            }
+            builds(last: 10) {
+              edges {
+                node {
+                  id
+                  number
+                  state
+                  url
+                  startedAt
+                  finishedAt
+                  createdAt
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
 export const GET_PIPELINE_BUILDS: TypedDocumentNode<
   { pipeline: { builds: { edges: Array<{ node: BuildkiteBuild }> } } },
   { pipelineSlug: string; first?: number }

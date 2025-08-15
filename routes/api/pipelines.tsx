@@ -1,17 +1,12 @@
 import { Context, RouteHandler } from "fresh"
 import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
-import { enrichPipelinesWithGitHubData, fetchAllPipelines } from "~/utils/buildkite-data.ts"
+import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
 
 export const handler: RouteHandler<unknown, AppState> = {
   async GET(ctx: Context<AppState>) {
     try {
-      // Fetch pipeline data from Buildkite
-      let pipelines = await fetchAllPipelines()
-
-      // Enrich with GitHub data if authenticated
-      if (ctx.state.session) {
-        pipelines = await enrichPipelinesWithGitHubData(pipelines, ctx.state.session)
-      }
+      // Fetch pipeline data from Buildkite (already enriched with GitHub data)
+      const pipelines = await fetchAllPipelines()
 
       // Filter based on user access
       const visiblePipelines = filterPipelinesForUser(pipelines, ctx.state.session)

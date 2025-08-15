@@ -5,13 +5,12 @@ import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import { type AppState } from "~/utils/middleware.ts"
 import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 import { type AppBuild, fetchRunningBuilds } from "~/utils/buildkite-data.ts"
-import { formatDuration, formatTimeAgo, getOrgFromRepo } from "~/utils/formatters.ts"
+import { formatDuration, formatTimeAgo } from "~/utils/formatters.ts"
 import EmptyState from "~/components/EmptyState.tsx"
 
 interface RunningProps {
   session: SessionData
   runningBuilds: AppBuild[]
-  orgFilter?: string
   error?: string
 }
 
@@ -19,21 +18,11 @@ export const handler = {
   async GET(ctx: Context<AppState>) {
     // Require authentication and divvun organization membership
     const session = requireDivvunOrgAccess(ctx.req)
-    const url = new URL(ctx.req.url)
-    const rawOrgFilter = url.searchParams.get("org")
-
-    // Validate and sanitize org filter - must be alphanumeric with dashes/underscores only
-    const orgFilter = rawOrgFilter?.match(/^[a-zA-Z0-9_-]+$/) ? rawOrgFilter : undefined
 
     try {
       console.log("Fetching running builds data...")
 
       let runningBuilds = await fetchRunningBuilds()
-
-      // Filter by organization if specified
-      if (orgFilter) {
-        runningBuilds = runningBuilds.filter((build) => getOrgFromRepo(build.repo) === orgFilter)
-      }
 
       // Sort by most recently started
       runningBuilds.sort((a, b) => {
@@ -48,7 +37,6 @@ export const handler = {
         {
           session,
           runningBuilds,
-          orgFilter,
         } satisfies RunningProps,
       )
     } catch (error) {
@@ -58,7 +46,6 @@ export const handler = {
         {
           session,
           runningBuilds: [],
-          orgFilter,
           error:
             "Unable to fetch currently running builds. This may be a temporary network issue or API rate limiting. Please wait a moment and try again.",
         } satisfies RunningProps,
@@ -68,24 +55,14 @@ export const handler = {
 }
 
 export default function Running(props: { data: RunningProps; state: AppState }) {
-  const { session, runningBuilds, orgFilter, error } = props.data
+  const { session, runningBuilds, error } = props.data
 
   const breadcrumbs = [
     { label: "Overview", href: "/" },
     { label: "Running Builds" },
   ]
 
-  // Group builds by organization
-  const buildsByOrg = runningBuilds.reduce((acc, build) => {
-    const org = getOrgFromRepo(build.repo)
-    if (!acc[org]) {
-      acc[org] = []
-    }
-    acc[org].push(build)
-    return acc
-  }, {} as Record<string, AppBuild[]>)
-
-  const organizations = Object.keys(buildsByOrg).sort()
+  // No organization grouping needed
 
   return (
     <Layout
@@ -123,38 +100,12 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
           </wa-callout>
         )}
 
-        {/* Organization Filter */}
-        {organizations.length > 1 && (
-          <div class="wa-cluster wa-gap-s">
-            <span class="wa-body-s">Organization:</span>
-            <a
-              href="/running"
-              class={`wa-button ${!orgFilter ? "wa-button-primary" : "wa-button-secondary"}`}
-              style="text-decoration: none"
-            >
-              All ({runningBuilds.length})
-            </a>
-            {organizations.map((org) => (
-              <a
-                key={org}
-                href={`/running?org=${org}`}
-                class={`wa-button ${orgFilter === org ? "wa-button-primary" : "wa-button-secondary"}`}
-                style="text-decoration: none"
-              >
-                {org} ({buildsByOrg[org].length})
-              </a>
-            ))}
-          </div>
-        )}
-
         {runningBuilds.length === 0 && !error
           ? (
             <EmptyState
               icon="check-circle"
               title="No running builds! 🎉"
-              description={orgFilter
-                ? `No running builds found for organization "${orgFilter}"`
-                : "All builds have completed. Check back later for new activity."}
+              description="All builds have completed. Check back later for new activity."
               variant="success"
               maxWidth="900px"
             />
@@ -242,9 +193,6 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
                       <div class="wa-stack wa-gap-3xs wa-align-items-end">
                         <div class="wa-body-s">
                           {formatDuration(build.duration)}
-                        </div>
-                        <div class="wa-caption-s wa-color-text-quiet">
-                          {getOrgFromRepo(build.repo)}
                         </div>
                       </div>
                     </div>

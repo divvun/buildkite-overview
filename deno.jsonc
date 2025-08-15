@@ -24,7 +24,8 @@
     "graphql-tag": "jsr:@necessary/graphql-tag@^2.12.6-test.2",
     "fresh": "jsr:@fresh/core@^2.0.0-alpha.50",
     "preact": "npm:preact@^10.27.0",
-    "@preact/signals": "npm:@preact/signals@^2.2.1"
+    "@preact/signals": "npm:@preact/signals@^2.2.1",
+    "@db/sqlite": "jsr:@db/sqlite@^0.12.0"
   },
   "compilerOptions": {
     "lib": ["dom", "dom.asynciterable", "dom.iterable", "deno.ns"],

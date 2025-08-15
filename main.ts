@@ -2,6 +2,7 @@ import { App, staticFiles } from "fresh"
 import "jsr:@std/dotenv/load"
 import { define } from "./utils.ts"
 import { type AppState, sessionMiddleware } from "./utils/middleware.ts"
+import { getCacheManager } from "./utils/cache/cache-manager.ts"
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -32,6 +33,13 @@ console.log("✅ All required environment variables are present")
 if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
   console.log("⚠️  Development mode: GitHub organization check is bypassed")
 }
+
+// Initialize cache manager and database
+console.log("🗄️  Initializing cache database...")
+getCacheManager() // Initialize the singleton
+
+// Cache cleanup is handled internally by the cache manager
+console.log("✅ Cache system initialized")
 
 export const app = new App<AppState>()
 

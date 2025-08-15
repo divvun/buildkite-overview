@@ -2,15 +2,14 @@ import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
 import { type SessionData } from "~/utils/session.ts"
-import { type AppPipeline, enrichPipelinesWithGitHubData, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { getBadgeVariant, getHealthBorderStyle, getOrgFromPipelineSlug, getStatusIcon } from "~/utils/formatters.ts"
+import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
+import { getBadgeVariant, getHealthBorderStyle, getStatusIcon } from "~/utils/formatters.ts"
 import EmptyState from "~/components/EmptyState.tsx"
 
 interface PipelinesProps {
   session?: SessionData | null
   pipelines: AppPipeline[]
   statusFilter?: string
-  orgFilter?: string
   searchQuery?: string
   error?: string
 }
@@ -23,17 +22,10 @@ export const handler = {
       // Get filter parameters from URL
       const url = new URL(ctx.req.url)
       const statusFilter = url.searchParams.get("status") || ""
-      const orgFilter = url.searchParams.get("org") || ""
       const searchQuery = url.searchParams.get("search") || ""
 
-      // Fetch real pipeline data from Buildkite
+      // Fetch real pipeline data from Buildkite (already enriched with GitHub data)
       let pipelines = await fetchAllPipelines()
-
-      // Enrich with GitHub repository data if user is authenticated
-      if (ctx.state.session) {
-        console.log("Enriching pipelines with GitHub data...")
-        pipelines = await enrichPipelinesWithGitHubData(pipelines, ctx.state.session)
-      }
 
       // Filter pipelines based on user access
       let visiblePipelines = filterPipelinesForUser(pipelines, ctx.state.session)
@@ -41,14 +33,6 @@ export const handler = {
       // Apply status filter
       if (statusFilter) {
         visiblePipelines = visiblePipelines.filter((p) => p.status === statusFilter)
-      }
-
-      // Apply organization filter
-      if (orgFilter) {
-        visiblePipelines = visiblePipelines.filter((p) => {
-          const orgFromSlug = getOrgFromPipelineSlug(p.slug)
-          return orgFromSlug === orgFilter
-        })
       }
 
       // Apply search filter
@@ -61,8 +45,8 @@ export const handler = {
       }
 
       console.log(
-        `Returning ${visiblePipelines.length} visible pipelines (filtered by status: ${statusFilter || "none"}, org: ${
-          orgFilter || "none"
+        `Returning ${visiblePipelines.length} visible pipelines (filtered by status: ${
+          statusFilter || "none"
         }, search: ${searchQuery || "none"})`,
       )
 
@@ -71,7 +55,6 @@ export const handler = {
           session: ctx.state.session,
           pipelines: visiblePipelines,
           statusFilter,
-          orgFilter,
           searchQuery,
         } satisfies PipelinesProps,
       )
@@ -83,7 +66,6 @@ export const handler = {
           session: ctx.state.session,
           pipelines: [],
           statusFilter: "",
-          orgFilter: "",
           searchQuery: "",
           error:
             "Unable to load pipelines from Buildkite. This usually indicates an authentication issue. Please verify your BUILDKITE_API_KEY environment variable is set correctly and has the necessary permissions.",
@@ -94,7 +76,7 @@ export const handler = {
 }
 
 export default function Pipelines(props: { data: PipelinesProps }) {
-  const { session, pipelines = [], statusFilter = "", orgFilter = "", searchQuery = "", error } = props.data
+  const { session, pipelines = [], statusFilter = "", searchQuery = "", error } = props.data
 
   const breadcrumbs = [
     { label: "All Pipelines" },
@@ -174,25 +156,6 @@ export default function Pipelines(props: { data: PipelinesProps }) {
               <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
             </wa-input>
           </form>
-          <wa-select
-            placeholder="Organization"
-            value={orgFilter}
-            onWa-change={(e: any) => {
-              const url = new URL(window.location.href)
-              if (e.target.value) {
-                url.searchParams.set("org", e.target.value)
-              } else {
-                url.searchParams.delete("org")
-              }
-              window.location.href = url.toString()
-            }}
-          >
-            <wa-option value="">All Organizations</wa-option>
-            <wa-option value="divvun">divvun</wa-option>
-            <wa-option value="giellalt">giellalt</wa-option>
-            <wa-option value="necessary-nu">necessary-nu</wa-option>
-            <wa-option value="bbqsrc">bbqsrc</wa-option>
-          </wa-select>
           <wa-select
             placeholder="Status"
             value={statusFilter}
