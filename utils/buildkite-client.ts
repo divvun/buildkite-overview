@@ -46,6 +46,7 @@ export interface BuildkiteBuild {
 
 export interface BuildkiteJob {
   id: string
+  uuid?: string
   state: string
   label?: string
   url?: string

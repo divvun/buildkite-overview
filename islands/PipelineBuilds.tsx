@@ -11,8 +11,6 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
   const [builds, setBuilds] = useState<BuildkiteBuild[]>(initialBuilds)
   const [loading, setLoading] = useState(false) // Don't load if we have initial builds
   const [error, setError] = useState<string>("")
-  const [expandedBuild, setExpandedBuild] = useState<string | null>(null)
-  const [buildJobs, setBuildJobs] = useState<Record<string, any[]>>({})
 
   console.log("PipelineBuilds mounted with", initialBuilds.length, "initial builds")
 
@@ -52,29 +50,6 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
       setError("Unable to load build history. Please refresh the page or check your connection.")
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchJobsForBuild = async (buildId: string) => {
-    if (buildJobs[buildId]) return // Already fetched
-
-    try {
-      const response = await fetch(`/api/builds/${buildId}/jobs`)
-      if (response.ok) {
-        const jobs = await response.json()
-        setBuildJobs((prev) => ({ ...prev, [buildId]: jobs }))
-      }
-    } catch (err) {
-      console.error("Error fetching jobs for build:", buildId, err)
-    }
-  }
-
-  const handleBuildClick = (buildId: string) => {
-    if (expandedBuild === buildId) {
-      setExpandedBuild(null)
-    } else {
-      setExpandedBuild(buildId)
-      fetchJobsForBuild(buildId)
     }
   }
 
@@ -121,27 +96,22 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
   return (
     <div class="wa-stack wa-gap-s">
       {builds.map((build) => (
-        <wa-card key={build.id} class="build-card">
-          <div class="wa-stack wa-gap-s">
+        <wa-card key={build.id} class="clickable-card">
+          <a
+            href={`/pipelines/${pipelineSlug}/builds/${build.number}`}
+            style="text-decoration: none; color: inherit; display: block"
+          >
             <div
-              class="wa-flank wa-gap-m build-header"
+              class="wa-flank wa-gap-m"
               style="padding: var(--wa-space-s)"
             >
               <div class="wa-stack wa-gap-3xs">
-                <div class="wa-flank wa-gap-xs">
+                <div class="wa-flank wa-gap-xs" style="margin-bottom: 0.5rem">
                   <wa-icon
                     name={getStatusIcon(build.state)}
-                    style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud)` as any}
+                    style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud)`}
                   />
-                  <a
-                    href={`/pipelines/${pipelineSlug}/builds/${build.number}`}
-                    style="text-decoration: none; color: inherit"
-                  >
-                    <span class="wa-heading-s">#{build.number}</span>
-                  </a>
-                  <wa-badge variant={getBadgeVariant(build.state)}>
-                    {build.state}
-                  </wa-badge>
+                  <span class="wa-heading-s">#{build.number}</span>
                 </div>
                 <div class="wa-caption-s wa-color-text-quiet">
                   {build.message || "No commit message"}
@@ -155,106 +125,18 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
               </div>
 
               <div class="wa-stack wa-gap-3xs wa-align-items-end">
+                <wa-badge style="margin-bottom: 0.5rem" variant={getBadgeVariant(build.state)}>
+                  {build.state}
+                </wa-badge>
                 <div class="wa-caption-s">
                   {formatDuration(build.startedAt, build.finishedAt)}
                 </div>
                 <div class="wa-caption-xs wa-color-text-quiet">
                   {formatTimeAgo(build.startedAt || build.createdAt)}
                 </div>
-                <div class="wa-cluster wa-gap-xs">
-                  <wa-button size="small" appearance="outlined">
-                    <wa-icon slot="prefix" name="eye"></wa-icon>
-                    <a
-                      href={`/pipelines/${pipelineSlug}/builds/${build.number}`}
-                      style="text-decoration: none; color: inherit"
-                    >
-                      Details
-                    </a>
-                  </wa-button>
-                  <wa-button
-                    size="small"
-                    appearance="plain"
-                    onClick={() => handleBuildClick(build.id)}
-                  >
-                    <wa-icon
-                      name={expandedBuild === build.id ? "chevron-up" : "chevron-down"}
-                    />
-                  </wa-button>
-                </div>
               </div>
             </div>
-
-            {expandedBuild === build.id && (
-              <div style="border-top: 1px solid var(--wa-color-border-subtle); padding: var(--wa-space-s)">
-                <div class="wa-stack wa-gap-s">
-                  <div class="wa-flank">
-                    <h4 class="wa-heading-xs">Jobs</h4>
-                    {build.url && (
-                      <wa-button size="small" appearance="outlined">
-                        <wa-icon slot="prefix" name="arrow-up-right-from-square" />
-                        <a href={build.url} target="_blank" style="text-decoration: none; color: inherit">
-                          View in Buildkite
-                        </a>
-                      </wa-button>
-                    )}
-                  </div>
-
-                  {buildJobs[build.id]
-                    ? (
-                      <div class="wa-stack wa-gap-xs">
-                        {buildJobs[build.id].map((job: any) => (
-                          <div
-                            key={job.id}
-                            class="wa-flank wa-gap-s"
-                            style="padding: var(--wa-space-xs); border: 1px solid var(--wa-color-border-subtle); border-radius: var(--wa-border-radius-m)"
-                          >
-                            <div class="wa-stack wa-gap-3xs">
-                              <div class="wa-flank wa-gap-xs">
-                                <wa-icon
-                                  name={getStatusIcon(job.state)}
-                                  style={`color: var(--wa-color-${getBadgeVariant(job.state)}-fill-loud)` as any}
-                                />
-                                <span class="wa-body-s">
-                                  {job.step?.label || job.name || job.command || `${job.type} job`}
-                                </span>
-                                <wa-badge variant={getBadgeVariant(job.state)}>
-                                  {job.state}
-                                </wa-badge>
-                              </div>
-                              {job.exitStatus !== undefined && job.exitStatus !== null && (
-                                <div class="wa-caption-xs wa-color-text-quiet">
-                                  Exit code: {job.exitStatus}
-                                </div>
-                              )}
-                            </div>
-
-                            <div class="wa-cluster wa-gap-xs">
-                              <div class="wa-caption-xs">
-                                {formatDuration(job.startedAt, job.finishedAt)}
-                              </div>
-                              {job.url && (
-                                <wa-button size="small" appearance="plain">
-                                  <wa-icon slot="prefix" name="file-lines" />
-                                  <a href={job.url} target="_blank" style="text-decoration: none; color: inherit">
-                                    Logs
-                                  </a>
-                                </wa-button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )
-                    : (
-                      <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-m)">
-                        <wa-icon name="spinner" style="color: var(--wa-color-brand-fill-loud)" />
-                        <p class="wa-caption-s wa-color-text-quiet">Loading jobs...</p>
-                      </div>
-                    )}
-                </div>
-              </div>
-            )}
-          </div>
+          </a>
         </wa-card>
       ))}
     </div>

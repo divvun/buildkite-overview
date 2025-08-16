@@ -90,7 +90,10 @@ export default function Login(props: { data: LoginProps }) {
         <script type="module" src="/webawesome/webawesome.loader.js"></script>
       </head>
       <body>
-        <div class="wa-center" style="min-height: 100vh; padding: var(--wa-space-xl)">
+        <div
+          class="wa-center"
+          style="min-height: 100vh; padding: var(--wa-space-xl); display: flex; align-items: center; justify-content: center"
+        >
           <wa-card style={"max-width: 400px; width: 100%" as any}>
             <div class="wa-stack wa-gap-l wa-align-items-center" style="padding: var(--wa-space-l)">
               <div class="wa-stack wa-gap-s wa-align-items-center">
@@ -145,9 +148,10 @@ export default function Login(props: { data: LoginProps }) {
                 )}
 
                 <div class="wa-stack wa-gap-xs wa-align-items-center">
-                  <p class="wa-caption-s wa-color-text-quiet wa-text-center">
-                    Requires access to divvun or giellalt organizations
-                  </p>
+                  <wa-callout variant="neutral">
+                    <wa-icon slot="icon" name="circle-info" variant="regular"></wa-icon>
+                    Requires membership of <code>divvun</code> or <code>giellalt</code> organizations
+                  </wa-callout>
                   <p class="wa-caption-xs wa-color-text-quiet wa-text-center">
                     We only access your public profile and organization membership
                   </p>

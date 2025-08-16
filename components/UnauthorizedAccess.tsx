@@ -13,7 +13,7 @@ export default function UnauthorizedAccess({
   children,
 }: UnauthorizedAccessProps) {
   return (
-    <wa-card style="max-width: 600px; margin: var(--wa-space-l) auto;">
+    <wa-card style="margin: var(--wa-space-l) auto;">
       <div class="wa-stack wa-gap-m" style="padding: var(--wa-space-l)">
         <div class="wa-stack wa-gap-s wa-align-items-center">
           <wa-icon

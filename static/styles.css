@@ -218,3 +218,11 @@ wa-select:hover {
 wa-input:hover {
   border-color: var(--wa-color-brand-fill-loud) !important;
 }
+
+main {
+  padding: 0;
+}
+
+.log-table tr {
+  border-top: 0px;
+}

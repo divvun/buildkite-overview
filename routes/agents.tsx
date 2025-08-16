@@ -1,12 +1,12 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { Context, page } from "fresh"
+import EmptyState from "~/components/EmptyState.tsx"
 import Layout from "~/components/Layout.tsx"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
-import { type AppState } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 import { type AppAgent, fetchAllAgents } from "~/utils/buildkite-data.ts"
 import { formatDuration, formatLastSeen, getConnectionIcon, getConnectionVariant } from "~/utils/formatters.ts"
-import EmptyState from "~/components/EmptyState.tsx"
+import { type AppState } from "~/utils/middleware.ts"
+import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 
 interface AgentsProps {
   session: SessionData
@@ -115,7 +115,7 @@ export default function Agents(props: { data: AgentsProps; state: AppState }) {
           </p>
         </header>
 
-        <div class="wa-flank" style="max-width: 1000px">
+        <div class="wa-flank">
           <div class="wa-cluster wa-gap-m">
             <div class="wa-stack wa-gap-3xs">
               <div class="wa-body-s wa-color-text-quiet">Total Agents</div>
@@ -175,7 +175,7 @@ export default function Agents(props: { data: AgentsProps; state: AppState }) {
             />
           )
           : (
-            <div class="wa-stack wa-gap-l" style="max-width: 900px">
+            <div class="wa-stack wa-gap-l">
               {queues.map((queueKey) => (
                 <div key={queueKey} class="wa-stack wa-gap-m">
                   <div class="wa-flank">

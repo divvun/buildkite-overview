@@ -45,29 +45,22 @@ export default function Layout(
                   slot="trigger"
                   size="small"
                   appearance="plain"
-                  style="max-width: 200px; display: flex; align-items: center; gap: var(--wa-space-xs)"
+                  with-caret
                 >
                   <img
                     src={session.user.avatar_url}
                     alt={session.user.name || session.user.login}
-                    style="width: 24px; height: 24px; border-radius: 50%"
+                    style="width: 24px; height: 24px; border-radius: 50%; margin-right: var(--wa-space-xs)"
                   />
-                  <span
-                    class="wa-desktop-only"
-                    style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px"
-                  >
-                    {session.user.name || session.user.login}
-                  </span>
-                  <wa-icon name="chevron-down"></wa-icon>
                 </wa-button>
+
                 <wa-dropdown-item>
-                  <wa-icon slot="prefix" name="user"></wa-icon>
+                  <wa-icon slot="icon" name="user"></wa-icon>
                   <a
                     href={`https://github.com/${session.user.login}`}
                     target="_blank"
                     rel="noopener"
-                    style="text-decoration: none; color: inherit"
-                    class="wa-cluster wa-gap-xs"
+                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: var(--wa-space-xs)"
                   >
                     View GitHub Profile
                     <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
@@ -75,15 +68,10 @@ export default function Layout(
                 </wa-dropdown-item>
                 <wa-divider></wa-divider>
                 <wa-dropdown-item>
-                  <form method="POST" action="/auth/logout" style="width: 100%">
-                    <button
-                      type="submit"
-                      style="background: none; border: none; width: 100%; text-align: left; padding: 0"
-                    >
-                      <wa-icon slot="prefix" name="arrow-right-from-bracket"></wa-icon>
-                      Sign Out
-                    </button>
-                  </form>
+                  <wa-icon slot="icon" name="arrow-right-from-bracket"></wa-icon>
+                  <a href="/auth/logout" style="text-decoration: none; color: inherit">
+                    Sign Out
+                  </a>
                 </wa-dropdown-item>
               </wa-dropdown>
             )
@@ -123,7 +111,7 @@ export default function Layout(
       </nav>
 
       <main>
-        <div class="main-container" style="max-width: 1400px; margin: 0 auto; padding: 0 var(--wa-space-m)">
+        <div class="main-container" style="margin: 0 auto; padding: 0 var(--wa-space-m)">
           {children}
         </div>
       </main>

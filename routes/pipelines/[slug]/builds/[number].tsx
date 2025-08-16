@@ -156,7 +156,8 @@ export default function BuildDetail(props: { data: BuildDetailProps }) {
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
         <header class="wa-stack wa-gap-s">
-          <div class="wa-flank">
+          {
+            /* <div class="wa-flank">
             <wa-button variant="neutral" appearance="outlined">
               <wa-icon slot="prefix" name="arrow-left"></wa-icon>
               <a href={`/pipelines/${pipelineSlug}`} style="text-decoration: none; color: inherit">
@@ -177,7 +178,8 @@ export default function BuildDetail(props: { data: BuildDetailProps }) {
                 </wa-button>
               )}
             </div>
-          </div>
+          </div> */
+          }
 
           <div class="wa-stack wa-gap-s">
             <div class="wa-flank wa-gap-s">
@@ -203,26 +205,29 @@ export default function BuildDetail(props: { data: BuildDetailProps }) {
           </div>
 
           {build.message && (
-            <div class="wa-stack wa-gap-xs">
-              <div class="wa-body-m">{build.message}</div>
-              <div class="wa-cluster wa-gap-l">
-                {build.branch && (
-                  <div class="wa-caption-s wa-color-text-quiet">
-                    <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                    {build.branch}
-                  </div>
-                )}
-                {build.commit && (
-                  <div class="wa-caption-s wa-color-text-quiet">
-                    <wa-icon name="code-commit" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                    {build.commit.substring(0, 8)}
-                  </div>
-                )}
+            <>
+              <wa-divider></wa-divider>
+              <div class="wa-stack wa-gap-xs">
+                <div class="wa-body-m">{build.message}</div>
+                <div class="wa-cluster wa-gap-l">
+                  {build.branch && (
+                    <div class="wa-caption-s wa-color-text-quiet">
+                      <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs)"></wa-icon>
+                      {build.branch}
+                    </div>
+                  )}
+                  {build.commit && (
+                    <div class="wa-caption-s wa-color-text-quiet">
+                      <wa-icon name="code-commit" style="margin-right: var(--wa-space-3xs)"></wa-icon>
+                      {build.commit.substring(0, 8)}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </header>
-
+        <wa-divider></wa-divider>
         <section>
           <h2 class="wa-heading-m">Jobs</h2>
           <BuildJobs

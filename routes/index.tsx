@@ -1,18 +1,18 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { Context, page } from "fresh"
+import EmptyState from "~/components/EmptyState.tsx"
 import Layout from "~/components/Layout.tsx"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
-import { type AppState } from "~/utils/middleware.ts"
-import { type SessionData } from "~/utils/session.ts"
 import {
   type AgentMetrics,
   type BuildHistoryItem,
   type FailingPipeline,
   fetchAgentMetrics,
 } from "~/utils/buildkite-data.ts"
-import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
 import { formatDurationSeconds, formatFailingSince } from "~/utils/formatters.ts"
-import EmptyState from "~/components/EmptyState.tsx"
+import { type AppState } from "~/utils/middleware.ts"
+import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
+import { type SessionData } from "~/utils/session.ts"
 
 interface HomeProps {
   session?: SessionData | null
@@ -98,7 +98,7 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
         {/* Three Status Cards */}
         <div
           class="wa-gap-m status-cards"
-          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--wa-space-m); max-width: 900px"
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--wa-space-m)"
         >
           <a href="/pipelines" style="text-decoration: none; color: inherit">
             <wa-card class="clickable-card">
@@ -107,7 +107,6 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
                   <span class="wa-heading-s">Total Pipelines</span>
                   <wa-badge variant="brand">{totalPipelines}</wa-badge>
                 </div>
-                <div class="wa-caption-m wa-color-text-quiet">Across 4 organizations</div>
               </div>
             </wa-card>
           </a>
@@ -121,10 +120,12 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
                       <span class="wa-heading-s">Average Wait Time</span>
                       <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime)}</wa-badge>
                     </div>
-                    <div class="wa-caption-m wa-color-text-quiet">
+                    {
+                      /* <div class="wa-caption-m wa-color-text-quiet">
                       P95: {formatDurationSeconds(agentMetrics.p95WaitTime)} • P99:{" "}
                       {formatDurationSeconds(agentMetrics.p99WaitTime)}
-                    </div>
+                    </div> */
+                    }
                   </div>
                 </wa-card>
               </a>
@@ -134,12 +135,16 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
                 <div class="wa-stack wa-gap-xs">
                   <div class="wa-flank">
                     <span class="wa-heading-s">Average Wait Time</span>
-                    <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime)}</wa-badge>
+                    <wa-badge variant="neutral" style="text-transform: none">
+                      {formatDurationSeconds(agentMetrics.averageWaitTime)}
+                    </wa-badge>
                   </div>
-                  <div class="wa-caption-m wa-color-text-quiet">
+                  {
+                    /* <div class="wa-caption-m wa-color-text-quiet">
                     P95: {formatDurationSeconds(agentMetrics.p95WaitTime)} • P99:{" "}
                     {formatDurationSeconds(agentMetrics.p99WaitTime)}
-                  </div>
+                  </div> */
+                  }
                 </div>
               </wa-card>
             )}
@@ -153,7 +158,7 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
                       <span class="wa-heading-s">Running Pipelines</span>
                       <wa-badge variant={runningPipelines > 0 ? "warning" : "neutral"}>{runningPipelines}</wa-badge>
                     </div>
-                    <div class="wa-caption-m wa-color-text-quiet">With active builds</div>
+                    {/* <div class="wa-caption-m wa-color-text-quiet">With active builds</div> */}
                   </div>
                 </wa-card>
               </a>
@@ -165,14 +170,14 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
                     <span class="wa-heading-s">Running Pipelines</span>
                     <wa-badge variant={runningPipelines > 0 ? "warning" : "neutral"}>{runningPipelines}</wa-badge>
                   </div>
-                  <div class="wa-caption-m wa-color-text-quiet">With active builds</div>
+                  {/* <div class="wa-caption-m wa-color-text-quiet">With active builds</div> */}
                 </div>
               </wa-card>
             )}
         </div>
 
         {/* Failing Pipelines Section */}
-        <section style="max-width: 900px">
+        <section>
           <div class="wa-stack wa-gap-s">
             <h2 class="wa-heading-m">Failing Pipelines</h2>
             <p class="wa-body-s wa-color-text-quiet">
@@ -189,42 +194,42 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
                       href={`/pipelines/${pipeline.slug}`}
                       style="text-decoration: none; color: inherit; display: block"
                     >
-                      <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--wa-space-m)">
+                      <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--wa-space-s); gap: var(--wa-space-m)">
                         <div class="wa-stack wa-gap-3xs" style="min-width: 0; flex: 1">
-                          <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--wa-space-s); align-items: center">
-                            <span
-                              class="wa-heading-s"
-                              style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
-                            >
-                              {pipeline.name}
-                            </span>
-                            <wa-badge variant="danger">
-                              <wa-icon slot="prefix" name="triangle-exclamation"></wa-icon>
-                              FAILED
-                            </wa-badge>
-                          </div>
+                          <span
+                            class="wa-heading-s"
+                            style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+                          >
+                            {pipeline.name}
+                          </span>
                           <div class="wa-caption-s wa-color-text-quiet">
                             failing since {formatFailingSince(pipeline.failingSince)}
                           </div>
                         </div>
 
-                        <div style="display: flex; gap: 2px; min-width: 120px">
-                          {pipeline.last10Builds.map((build: BuildHistoryItem, index: number) => (
-                            <div
-                              key={`${pipeline.id}-build-${index}`}
-                              style={`width: 10px; height: 20px; border-radius: 2px; background-color: ${
-                                build.status === "success"
-                                  ? "var(--wa-color-success-fill-loud)"
-                                  : build.status === "failed"
-                                  ? "var(--wa-color-danger-fill-loud)"
-                                  : build.status === "running"
-                                  ? "var(--wa-color-warning-fill-loud)"
-                                  : "var(--wa-color-neutral-fill-loud)"
-                              }`}
-                              title={`Build #${build.buildNumber}: ${build.status}`}
-                            >
-                            </div>
-                          ))}
+                        <div style="display: flex; align-items: center; gap: var(--wa-space-s)">
+                          <div style="display: flex; gap: 2px">
+                            {pipeline.last10Builds.toReversed().map((build: BuildHistoryItem, index: number) => (
+                              <div
+                                key={`${pipeline.id}-build-${index}`}
+                                style={`width: 10px; height: 20px; border-radius: 2px; background-color: ${
+                                  build.status === "passed"
+                                    ? "var(--wa-color-success-fill-loud)"
+                                    : build.status === "failed"
+                                    ? "var(--wa-color-danger-fill-loud)"
+                                    : build.status === "running"
+                                    ? "var(--wa-color-warning-fill-loud)"
+                                    : "var(--wa-color-neutral-fill-loud)"
+                                }`}
+                                title={`Build #${build.buildNumber}: ${build.status}`}
+                              >
+                              </div>
+                            ))}
+                          </div>
+                          <wa-badge variant="danger">
+                            <wa-icon slot="prefix" name="triangle-exclamation"></wa-icon>
+                            FAILED
+                          </wa-badge>
                         </div>
                       </div>
                     </a>

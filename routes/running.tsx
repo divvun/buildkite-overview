@@ -1,12 +1,12 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { Context, page } from "fresh"
+import EmptyState from "~/components/EmptyState.tsx"
 import Layout from "~/components/Layout.tsx"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
-import { type AppState } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 import { type AppBuild, extractRunningBuildsFromPipelines, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { formatDuration, formatTimeAgo } from "~/utils/formatters.ts"
-import EmptyState from "~/components/EmptyState.tsx"
+import { type AppState } from "~/utils/middleware.ts"
+import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 
 interface RunningProps {
   session: SessionData
@@ -81,7 +81,7 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
           </p>
         </header>
 
-        <div class="wa-flank" style="max-width: 1000px">
+        <div class="wa-flank">
           <div class="wa-cluster wa-gap-m">
             <div class="wa-stack wa-gap-3xs">
               <div class="wa-body-s wa-color-text-quiet">Active Builds</div>
@@ -110,7 +110,7 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
           )
           : error
           ? (
-            <div class="wa-stack wa-gap-s" style="max-width: 900px">
+            <div class="wa-stack wa-gap-s">
               {[1, 2, 3].map((i) => (
                 <wa-card key={`skeleton-${i}`}>
                   <div style="padding: var(--wa-space-m)">
@@ -144,7 +144,7 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
             </div>
           )
           : (
-            <div class="wa-stack wa-gap-s" style="max-width: 900px">
+            <div class="wa-stack wa-gap-s">
               {runningBuilds.map((build) => (
                 <wa-card key={`${build.name}-${build.number || "unknown"}`}>
                   <div style="padding: var(--wa-space-m); border-left: 4px solid var(--wa-color-warning-fill-loud)">

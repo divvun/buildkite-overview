@@ -17,7 +17,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
   const [logData, setLogData] = useState<LogData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [showTimestamps, setShowTimestamps] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
   const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>([])
@@ -37,6 +37,13 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
       setCollapsedGroups(initialCollapsed)
     }
   }, [logData?.content])
+
+  useEffect(() => {
+    // Auto-fetch logs when component mounts
+    if (jobId && buildNumber && pipelineSlug) {
+      fetchLogs()
+    }
+  }, [jobId, buildNumber, pipelineSlug])
 
   const fetchLogs = async () => {
     if (!buildNumber || !pipelineSlug) {
@@ -70,13 +77,6 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleToggleExpanded = () => {
-    if (!expanded && !logData) {
-      fetchLogs()
-    }
-    setExpanded(!expanded)
   }
 
   const downloadLogs = () => {
@@ -564,18 +564,6 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
       `}
       </style>
       <div class="wa-flank">
-        <wa-button
-          size="small"
-          appearance="outlined"
-          onClick={handleToggleExpanded}
-        >
-          <wa-icon
-            slot="prefix"
-            name={expanded ? "chevron-up" : "chevron-down"}
-          />
-          {expanded ? "Hide Logs" : "Show Logs"}
-        </wa-button>
-
         {logData?.url && (
           <wa-button size="small" appearance="plain">
             <wa-icon slot="prefix" name="arrow-up-right-from-square" />

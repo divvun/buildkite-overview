@@ -16,7 +16,6 @@ export default function EmptyState({
   description,
   variant = "neutral",
   children,
-  maxWidth = "900px",
 }: EmptyStateProps) {
   const getIconColor = (variant: string): string => {
     switch (variant) {
@@ -32,7 +31,7 @@ export default function EmptyState({
   }
 
   return (
-    <wa-card style={`max-width: ${maxWidth}`}>
+    <wa-card>
       <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-l)">
         <wa-icon
           name={icon}

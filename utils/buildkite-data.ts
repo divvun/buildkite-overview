@@ -2,16 +2,12 @@ import {
   type BuildkiteAgent,
   type BuildkiteBuild,
   buildkiteClient,
-  type BuildkiteOrganization,
   type BuildkitePipeline,
-  GET_ORGANIZATION_AGENTS,
   GET_ORGANIZATION_CLUSTERS_AND_METRICS,
-  GET_ORGANIZATION_PIPELINES,
 } from "./buildkite-client.ts"
-import type { SessionData } from "./session.ts"
-import { apiCache, withRetry } from "./retry-helper.ts"
-import { normalizeStatus, ORGANIZATIONS } from "./formatters.ts"
 import { getCacheManager } from "./cache/cache-manager.ts"
+import { normalizeStatus, ORGANIZATIONS } from "./formatters.ts"
+import { withRetry } from "./retry-helper.ts"
 
 export interface AppPipeline {
   id: string
@@ -43,7 +39,7 @@ export interface AppBuild {
 }
 
 export interface BuildHistoryItem {
-  status: "success" | "failed" | "running" | "cancelled"
+  status: "passed" | "success" | "failed" | "running" | "cancelled"
   buildNumber: number
   finishedAt?: string
 }

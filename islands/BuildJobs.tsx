@@ -109,8 +109,6 @@ export default function BuildJobs(
   const [buildNumber, setBuildNumber] = useState<number | null>(initialBuildNumber || null)
   const [pipelineSlug, setPipelineSlug] = useState<string | null>(initialPipelineSlug || null)
 
-  console.log("BuildJobs mounted with", initialJobs.length, "initial jobs", initialJobs)
-
   useEffect(() => {
     // Only fetch if we don't have initial jobs
     if (initialJobs.length === 0) {
@@ -191,16 +189,13 @@ export default function BuildJobs(
   }
 
   return (
-    <div style="background: white; border: 1px solid var(--wa-color-border-subtle); border-radius: var(--wa-border-radius-m); max-width: 1200px">
-      {jobs.map((job, index) => {
+    <div class="wa-stack wa-gap-s">
+      {jobs.toReversed().map((job) => {
         const jobKey = job.uuid || job.id
         return (
-          <div
-            key={jobKey}
-            style={`border-bottom: ${index === jobs.length - 1 ? "none" : "1px solid var(--wa-color-border-subtle)"}`}
-          >
+          <wa-card key={jobKey} class="clickable-card">
             <div
-              style="display: flex; align-items: center; gap: var(--wa-space-s); padding: var(--wa-space-s) var(--wa-space-m); cursor: pointer; hover:background-color: var(--wa-color-neutral-fill-subtle)"
+              style="display: flex; align-items: center; gap: var(--wa-space-s); padding: 0; cursor: pointer"
               onClick={() => handleJobClick(jobKey)}
             >
               <span style="width: 1rem; text-align: center;">
@@ -250,11 +245,6 @@ export default function BuildJobs(
                 </div>
 
                 <div style="display: flex; align-items: center; gap: var(--wa-space-m)">
-                  {job.exitStatus !== undefined && job.exitStatus !== null && job.exitStatus !== 0 && (
-                    <span class="wa-caption-xs" style="color: var(--wa-color-danger-text-loud)">
-                      Exit {job.exitStatus}
-                    </span>
-                  )}
                   <span class="wa-caption-s wa-color-text-quiet">
                     {formatJobTiming(job)}
                   </span>
@@ -310,7 +300,8 @@ export default function BuildJobs(
                     )}
                   </div>
 
-                  {job.command && (
+                  {
+                    /* {job.command && (
                     <div class="wa-stack wa-gap-xs">
                       <div class="wa-caption-xs wa-color-text-quiet">Command</div>
                       <div
@@ -320,7 +311,8 @@ export default function BuildJobs(
                         {job.command}
                       </div>
                     </div>
-                  )}
+                  )} */
+                  }
 
                   <div class="wa-stack wa-gap-xs">
                     <h5 class="wa-heading-xs">Job Logs</h5>
@@ -333,7 +325,7 @@ export default function BuildJobs(
                 </div>
               </div>
             )}
-          </div>
+          </wa-card>
         )
       })}
     </div>

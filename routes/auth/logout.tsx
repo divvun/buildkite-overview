@@ -1,17 +1,20 @@
 import { Context } from "fresh"
 import { State } from "~/utils.ts"
 
+const logoutHandler = (_ctx: Context<State>) => {
+  const headers = new Headers()
+  headers.set("Location", "/")
+
+  // Clear session cookie
+  headers.set("Set-Cookie", "session=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/")
+
+  return new Response(null, {
+    status: 302,
+    headers,
+  })
+}
+
 export const handler = {
-  POST(_ctx: Context<State>) {
-    const headers = new Headers()
-    headers.set("Location", "/auth/login")
-
-    // Clear session cookie
-    headers.set("Set-Cookie", "session=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/")
-
-    return new Response(null, {
-      status: 302,
-      headers,
-    })
-  },
+  GET: logoutHandler,
+  POST: logoutHandler,
 }

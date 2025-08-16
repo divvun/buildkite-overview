@@ -42,16 +42,14 @@ export default function AutoRefresh({ enabled = false, intervalSeconds = 30 }: A
         onClick={() => setIsEnabled(!isEnabled)}
         title={`Auto-refresh ${isEnabled ? "ON" : "OFF"}`}
       >
-        <wa-icon
-          name={isEnabled ? "sync" : "sync-disabled"}
-        />
+        {isEnabled
+          ? (
+            <div class="wa-caption-xs wa-color-text-quiet" style="white-space: nowrap">
+              {countdown}s
+            </div>
+          )
+          : <wa-icon name="sync" />}
       </wa-button>
-
-      {isEnabled && (
-        <div class="wa-caption-xs wa-color-text-quiet" style="white-space: nowrap">
-          {countdown}s
-        </div>
-      )}
     </div>
   )
 }

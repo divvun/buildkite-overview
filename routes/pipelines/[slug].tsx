@@ -3,7 +3,7 @@ import Layout from "~/components/Layout.tsx"
 import PipelineBuilds from "~/islands/PipelineBuilds.tsx"
 import { type BuildkiteBuild, buildkiteClient, GET_PIPELINE_BUILDS } from "~/utils/buildkite-client.ts"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
+import { formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
 import { type SessionData } from "~/utils/session.ts"
@@ -85,6 +85,9 @@ export const handler = {
 
 export default function PipelineDetail(props: { data: PipelineDetailProps }) {
   const { session, pipeline, builds = [], error } = props.data
+
+  // Get the most recent build for display
+  const latestBuild = builds.length > 0 ? builds[0] : null
 
   if (error || !pipeline) {
     return (
@@ -174,7 +177,13 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
                 <span class="wa-heading-s">Total Builds</span>
                 <wa-badge variant="brand">{pipeline.builds.total}</wa-badge>
               </div>
-              <div class="wa-caption-m wa-color-text-quiet">Last 10 builds</div>
+              <div class="wa-caption-m wa-color-text-quiet">
+                {latestBuild
+                  ? `Last build ${
+                    formatTimeAgo(latestBuild.createdAt || latestBuild.startedAt || new Date().toISOString())
+                  }`
+                  : "No builds yet"}
+              </div>
             </div>
           </wa-card>
 

@@ -48,10 +48,8 @@ getCacheManager() // Initialize the singleton
 console.log("✅ Cache system initialized")
 
 // Initialize and start background polling service
-console.log("🔄 Starting background polling service...")
 const backgroundPoller = getBackgroundPoller()
 backgroundPoller.start()
-console.log("✅ Background polling service started")
 
 export const app = new App<AppState>()
 

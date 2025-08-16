@@ -147,19 +147,19 @@ export default function Pipelines(props: { data: PipelinesProps }) {
                         <div class="wa-flank wa-gap-xs">
                           <wa-icon
                             name={getStatusIcon(pipeline.status)}
-                            style={`color: var(--wa-color-${getBadgeVariant(pipeline.status)}-fill-loud)` as any}
+                            style={`color: var(--wa-color-${getBadgeVariant(pipeline.status)}-fill-loud)`}
                           >
                           </wa-icon>
                           <span class="wa-heading-s">{pipeline.name}</span>
                         </div>
                         <div class="wa-caption-s wa-color-text-quiet">{pipeline.repo || "No repository"}</div>
                       </div>
-                      <wa-badge variant={getBadgeVariant(pipeline.status)}>
-                        {pipeline.status}
-                      </wa-badge>
                     </div>
 
-                    <div class="wa-cluster wa-gap-xs" style="flex-wrap: wrap">
+                    <wa-badge variant={getBadgeVariant(pipeline.status)}>
+                      {pipeline.status}
+                    </wa-badge>
+                    <div class="wa-cluster wa-gap-xs" style="flex-wrap: wrap; min-height: 24px">
                       {pipeline.tags.map((tag) => <wa-tag key={tag}>{tag}</wa-tag>)}
                     </div>
 

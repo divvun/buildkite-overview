@@ -66,13 +66,13 @@ export function getHealthBorderStyle(status: string): string {
   const normalizedStatus = normalizeStatus(status)
   switch (normalizedStatus) {
     case "passed":
-      return "border-left: 4px solid var(--wa-color-success-fill-loud)"
+      return "border-top: 4px solid var(--wa-color-success-fill-loud)"
     case "failed":
-      return "border-left: 4px solid var(--wa-color-danger-fill-loud)"
+      return "border-top: 4px solid var(--wa-color-danger-fill-loud)"
     case "running":
-      return "border-left: 4px solid var(--wa-color-warning-fill-loud)"
+      return "border-top: 4px solid var(--wa-color-warning-fill-loud)"
     default:
-      return "border-left: 4px solid var(--wa-color-neutral-fill-loud)"
+      return "border-top: 4px solid var(--wa-color-neutral-fill-loud)"
   }
 }
 
