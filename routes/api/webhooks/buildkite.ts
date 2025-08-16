@@ -179,7 +179,7 @@ async function handleBuildScheduled(cacheManager: any, build: any, pipelineSlug?
   try {
     // Cache the build data
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, "scheduled")
+    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, build.state)
   } catch (error) {
     console.error("Error updating build status:", error)
   }
@@ -193,7 +193,7 @@ async function handleBuildStarted(cacheManager: any, build: any, pipelineSlug?: 
   try {
     // Cache the updated build data
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, "running")
+    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, build.state)
   } catch (error) {
     console.error("Error updating build status:", error)
   }
@@ -207,7 +207,7 @@ async function handleBuildRunning(cacheManager: any, build: any, pipelineSlug?: 
   try {
     // Cache the updated build data
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, "running")
+    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, build.state)
   } catch (error) {
     console.error("Error updating build status:", error)
   }

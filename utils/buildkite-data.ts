@@ -39,7 +39,7 @@ export interface AppBuild {
 }
 
 export interface BuildHistoryItem {
-  status: "passed" | "success" | "failed" | "running" | "cancelled"
+  status: "passed" | "success" | "failed" | "running" | "cancelled" | "blocked" | "waiting" | "scheduled"
   buildNumber: number
   finishedAt?: string
 }
@@ -98,7 +98,7 @@ export interface AppAgent {
 }
 
 function mapBuildToHistoryItem(build: BuildkiteBuild): BuildHistoryItem {
-  let status: "success" | "failed" | "running" | "cancelled"
+  let status: "success" | "failed" | "running" | "cancelled" | "blocked" | "waiting" | "scheduled"
 
   switch (build.state) {
     case "PASSED":
@@ -110,11 +110,17 @@ function mapBuildToHistoryItem(build: BuildkiteBuild): BuildHistoryItem {
       status = "failed"
       break
     case "RUNNING":
-    case "SCHEDULED":
     case "CREATING":
-    case "WAITING":
-    case "BLOCKED":
       status = "running"
+      break
+    case "BLOCKED":
+      status = "blocked"
+      break
+    case "WAITING":
+      status = "waiting"
+      break
+    case "SCHEDULED":
+      status = "scheduled"
       break
     case "CANCELED":
     case "CANCELING":
@@ -138,29 +144,37 @@ function determinePipelineStatus(builds: BuildWithState[]): string {
 
   const latestBuild = builds[0]
 
-  // If the latest build is running, the pipeline is running
-  if (latestBuild && ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED"].includes(latestBuild.state)) {
-    return "running"
-  }
+  // Handle specific latest build states first (most important)
+  if (latestBuild) {
+    // Only RUNNING and CREATING are truly "running"
+    if (["RUNNING", "CREATING"].includes(latestBuild.state)) {
+      return "running"
+    }
 
-  // If the latest build is cancelled, the pipeline is cancelled
-  if (latestBuild && ["CANCELED", "CANCELING"].includes(latestBuild.state)) {
-    return "cancelled"
-  }
+    // BLOCKED is its own status - not running
+    if (latestBuild.state === "BLOCKED") {
+      return "blocked"
+    }
 
-  // Look at recent builds to determine failing vs passing pattern
-  // Consider the last 3 builds to determine the pipeline health trend
-  const recentBuilds = builds.slice(0, 3)
-  const failedBuilds = recentBuilds.filter((build) => ["FAILED", "WAITING_FAILED"].includes(build.state))
-  const passedBuilds = recentBuilds.filter((build) => build.state === "PASSED")
+    // SCHEDULED and WAITING are pending states
+    if (["SCHEDULED", "WAITING"].includes(latestBuild.state)) {
+      return normalizeStatus(latestBuild.state)
+    }
 
-  // If the latest build failed, or if 2+ of the last 3 builds failed, mark as failing
-  if (latestBuild && ["FAILED", "WAITING_FAILED"].includes(latestBuild.state)) {
-    return "failed"
-  } else if (failedBuilds.length >= 2) {
-    return "failed"
-  } else if (passedBuilds.length > 0) {
-    return "passed"
+    // If the latest build is cancelled, the pipeline is cancelled
+    if (["CANCELED", "CANCELING"].includes(latestBuild.state)) {
+      return "cancelled"
+    }
+
+    // If the latest build failed, pipeline is failed
+    if (["FAILED", "WAITING_FAILED"].includes(latestBuild.state)) {
+      return "failed"
+    }
+
+    // If the latest build passed, check for patterns
+    if (latestBuild.state === "PASSED") {
+      return "passed"
+    }
   }
 
   // Default to the normalized latest build status
@@ -456,7 +470,7 @@ export function extractRunningBuildsFromPipelines(pipelines: AppPipeline[]): App
   const runningBuilds: AppBuild[] = []
 
   for (const pipeline of pipelines) {
-    // Check if the latest build is actually running, not just pipeline status
+    // Check if the latest build is actually running (not blocked, waiting, or scheduled)
     const latestBuild = pipeline.last10Builds?.[0]
     if (latestBuild && latestBuild.status === "running") {
       const build: AppBuild = {

@@ -552,10 +552,10 @@ export class CacheManager {
       "PASSED": "passed",
       "FAILED": "failed",
       "RUNNING": "running",
-      "SCHEDULED": "running",
       "CREATING": "running",
-      "WAITING": "running",
-      "BLOCKED": "running",
+      "SCHEDULED": "scheduled",
+      "WAITING": "waiting",
+      "BLOCKED": "blocked",
       "CANCELED": "cancelled",
       "CANCELING": "cancelled",
       "WAITING_FAILED": "failed",
@@ -571,24 +571,37 @@ export class CacheManager {
 
     const latestBuild = builds[0]
 
-    // If the latest build is running, the pipeline is running
-    if (latestBuild && ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED"].includes(latestBuild.state)) {
-      return "running"
-    }
+    // Handle specific latest build states first (most important)
+    if (latestBuild) {
+      // Only RUNNING and CREATING are truly "running"
+      if (["RUNNING", "CREATING"].includes(latestBuild.state)) {
+        return "running"
+      }
 
-    // If the latest build is cancelled, the pipeline is cancelled
-    if (latestBuild && ["CANCELED", "CANCELING"].includes(latestBuild.state)) {
-      return "cancelled"
-    }
+      // BLOCKED is its own status - not running
+      if (latestBuild.state === "BLOCKED") {
+        return "blocked"
+      }
 
-    // If the latest build passed, the pipeline is passing
-    if (latestBuild && latestBuild.state === "PASSED") {
-      return "passed"
-    }
+      // SCHEDULED and WAITING are pending states
+      if (["SCHEDULED", "WAITING"].includes(latestBuild.state)) {
+        return this.normalizeStatus(latestBuild.state)
+      }
 
-    // If the latest build failed, the pipeline is failing
-    if (latestBuild && ["FAILED", "WAITING_FAILED"].includes(latestBuild.state)) {
-      return "failed"
+      // If the latest build is cancelled, the pipeline is cancelled
+      if (["CANCELED", "CANCELING"].includes(latestBuild.state)) {
+        return "cancelled"
+      }
+
+      // If the latest build failed, pipeline is failed
+      if (["FAILED", "WAITING_FAILED"].includes(latestBuild.state)) {
+        return "failed"
+      }
+
+      // If the latest build passed, pipeline is passed
+      if (latestBuild.state === "PASSED") {
+        return "passed"
+      }
     }
 
     // Default to the normalized latest build status

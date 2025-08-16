@@ -17,6 +17,7 @@
   },
   "exclude": ["**/_fresh/*"],
   "imports": {
+    "@std/fs": "jsr:@std/fs@^1.0.19",
     "~/": "./",
     "openid-client": "jsr:@panva/openid-client@^6.6.2",
     "webawesome": "npm:@awesome.me/webawesome@^3.0.0-beta.4",

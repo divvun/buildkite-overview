@@ -14,6 +14,11 @@ export interface SessionData {
 }
 
 export function getSessionFromRequest(request: Request): SessionData | null {
+  // Check if BYPASS_ORG_CHECK is enabled for development
+  if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
+    return createMockSession()
+  }
+
   try {
     const sessionCookie = request.headers.get("cookie")
       ?.split("; ")
@@ -66,4 +71,19 @@ export function requireDivvunOrgAccess(request: Request): SessionData {
     })
   }
   return session
+}
+
+export function createMockSession(): SessionData {
+  return {
+    user: {
+      id: 99999,
+      login: "dev-user",
+      name: "Development User",
+      email: "dev@example.com",
+      avatar_url: "https://github.com/github.png",
+    },
+    organizations: ["divvun", "giellalt"],
+    access_token: "mock_token_for_development",
+    expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours from now
+  }
 }

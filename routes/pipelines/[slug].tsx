@@ -3,11 +3,11 @@ import Layout from "~/components/Layout.tsx"
 import PipelineBuilds from "~/islands/PipelineBuilds.tsx"
 import { type BuildkiteBuild, buildkiteClient, GET_PIPELINE_BUILDS } from "~/utils/buildkite-client.ts"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
+import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 import { formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
 import { type SessionData } from "~/utils/session.ts"
-import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 
 interface PipelineDetailProps {
   session?: SessionData | null
@@ -209,7 +209,8 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
             <div class="wa-stack wa-gap-xs">
               <div class="wa-flank">
                 <span class="wa-heading-s">Visibility</span>
-                <wa-badge variant={pipeline.visibility === "private" ? "danger" : "success"}>
+                <wa-badge variant={pipeline.visibility === "private" ? "brand" : "success"}>
+                  <wa-icon slot="prefix" name={pipeline.visibility === "private" ? "lock" : "globe"}></wa-icon>
                   {pipeline.visibility || "Unknown"}
                 </wa-badge>
               </div>

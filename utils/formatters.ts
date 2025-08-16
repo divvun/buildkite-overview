@@ -10,10 +10,10 @@ export const BUILD_STATUS_MAP: Record<string, string> = {
   "CANCELED": "cancelled",
   "WAITING_FAILED": "failed",
   "RUNNING": "running",
-  "SCHEDULED": "running",
   "CREATING": "running",
-  "WAITING": "running",
-  "BLOCKED": "running",
+  "SCHEDULED": "scheduled",
+  "WAITING": "waiting",
+  "BLOCKED": "blocked",
   "CANCELING": "cancelled",
   "SKIPPED": "passed",
   "NOT_RUN": "neutral",
@@ -22,6 +22,9 @@ export const BUILD_STATUS_MAP: Record<string, string> = {
   "failed": "failed",
   "running": "running",
   "cancelled": "cancelled",
+  "blocked": "blocked",
+  "waiting": "waiting",
+  "scheduled": "scheduled",
   "neutral": "neutral",
   "unknown": "unknown",
 }
@@ -39,6 +42,11 @@ export function getBadgeVariant(status: string): "brand" | "neutral" | "success"
       return "danger"
     case "running":
       return "warning"
+    case "blocked":
+      return "brand" // Distinct from running - something needs attention but not failed
+    case "waiting":
+    case "scheduled":
+      return "warning" // Something will happen soon
     case "cancelled":
       return "neutral"
     default:
@@ -55,6 +63,12 @@ export function getStatusIcon(status: string): string {
       return "circle-xmark"
     case "running":
       return "spinner"
+    case "blocked":
+      return "circle-pause" // Paused/blocked state
+    case "waiting":
+      return "clock" // Waiting for something
+    case "scheduled":
+      return "calendar" // Scheduled to run
     case "cancelled":
       return "circle-stop"
     default:

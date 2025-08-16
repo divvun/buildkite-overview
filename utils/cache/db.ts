@@ -1,4 +1,8 @@
 import { Database } from "@db/sqlite"
+import { expandGlobSync } from "@std/fs"
+
+// Cache schema version - increment this to force a fresh database
+const CACHE_SCHEMA_VERSION = 1
 
 // Type definitions for database query results
 interface CountResult {
@@ -16,9 +20,32 @@ interface IsPrivateResult {
 export class CacheDB {
   private db: Database
 
-  constructor(path = "./cache.db") {
+  constructor(path = `./cache-v${CACHE_SCHEMA_VERSION}.db`) {
+    this.cleanupOldCacheFiles()
     this.db = new Database(path)
     this.initialize()
+  }
+
+  private cleanupOldCacheFiles() {
+    try {
+      // Find all cache-v*.db* files using glob
+      for (const file of expandGlobSync("cache-v*.db*")) {
+        const match = file.name.match(/^cache-v(\d+)\.db/)
+        if (match) {
+          const fileVersion = parseInt(match[1])
+          if (fileVersion < CACHE_SCHEMA_VERSION) {
+            console.log(`🗑️  Cleaning up old cache file: ${file.name}`)
+            try {
+              Deno.removeSync(file.path)
+            } catch (error) {
+              console.warn(`Failed to remove ${file.name}:`, error)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to cleanup old cache files:", error)
+    }
   }
 
   // Retry wrapper for database operations that might fail due to locking

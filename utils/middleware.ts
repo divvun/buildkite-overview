@@ -1,5 +1,5 @@
 import { define, State } from "~/utils.ts"
-import { getOptionalSession, type SessionData } from "~/utils/session.ts"
+import { createMockSession, getOptionalSession, type SessionData } from "~/utils/session.ts"
 
 // Extend the State interface to include session
 export interface AppState extends State {
@@ -7,8 +7,14 @@ export interface AppState extends State {
 }
 
 export const sessionMiddleware = define.middleware(async (ctx) => {
-  // Get session from request (optional, doesn't throw)
-  ctx.state.session = getOptionalSession(ctx.req)
+  // Check if BYPASS_ORG_CHECK is enabled
+  if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
+    console.log("⚠️  Using mock session for development (BYPASS_ORG_CHECK=true)")
+    ctx.state.session = createMockSession()
+  } else {
+    // Get session from request (optional, doesn't throw)
+    ctx.state.session = getOptionalSession(ctx.req)
+  }
 
   // Continue to the route handler
   return await ctx.next()
@@ -25,6 +31,11 @@ export const requireGlobalAuth = define.middleware(async (ctx) => {
 
   // Skip auth check for auth routes and webhooks to avoid infinite redirects
   if (ctx.url.pathname.startsWith("/auth/") || ctx.url.pathname.startsWith("/api/webhooks/")) {
+    return await ctx.next()
+  }
+
+  // If BYPASS_ORG_CHECK is enabled, mock session should already be in context
+  if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
     return await ctx.next()
   }
 

@@ -12,4 +12,8 @@ node_modules/
 vendor/
 # WebAwesome files (copied during build)
 static/webawesome/
+# Cache database files (versioned)
+cache-v*.db
+cache-v*.db-shm
+cache-v*.db-wal
 
