@@ -33,7 +33,7 @@ export default function Layout(
           {session && (
             <>
               <a href="/agents" class={currentPath === "/agents" ? "active" : ""}>Agents</a>
-              <a href="/running" class={currentPath === "/running" ? "active" : ""}>Running</a>
+              <a href="/queues" class={currentPath === "/queues" ? "active" : ""}>Queues</a>
             </>
           )}
         </div>

@@ -324,6 +324,21 @@ export interface BuildkiteAgent {
   clusterQueue?: {
     key: string
   }
+  job?: {
+    id: string
+    state: string
+    url?: string
+    startedAt?: string
+    build: {
+      id: string
+      number: number
+      pipeline: {
+        id: string
+        name: string
+        slug: string
+      }
+    }
+  }
 }
 
 export const GET_ORGANIZATION_AGENTS: TypedDocumentNode<
@@ -350,6 +365,23 @@ export const GET_ORGANIZATION_AGENTS: TypedDocumentNode<
             disconnectedAt
             clusterQueue {
               key
+            }
+            job {
+              ... on JobTypeCommand {
+                id
+                state
+                url
+                startedAt
+                build {
+                  id
+                  number
+                  pipeline {
+                    id
+                    name
+                    slug
+                  }
+                }
+              }
             }
           }
         }
@@ -418,3 +450,120 @@ export const GET_ORGANIZATION_CLUSTERS_AND_METRICS: TypedDocumentNode<
     }
   }
 `
+
+// REST API interfaces and functions
+export interface BuildkiteBuildRest {
+  id: string
+  number: number
+  state: string
+  url: string
+  web_url: string
+  started_at?: string
+  finished_at?: string
+  created_at: string
+  scheduled_at?: string
+  message?: string
+  branch?: string
+  commit?: string
+  pipeline: {
+    id: string
+    name: string
+    slug: string
+    url: string
+    repository?: {
+      url: string
+    }
+  }
+  jobs: BuildkiteJobRest[]
+}
+
+export interface BuildkiteJobRest {
+  id: string
+  type: string
+  name?: string
+  state: string
+  web_url?: string
+  started_at?: string
+  finished_at?: string
+  created_at?: string
+  scheduled_at?: string
+  step_key?: string
+  agent?: {
+    id: string
+    name: string
+    queue?: string
+  }
+  agent_query_rules?: string[]
+}
+
+const BUILDKITE_REST_ENDPOINT = "https://api.buildkite.com/v2"
+
+// REST API client for fetching builds by state
+export async function fetchBuildsByState(orgSlug: string, states: string[]): Promise<BuildkiteBuildRest[]> {
+  if (!BUILDKITE_API_KEY) {
+    throw new Error("BUILDKITE_API_KEY environment variable is required")
+  }
+
+  const stateParams = states.map((state) => `state[]=${encodeURIComponent(state)}`).join("&")
+  const url =
+    `${BUILDKITE_REST_ENDPOINT}/organizations/${orgSlug}/builds?${stateParams}&include_retried_jobs=false&per_page=100`
+
+  console.log(`Fetching builds from REST API: ${url}`)
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${BUILDKITE_API_KEY}`,
+        "Accept": "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`REST API Error: ${response.status} ${response.statusText}`, errorText)
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`)
+    }
+
+    const builds: BuildkiteBuildRest[] = await response.json()
+    console.log(`✅ Fetched ${builds.length} builds with states: ${states.join(", ")}`)
+
+    return builds
+  } catch (error) {
+    console.error(`❌ Error fetching builds for ${orgSlug}:`, error)
+    throw error
+  }
+}
+
+// Fetch scheduled builds across all organizations
+export async function fetchScheduledBuilds(): Promise<BuildkiteBuildRest[]> {
+  const allBuilds: BuildkiteBuildRest[] = []
+
+  for (const orgSlug of ["divvun"]) { // Using hardcoded for now, import ORGANIZATIONS from formatters later
+    try {
+      const builds = await fetchBuildsByState(orgSlug, ["scheduled"])
+      allBuilds.push(...builds)
+    } catch (error) {
+      console.error(`Failed to fetch scheduled builds for ${orgSlug}:`, error)
+      // Continue with other orgs even if one fails
+    }
+  }
+
+  return allBuilds
+}
+
+// Fetch running builds across all organizations
+export async function fetchRunningBuildsRest(): Promise<BuildkiteBuildRest[]> {
+  const allBuilds: BuildkiteBuildRest[] = []
+
+  for (const orgSlug of ["divvun"]) { // Using hardcoded for now, import ORGANIZATIONS from formatters later
+    try {
+      const builds = await fetchBuildsByState(orgSlug, ["running"])
+      allBuilds.push(...builds)
+    } catch (error) {
+      console.error(`Failed to fetch running builds for ${orgSlug}:`, error)
+      // Continue with other orgs even if one fails
+    }
+  }
+
+  return allBuilds
+}

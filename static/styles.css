@@ -12,9 +12,56 @@ button {
 button, [role="button"] {
   cursor: pointer;
 }
+/* Iosevka SS14 Font Face Declarations */
+@font-face {
+  font-family: "Iosevka SS14";
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+  src:
+    url("/fonts/WOFF2/IosevkaSS14-Regular.woff2") format("woff2"),
+    url("/fonts/TTF/IosevkaSS14-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Iosevka SS14";
+  font-display: swap;
+  font-weight: 400;
+  font-style: italic;
+  src:
+    url("/fonts/WOFF2/IosevkaSS14-Italic.woff2") format("woff2"),
+    url("/fonts/TTF/IosevkaSS14-Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Iosevka SS14";
+  font-display: swap;
+  font-weight: 700;
+  font-style: normal;
+  src:
+    url("/fonts/WOFF2/IosevkaSS14-Bold.woff2") format("woff2"),
+    url("/fonts/TTF/IosevkaSS14-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Iosevka SS14";
+  font-display: swap;
+  font-weight: 700;
+  font-style: italic;
+  src:
+    url("/fonts/WOFF2/IosevkaSS14-BoldItalic.woff2") format("woff2"),
+    url("/fonts/TTF/IosevkaSS14-BoldItalic.ttf") format("truetype");
+}
+
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family:
+    "Iosevka SS14", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 1em;
+}
+
+pre {
+  font-family:
+    "Iosevka SS14", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 img,
 svg {
@@ -225,4 +272,40 @@ main {
 
 .log-table tr {
   border-top: 0px;
+}
+
+.log-table * {
+  font-family:
+    "Iosevka SS14", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace
+    !important;
+}
+
+/* Apply Iosevka SS14 to monospace elements throughout the app */
+.monospace,
+[style*="font-family: monospace"],
+[style*="font-family:monospace"] {
+  font-family:
+    "Iosevka SS14", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace
+    !important;
+}
+
+/* Build command display styling */
+.build-command {
+  font-family:
+    "Iosevka SS14", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Log output and terminal text */
+.log-output,
+.terminal-text {
+  font-family:
+    "Iosevka SS14", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Override WebAwesome theme fonts */
+.wa-theme-awesome {
+  --wa-font-family-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --wa-font-family-heading: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --wa-font-family-code: "Iosevka SS14", ui-monospace, monospace;
+  --wa-font-family-longform: "Noto Sans", "Noto Sans Hebrew", ui-sans-serif, system-ui, sans-serif;
 }

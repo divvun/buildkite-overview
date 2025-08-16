@@ -527,6 +527,25 @@ export class CacheManager {
   }
 
   private mapBuildkiteAgentToApp(agent: any, orgSlug: string): AppAgent {
+    let currentJob: AppAgent["currentJob"] = undefined
+
+    // Map job data if available
+    if (agent.job && agent.isRunningJob) {
+      currentJob = {
+        id: agent.job.id,
+        state: agent.job.state,
+        url: agent.job.url,
+        pipelineName: agent.job.build?.pipeline?.name || "Unknown",
+        pipelineSlug: agent.job.build?.pipeline?.slug || "",
+        buildNumber: agent.job.build?.number || 0,
+        buildUrl: agent.job.build
+          ? `https://buildkite.com/${orgSlug}/${agent.job.build.pipeline?.slug}/builds/${agent.job.build.number}`
+          : "",
+        startedAt: agent.job.startedAt,
+        duration: agent.job.startedAt ? this.formatDuration(agent.job.startedAt) : undefined,
+      }
+    }
+
     return {
       id: agent.id,
       name: agent.name,
@@ -539,12 +558,26 @@ export class CacheManager {
       organization: orgSlug,
       queueKey: agent.clusterQueue?.key,
       metadata: undefined,
-      currentJob: undefined,
+      currentJob,
       createdAt: new Date(agent.createdAt),
       connectedAt: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
       disconnectedAt: agent.disconnectedAt ? new Date(agent.disconnectedAt) : undefined,
       lastSeen: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
     }
+  }
+
+  private formatDuration(startedAt: string): string {
+    const start = new Date(startedAt)
+    const now = new Date()
+    const durationMs = now.getTime() - start.getTime()
+
+    const minutes = Math.floor(durationMs / (1000 * 60))
+    const seconds = Math.floor((durationMs % (1000 * 60)) / 1000)
+
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`
+    }
+    return `${seconds}s`
   }
 
   private normalizeStatus(status: string): string {

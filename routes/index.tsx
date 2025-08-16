@@ -8,6 +8,7 @@ import {
   type BuildHistoryItem,
   type FailingPipeline,
   fetchAgentMetrics,
+  fetchQueueStatus,
 } from "~/utils/buildkite-data.ts"
 import { formatDurationSeconds, formatFailingSince } from "~/utils/formatters.ts"
 import { type AppState } from "~/utils/middleware.ts"
@@ -18,6 +19,7 @@ interface HomeProps {
   session?: SessionData | null
   totalPipelines: number
   runningPipelines: number
+  pendingBuilds: number
   agentMetrics: AgentMetrics
   failingPipelines: FailingPipeline[]
   error?: string
@@ -29,10 +31,14 @@ export const handler = {
       console.log("Fetching dashboard data...")
 
       // Fetch all dashboard data with a single API call (uses caching)
-      const [dashboardData, agentMetrics] = await Promise.all([
+      const [dashboardData, agentMetrics, queueStatus] = await Promise.all([
         fetchDashboardData(),
         fetchAgentMetrics(),
+        fetchQueueStatus(),
       ])
+
+      // Calculate total pending builds
+      const pendingBuilds = queueStatus.reduce((total, queue) => total + queue.scheduledJobs.length, 0)
 
       console.log(
         `Dashboard stats: ${dashboardData.pipelines.length} total pipelines, ${dashboardData.failingPipelines.length} failing, ${dashboardData.runningPipelinesCount} pipelines with running builds`,
@@ -43,6 +49,7 @@ export const handler = {
           session: ctx.state.session,
           totalPipelines: dashboardData.pipelines.length,
           runningPipelines: dashboardData.runningPipelinesCount,
+          pendingBuilds,
           agentMetrics,
           failingPipelines: dashboardData.failingPipelines,
         } satisfies HomeProps,
@@ -55,6 +62,7 @@ export const handler = {
           session: ctx.state.session,
           totalPipelines: 0,
           runningPipelines: 0,
+          pendingBuilds: 0,
           agentMetrics: { averageWaitTime: 0, p95WaitTime: 0, p99WaitTime: 0 },
           failingPipelines: [],
           error:
@@ -66,7 +74,7 @@ export const handler = {
 }
 
 export default function Home(props: { data: HomeProps; state: AppState }) {
-  const { session, totalPipelines, runningPipelines, agentMetrics, failingPipelines, error } = props.data
+  const { session, totalPipelines, runningPipelines, pendingBuilds, agentMetrics, failingPipelines, error } = props.data
 
   const breadcrumbs = undefined
 
@@ -151,14 +159,13 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
 
           {session
             ? (
-              <a href="/running" style="text-decoration: none; color: inherit">
+              <a href="/queues" style="text-decoration: none; color: inherit">
                 <wa-card class="clickable-card">
                   <div class="wa-stack wa-gap-xs">
                     <div class="wa-flank">
-                      <span class="wa-heading-s">Running Pipelines</span>
-                      <wa-badge variant={runningPipelines > 0 ? "warning" : "neutral"}>{runningPipelines}</wa-badge>
+                      <span class="wa-heading-s">Pending Builds</span>
+                      <wa-badge variant={pendingBuilds > 0 ? "warning" : "neutral"}>{pendingBuilds}</wa-badge>
                     </div>
-                    {/* <div class="wa-caption-m wa-color-text-quiet">With active builds</div> */}
                   </div>
                 </wa-card>
               </a>

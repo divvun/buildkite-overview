@@ -29,19 +29,20 @@ export const handler = {
       try {
         console.log("Fetching agents data...")
 
-        let allAgents = await fetchAllAgents()
+        const allAgents = await fetchAllAgents()
 
         // Filter by organization if specified
+        let filteredAgents = allAgents
         if (orgFilter) {
-          allAgents = allAgents.filter((agent) => agent.organization === orgFilter)
+          filteredAgents = allAgents.filter((agent) => agent.organization === orgFilter)
         }
 
-        console.log(`Found ${allAgents.length} agents`)
+        console.log(`Found ${filteredAgents.length} agents`)
 
         return page(
           {
             session,
-            agents: allAgents,
+            agents: filteredAgents,
             orgFilter,
           } satisfies AgentsProps,
         )
@@ -99,6 +100,7 @@ export default function Agents(props: { data: AgentsProps; state: AppState }) {
   const organizations = Object.keys(agentsByOrg).sort()
   const connectedAgents = agents.filter((agent) => agent.connectionState === "connected").length
   const runningJobs = agents.filter((agent) => agent.isRunningJob).length
+  const pendingJobs = 0 // Queue information moved to dedicated Queues page
 
   return (
     <Layout
@@ -128,6 +130,10 @@ export default function Agents(props: { data: AgentsProps; state: AppState }) {
             <div class="wa-stack wa-gap-3xs">
               <div class="wa-body-s wa-color-text-quiet">Running Jobs</div>
               <div class="wa-heading-s">{runningJobs}</div>
+            </div>
+            <div class="wa-stack wa-gap-3xs">
+              <div class="wa-body-s wa-color-text-quiet">Pending Jobs</div>
+              <div class="wa-heading-s">{pendingJobs}</div>
             </div>
           </div>
           <AutoRefresh enabled intervalSeconds={30} />
@@ -176,115 +182,120 @@ export default function Agents(props: { data: AgentsProps; state: AppState }) {
           )
           : (
             <div class="wa-stack wa-gap-l">
-              {queues.map((queueKey) => (
-                <div key={queueKey} class="wa-stack wa-gap-m">
-                  <div class="wa-flank">
-                    <h2 class="wa-heading-m">
-                      {queueKey === "unassigned" ? "Unassigned Agents" : `Queue: ${queueKey}`}
-                    </h2>
-                    <wa-badge variant="neutral">
-                      {agentsByQueue[queueKey].length} agent{agentsByQueue[queueKey].length !== 1 ? "s" : ""}
-                    </wa-badge>
-                  </div>
+              {queues.map((queueKey) => {
+                // Queue info moved to dedicated Queues page
+                return (
+                  <div key={queueKey} class="wa-stack wa-gap-m">
+                    <div class="wa-flank">
+                      <div class="wa-stack wa-gap-3xs">
+                        <h2 class="wa-heading-m">
+                          {queueKey === "unassigned" ? "Unassigned Agents" : `Queue: ${queueKey}`}
+                        </h2>
+                      </div>
+                      <wa-badge variant="neutral">
+                        {agentsByQueue[queueKey].length} agent{agentsByQueue[queueKey].length !== 1 ? "s" : ""}
+                      </wa-badge>
+                    </div>
 
-                  <div class="wa-stack wa-gap-s">
-                    {agentsByQueue[queueKey].map((agent) => (
-                      <wa-card key={agent.id}>
-                        <div style="padding: var(--wa-space-m)">
-                          <div class="wa-flank wa-gap-m">
-                            <div class="wa-stack wa-gap-s">
-                              <div class="wa-flank wa-gap-s">
-                                <div class="wa-stack wa-gap-3xs">
-                                  <h3 class="wa-heading-s">{agent.name}</h3>
-                                  <div class="wa-caption-s wa-color-text-quiet">
-                                    {agent.hostname ? `${agent.hostname} • ` : ""}
-                                    {agent.organization}
-                                    {agent.ipAddress ? ` • ${agent.ipAddress}` : ""}
-                                    {agent.queueKey && agent.queueKey !== queueKey ? ` • Queue: ${agent.queueKey}` : ""}
-                                  </div>
-                                </div>
-                                <wa-badge variant={getConnectionVariant(agent.connectionState)}>
-                                  <wa-icon slot="prefix" name={getConnectionIcon(agent.connectionState)}></wa-icon>
-                                  {agent.connectionState}
-                                </wa-badge>
-                              </div>
-
-                              {agent.isRunningJob && agent.currentJob && (
-                                <div style="background: var(--wa-color-warning-fill-subtle); padding: var(--wa-space-s); border-radius: var(--wa-border-radius-s); border-left: 4px solid var(--wa-color-warning-fill-loud)">
+                    <div class="wa-stack wa-gap-s">
+                      {agentsByQueue[queueKey].map((agent) => (
+                        <wa-card key={agent.id}>
+                          <div style="padding: var(--wa-space-m)">
+                            <div class="wa-flank wa-gap-m">
+                              <div class="wa-stack wa-gap-s">
+                                <div class="wa-flank wa-gap-s">
                                   <div class="wa-stack wa-gap-3xs">
-                                    <div class="wa-flank wa-gap-s">
-                                      <span class="wa-body-s wa-color-text-loud">
-                                        Running: {agent.currentJob.pipelineName}
-                                      </span>
-                                      <wa-badge variant="warning">
-                                        Build #{agent.currentJob.buildNumber}
-                                      </wa-badge>
-                                    </div>
+                                    <h3 class="wa-heading-s">{agent.name}</h3>
                                     <div class="wa-caption-s wa-color-text-quiet">
-                                      Duration:{" "}
-                                      {agent.currentJob.duration || formatDuration(agent.currentJob.startedAt)}
-                                      {agent.currentJob.url && (
-                                        <>
-                                          {" • "}
-                                          <a
-                                            href={agent.currentJob.url}
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="wa-cluster wa-gap-xs"
-                                          >
-                                            View job
-                                            <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em">
-                                            </wa-icon>
-                                          </a>
-                                        </>
-                                      )}
+                                      {agent.hostname ? `${agent.hostname} • ` : ""}
+                                      {agent.organization}
+                                      {agent.ipAddress ? ` • ${agent.ipAddress}` : ""}
+                                      {agent.queueKey && agent.queueKey !== queueKey
+                                        ? ` • Queue: ${agent.queueKey}`
+                                        : ""}
                                     </div>
                                   </div>
+                                  <wa-badge variant={getConnectionVariant(agent.connectionState)}>
+                                    <wa-icon slot="prefix" name={getConnectionIcon(agent.connectionState)}></wa-icon>
+                                    {agent.connectionState}
+                                  </wa-badge>
                                 </div>
-                              )}
-                            </div>
 
-                            <div class="wa-stack wa-gap-3xs wa-align-items-end">
-                              {agent.version && (
-                                <div class="wa-caption-s wa-color-text-quiet">
-                                  v{agent.version}
-                                </div>
-                              )}
-                              {agent.operatingSystem && (
-                                <div class="wa-caption-s wa-color-text-quiet">
-                                  {agent.operatingSystem}
-                                </div>
-                              )}
-                              <div class="wa-caption-s wa-color-text-quiet">
-                                Last seen: {formatLastSeen(agent.lastSeen)}
-                              </div>
-                            </div>
-                          </div>
-
-                          {agent.metadata && agent.metadata.length > 0 && (
-                            <details style="margin-top: var(--wa-space-s)">
-                              <summary class="wa-caption-s wa-color-text-quiet" style="cursor: pointer">
-                                Metadata ({agent.metadata.length} items)
-                              </summary>
-                              <div
-                                class="wa-grid wa-gap-3xs"
-                                style="grid-template-columns: auto 1fr; margin-top: var(--wa-space-3xs)"
-                              >
-                                {agent.metadata.map((meta, index) => (
-                                  <div key={`${agent.id}-meta-${index}`} style="display: contents">
-                                    <div class="wa-caption-xs wa-color-text-quiet">{meta.key}:</div>
-                                    <div class="wa-caption-xs">{meta.value}</div>
+                                {agent.isRunningJob && agent.currentJob && (
+                                  <div style="background: var(--wa-color-warning-fill-subtle); padding: var(--wa-space-s); border-radius: var(--wa-border-radius-s); border-left: 4px solid var(--wa-color-warning-fill-loud)">
+                                    <div class="wa-stack wa-gap-3xs">
+                                      <div class="wa-flank wa-gap-s">
+                                        <span class="wa-body-s wa-color-text-loud">
+                                          Running: {agent.currentJob.pipelineName}
+                                        </span>
+                                        <wa-badge variant="warning">
+                                          Build #{agent.currentJob.buildNumber}
+                                        </wa-badge>
+                                      </div>
+                                      <div class="wa-caption-s wa-color-text-quiet">
+                                        Duration:{" "}
+                                        {agent.currentJob.duration || formatDuration(agent.currentJob.startedAt)}
+                                        {agent.currentJob.url && (
+                                          <>
+                                            {" • "}
+                                            <a
+                                              href={`/pipelines/${agent.currentJob.pipelineSlug}/builds/${agent.currentJob.buildNumber}`}
+                                              class="wa-cluster wa-gap-xs"
+                                            >
+                                              View build
+                                              <wa-icon name="arrow-right" style="font-size: 0.75em">
+                                              </wa-icon>
+                                            </a>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
-                                ))}
+                                )}
                               </div>
-                            </details>
-                          )}
-                        </div>
-                      </wa-card>
-                    ))}
+
+                              <div class="wa-stack wa-gap-3xs wa-align-items-end">
+                                {agent.version && (
+                                  <div class="wa-caption-s wa-color-text-quiet">
+                                    v{agent.version}
+                                  </div>
+                                )}
+                                {agent.operatingSystem && (
+                                  <div class="wa-caption-s wa-color-text-quiet">
+                                    {agent.operatingSystem}
+                                  </div>
+                                )}
+                                <div class="wa-caption-s wa-color-text-quiet">
+                                  Last seen: {formatLastSeen(agent.lastSeen)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {agent.metadata && agent.metadata.length > 0 && (
+                              <details style="margin-top: var(--wa-space-s)">
+                                <summary class="wa-caption-s wa-color-text-quiet" style="cursor: pointer">
+                                  Metadata ({agent.metadata.length} items)
+                                </summary>
+                                <div
+                                  class="wa-grid wa-gap-3xs"
+                                  style="grid-template-columns: auto 1fr; margin-top: var(--wa-space-3xs)"
+                                >
+                                  {agent.metadata.map((meta, index) => (
+                                    <div key={`${agent.id}-meta-${index}`} style="display: contents">
+                                      <div class="wa-caption-xs wa-color-text-quiet">{meta.key}:</div>
+                                      <div class="wa-caption-xs">{meta.value}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            )}
+                          </div>
+                        </wa-card>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
       </div>

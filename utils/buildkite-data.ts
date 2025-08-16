@@ -6,7 +6,7 @@ import {
   GET_ORGANIZATION_CLUSTERS_AND_METRICS,
 } from "./buildkite-client.ts"
 import { getCacheManager } from "./cache/cache-manager.ts"
-import { normalizeStatus, ORGANIZATIONS } from "./formatters.ts"
+import { formatDuration, formatTimeAgo, normalizeStatus, ORGANIZATIONS } from "./formatters.ts"
 import { withRetry } from "./retry-helper.ts"
 
 export interface AppPipeline {
@@ -458,45 +458,41 @@ export async function fetchAllAgents(): Promise<AppAgent[]> {
 }
 
 export async function fetchRunningBuilds(): Promise<AppBuild[]> {
-  // Fetch all pipelines once and extract running builds
-  const pipelines = await fetchAllPipelines()
-  return extractRunningBuildsFromPipelines(pipelines)
+  // Use queue status to get accurate running builds
+  try {
+    const queueStatus = await fetchQueueStatus()
+    const runningBuilds: AppBuild[] = []
+
+    for (const queue of queueStatus) {
+      for (const job of queue.runningJobs) {
+        runningBuilds.push({
+          name: job.pipelineName,
+          status: "running",
+          duration: job.startedAt ? formatDuration(job.startedAt) : "0s",
+          lastRun: job.startedAt ? formatTimeAgo(job.startedAt) : "Unknown",
+          repo: job.repo || "unknown",
+          url: job.buildUrl,
+          pipelineSlug: job.pipelineSlug,
+          number: job.buildNumber,
+        })
+      }
+    }
+
+    console.log(`Found ${runningBuilds.length} running builds via queue status`)
+    return runningBuilds
+  } catch (error) {
+    console.error("Error fetching running builds:", error)
+    return []
+  }
 }
 
 /**
  * Extract running builds from pipeline data (no additional API calls)
+ * @deprecated Use fetchQueueStatus() and REST API for accurate running builds
  */
 export function extractRunningBuildsFromPipelines(pipelines: AppPipeline[]): AppBuild[] {
-  const runningBuilds: AppBuild[] = []
-
-  for (const pipeline of pipelines) {
-    // Check if the latest build is actually running (not blocked, waiting, or scheduled)
-    const latestBuild = pipeline.last10Builds?.[0]
-    if (latestBuild && latestBuild.status === "running") {
-      const build: AppBuild = {
-        name: pipeline.name,
-        status: "running",
-        duration: "0s", // Would need individual build details for accurate duration
-        lastRun: pipeline.lastBuild,
-        repo: pipeline.repo || "unknown",
-        url: pipeline.url,
-        pipelineSlug: pipeline.slug,
-        number: latestBuild.buildNumber || 1,
-      }
-
-      runningBuilds.push(build)
-    }
-  }
-
-  // Sort by most recently started
-  runningBuilds.sort((a, b) => {
-    if (a.lastRun === "now" && b.lastRun !== "now") return -1
-    if (b.lastRun === "now" && a.lastRun !== "now") return 1
-    return 0
-  })
-
-  console.log(`Found ${runningBuilds.length} running builds`)
-  return runningBuilds
+  console.log("extractRunningBuildsFromPipelines is deprecated, returning empty array")
+  return []
 }
 
 export async function fetchAgentMetrics(): Promise<AgentMetrics> {
@@ -594,5 +590,272 @@ export async function fetchAgentMetrics(): Promise<AgentMetrics> {
   } catch (error) {
     console.error("Error fetching agent metrics:", error)
     return { averageWaitTime: 0, p95WaitTime: 0, p99WaitTime: 0 }
+  }
+}
+
+// Queue analysis interfaces and functions
+export interface QueueStatus {
+  queueKey: string
+  runningJobs: QueueJob[]
+  scheduledJobs: QueueJob[]
+  scheduledBuilds: QueueBuild[]
+  connectedAgents: number
+  availableAgents: number
+}
+
+export interface QueueBuild {
+  buildId: string
+  buildNumber: number
+  pipelineName: string
+  pipelineSlug: string
+  repo?: string
+  buildUrl: string
+  scheduledAt: string
+  jobs: QueueJob[]
+}
+
+export interface QueueJob {
+  id: string
+  buildId: string
+  buildNumber: number
+  pipelineName: string
+  pipelineSlug: string
+  repo?: string
+  state: string
+  createdAt: string
+  scheduledAt?: string
+  startedAt?: string
+  agentQueryRules?: string[]
+  url?: string
+  buildUrl: string
+}
+
+// Extract jobs from builds and group by queue
+function extractJobsByQueue(builds: any[], jobState: string): Map<string, QueueJob[]> {
+  const jobsByQueue = new Map<string, QueueJob[]>()
+
+  for (const build of builds) {
+    if (!build.jobs || !Array.isArray(build.jobs)) continue
+
+    for (const job of build.jobs) {
+      // Skip non-command jobs (wait, block, trigger steps don't use agents)
+      // Note: Buildkite REST API uses "command" for agent jobs
+      if (!["command", "script"].includes(job.type)) {
+        console.log(`Skipping job type: ${job.type}`)
+        continue
+      }
+
+      // Only include jobs in the specified state
+      // REST API returns lowercase states, unlike GraphQL which uses uppercase
+      if (job.state.toLowerCase() !== jobState.toLowerCase()) {
+        console.log(`Skipping job state: ${job.state}, looking for: ${jobState}`)
+        continue
+      }
+
+      // Determine queue from agent query rules
+      let queueKey = "default"
+      if (job.agent_query_rules && job.agent_query_rules.length > 0) {
+        // Extract queue from agent query rules (e.g., "queue=macos")
+        for (const rule of job.agent_query_rules) {
+          const queueMatch = rule.match(/queue=([^,\s]+)/)
+          if (queueMatch) {
+            queueKey = queueMatch[1]
+            break
+          }
+        }
+      }
+
+      // Extract repo from pipeline repository URL
+      let repo: string | undefined
+      if (build.pipeline.repository?.url) {
+        const repoUrl = build.pipeline.repository.url
+        // Handle both SSH (git@github.com:org/repo.git) and HTTPS (https://github.com/org/repo) formats
+        const sshMatch = repoUrl.match(/git@github\.com:([^\/]+\/[^\/]+?)(?:\.git)?$/)
+        const httpsMatch = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+?)(?:\.git)?(?:\/.*)?$/)
+        repo = (sshMatch || httpsMatch)?.[1]
+      }
+
+      const queueJob: QueueJob = {
+        id: job.id,
+        buildId: build.id,
+        buildNumber: build.number,
+        pipelineName: build.pipeline.name,
+        pipelineSlug: build.pipeline.slug,
+        repo,
+        state: job.state,
+        createdAt: job.created_at || build.created_at,
+        scheduledAt: job.scheduled_at || build.scheduled_at,
+        startedAt: job.started_at,
+        agentQueryRules: job.agent_query_rules,
+        url: job.web_url,
+        buildUrl: build.web_url,
+      }
+
+      if (!jobsByQueue.has(queueKey)) {
+        jobsByQueue.set(queueKey, [])
+      }
+      jobsByQueue.get(queueKey)!.push(queueJob)
+    }
+  }
+
+  // Sort jobs within each queue by scheduled time (earliest first)
+  for (const [queueKey, jobs] of jobsByQueue.entries()) {
+    jobs.sort((a, b) => {
+      const timeA = new Date(a.scheduledAt || a.createdAt).getTime()
+      const timeB = new Date(b.scheduledAt || b.createdAt).getTime()
+      return timeA - timeB
+    })
+  }
+
+  return jobsByQueue
+}
+
+// Fetch and analyze queue status
+export async function fetchQueueStatus(): Promise<QueueStatus[]> {
+  try {
+    // Import REST API functions
+    const { fetchScheduledBuilds, fetchRunningBuildsRest } = await import("./buildkite-client.ts")
+
+    // Fetch builds by state
+    console.log("Fetching scheduled and running builds for queue analysis...")
+    const [scheduledBuilds, runningBuilds] = await Promise.all([
+      fetchScheduledBuilds(),
+      fetchRunningBuildsRest(),
+    ])
+
+    console.log(`Found ${scheduledBuilds.length} scheduled builds, ${runningBuilds.length} running builds`)
+
+    // Log some build details for debugging
+    if (scheduledBuilds.length > 0) {
+      console.log("Sample scheduled build:", {
+        id: scheduledBuilds[0].id,
+        pipeline: scheduledBuilds[0].pipeline.name,
+        jobCount: scheduledBuilds[0].jobs.length,
+        jobTypes: scheduledBuilds[0].jobs.map((j) => j.type),
+      })
+    }
+    if (runningBuilds.length > 0) {
+      console.log("Sample running build:", {
+        id: runningBuilds[0].id,
+        pipeline: runningBuilds[0].pipeline.name,
+        jobCount: runningBuilds[0].jobs.length,
+        jobTypes: runningBuilds[0].jobs.map((j) => j.type),
+      })
+    }
+
+    // Extract jobs and group by queue
+    // Note: We need to check ALL builds for queued jobs because a "running" build
+    // can have jobs in "scheduled" or "waiting" state that are still queued
+    const allBuilds = [...scheduledBuilds, ...runningBuilds]
+
+    // Extract all queued jobs (scheduled + waiting) from all builds
+    const scheduledJobsByQueue = extractJobsByQueue(allBuilds, "scheduled")
+    const waitingJobsByQueue = extractJobsByQueue(allBuilds, "waiting")
+    const runningJobsByQueue = extractJobsByQueue(allBuilds, "running")
+
+    // Merge scheduled and waiting jobs as they're both effectively queued
+    const queuedJobsByQueue = new Map<string, QueueJob[]>()
+
+    // Add scheduled jobs
+    for (const [queueKey, jobs] of scheduledJobsByQueue.entries()) {
+      queuedJobsByQueue.set(queueKey, [...jobs])
+    }
+
+    // Add waiting jobs to the same queues
+    for (const [queueKey, jobs] of waitingJobsByQueue.entries()) {
+      if (!queuedJobsByQueue.has(queueKey)) {
+        queuedJobsByQueue.set(queueKey, [])
+      }
+      queuedJobsByQueue.get(queueKey)!.push(...jobs)
+    }
+
+    // Sort merged queued jobs by scheduled time within each queue
+    for (const [queueKey, jobs] of queuedJobsByQueue.entries()) {
+      jobs.sort((a, b) => {
+        const timeA = new Date(a.scheduledAt || a.createdAt).getTime()
+        const timeB = new Date(b.scheduledAt || b.createdAt).getTime()
+        return timeA - timeB
+      })
+    }
+
+    // Get all unique queue keys
+    const allQueues = new Set([
+      ...queuedJobsByQueue.keys(),
+      ...runningJobsByQueue.keys(),
+    ])
+
+    // Get agent counts by queue (from existing agent data)
+    const agents = await fetchAllAgents()
+    const agentsByQueue = agents.reduce((acc, agent) => {
+      const queueKey = agent.queueKey || "default"
+      if (!acc[queueKey]) {
+        acc[queueKey] = { total: 0, running: 0 }
+      }
+      acc[queueKey].total++
+      if (agent.isRunningJob) {
+        acc[queueKey].running++
+      }
+      return acc
+    }, {} as Record<string, { total: number; running: number }>)
+
+    // Build queue status for each queue
+    const queueStatuses: QueueStatus[] = []
+    for (const queueKey of allQueues) {
+      const agentStats = agentsByQueue[queueKey] || { total: 0, running: 0 }
+      const scheduledJobs = queuedJobsByQueue.get(queueKey) || []
+
+      // Group scheduled jobs by build
+      const scheduledBuilds: QueueBuild[] = []
+      const buildGroups = new Map<string, QueueJob[]>()
+
+      for (const job of scheduledJobs) {
+        if (!buildGroups.has(job.buildId)) {
+          buildGroups.set(job.buildId, [])
+        }
+        buildGroups.get(job.buildId)!.push(job)
+      }
+
+      // Create QueueBuild objects
+      for (const [buildId, jobs] of buildGroups.entries()) {
+        const firstJob = jobs[0]
+        scheduledBuilds.push({
+          buildId,
+          buildNumber: firstJob.buildNumber,
+          pipelineName: firstJob.pipelineName,
+          pipelineSlug: firstJob.pipelineSlug,
+          repo: firstJob.repo,
+          buildUrl: firstJob.buildUrl,
+          scheduledAt: firstJob.scheduledAt || firstJob.createdAt,
+          jobs: jobs.sort((a, b) =>
+            new Date(a.scheduledAt || a.createdAt).getTime() - new Date(b.scheduledAt || b.createdAt).getTime()
+          ),
+        })
+      }
+
+      // Sort builds by scheduled time
+      scheduledBuilds.sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
+
+      queueStatuses.push({
+        queueKey,
+        runningJobs: runningJobsByQueue.get(queueKey) || [],
+        scheduledJobs: scheduledJobs,
+        scheduledBuilds,
+        connectedAgents: agentStats.total,
+        availableAgents: agentStats.total - agentStats.running,
+      })
+    }
+
+    // Sort by queue key for consistent display
+    queueStatuses.sort((a, b) => a.queueKey.localeCompare(b.queueKey))
+
+    console.log(
+      `Analyzed ${queueStatuses.length} queues:`,
+      queueStatuses.map((q) => `${q.queueKey}: ${q.runningJobs.length} running, ${q.scheduledJobs.length} scheduled`),
+    )
+
+    return queueStatuses
+  } catch (error) {
+    console.error("Error fetching queue status:", error)
+    return []
   }
 }
