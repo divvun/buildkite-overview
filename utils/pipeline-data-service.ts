@@ -158,7 +158,7 @@ export function countRunningPipelines(pipelines: AppPipeline[]): number {
  * Helper function to determine when a pipeline started failing
  */
 function findFailingSince(builds: BuildHistoryItem[]): Date | null {
-  // builds come as last 10 (most recent first), check if latest build is failed
+  // builds come as first 10 (most recent first), check if latest build is failed
   const latestBuild = builds[0]
   if (!latestBuild || latestBuild.status !== "failed") {
     return null // Not currently failing
@@ -174,7 +174,7 @@ function findFailingSince(builds: BuildHistoryItem[]): Date | null {
     }
   }
 
-  // All builds in last 10 are failed, use the oldest one we have
+  // All builds in first 10 are failed, use the oldest one we have
   const oldestBuild = builds[builds.length - 1]
   return new Date(oldestBuild.finishedAt || new Date().toISOString())
 }
