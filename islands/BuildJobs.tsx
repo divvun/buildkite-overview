@@ -190,7 +190,13 @@ export default function BuildJobs(
 
   return (
     <div class="wa-stack wa-gap-s">
-      {jobs.toReversed().map((job) => {
+      {jobs.toSorted((a, b) => {
+        // Sort by startedAt time (most recent first)
+        if (!a.startedAt && !b.startedAt) return 0
+        if (!a.startedAt) return 1
+        if (!b.startedAt) return -1
+        return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+      }).map((job) => {
         const jobKey = job.uuid || job.id
         return (
           <wa-card key={jobKey} class="clickable-card">
