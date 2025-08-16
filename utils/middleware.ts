@@ -23,8 +23,8 @@ export const requireGlobalAuth = define.middleware(async (ctx) => {
     return await ctx.next()
   }
 
-  // Skip auth check for auth routes to avoid infinite redirects
-  if (ctx.url.pathname.startsWith("/auth/")) {
+  // Skip auth check for auth routes and webhooks to avoid infinite redirects
+  if (ctx.url.pathname.startsWith("/auth/") || ctx.url.pathname.startsWith("/api/webhooks/")) {
     return await ctx.next()
   }
 
