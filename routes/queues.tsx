@@ -83,12 +83,7 @@ export default function Queues(props: { data: QueuesProps; state: AppState }) {
           <AutoRefresh enabled intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS} />
         </div>
 
-        <QueuesContent
-          initialData={{
-            queueStatus,
-            error,
-          }}
-        />
+        <QueuesContent />
       </div>
     </Layout>
   )

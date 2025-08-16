@@ -67,7 +67,7 @@ export function requireDivvunOrgAccess(request: Request): SessionData {
   if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
     return createMockSession()
   }
-  
+
   const session = requireAuth(request)
   if (!hasOrgAccess(session, "divvun")) {
     throw new Response(null, {

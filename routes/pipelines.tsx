@@ -13,6 +13,7 @@ interface PipelinesProps {
   pipelines: AppPipeline[]
   statusFilter?: string
   searchQuery?: string
+  runningPipelines?: number
   error?: string
 }
 
@@ -46,10 +47,13 @@ export const handler = {
         )
       }
 
+      // Count running pipelines for auto-refresh optimization
+      const runningCount = visiblePipelines.filter((p) => p.status === "running").length
+
       console.log(
         `Returning ${visiblePipelines.length} visible pipelines (filtered by status: ${
           statusFilter || "none"
-        }, search: ${searchQuery || "none"})`,
+        }, search: ${searchQuery || "none"}), ${runningCount} running`,
       )
 
       return page(
@@ -58,6 +62,7 @@ export const handler = {
           pipelines: visiblePipelines,
           statusFilter,
           searchQuery,
+          runningPipelines: runningCount,
         } satisfies PipelinesProps,
       )
     } catch (error) {
@@ -69,6 +74,7 @@ export const handler = {
           pipelines: [],
           statusFilter: "",
           searchQuery: "",
+          runningPipelines: 0,
           error:
             "Unable to load pipelines from Buildkite. This usually indicates an authentication issue. Please verify your BUILDKITE_API_KEY environment variable is set correctly and has the necessary permissions.",
         } satisfies PipelinesProps,
@@ -78,7 +84,7 @@ export const handler = {
 }
 
 export default function Pipelines(props: { data: PipelinesProps }) {
-  const { session, pipelines = [], statusFilter = "", searchQuery = "", error } = props.data
+  const { session, pipelines = [], statusFilter = "", searchQuery = "", runningPipelines = 0, error } = props.data
 
   const breadcrumbs = [
     { label: "Pipelines" },
@@ -99,7 +105,10 @@ export default function Pipelines(props: { data: PipelinesProps }) {
               Manage and monitor all Buildkite pipelines across organizations
             </p>
           </div>
-          <AutoRefresh enabled={!!session} intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS} />
+          <AutoRefresh
+            enabled
+            intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS}
+          />
         </header>
 
         <PipelineFilters
@@ -108,12 +117,8 @@ export default function Pipelines(props: { data: PipelinesProps }) {
         />
 
         <PipelinesContent
-          initialData={{
-            pipelines,
-            statusFilter,
-            searchQuery,
-            error,
-          }}
+          statusFilter={statusFilter}
+          searchQuery={searchQuery}
         />
       </div>
     </Layout>

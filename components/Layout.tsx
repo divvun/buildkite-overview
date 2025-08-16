@@ -21,19 +21,29 @@ export default function Layout(
     <wa-page mobile-breakpoint="768">
       <header slot="header" class="wa-split">
         <div class="wa-cluster">
-          <wa-icon name="building" style="color: var(--wa-color-brand-fill-loud); font-size: 1.5em"></wa-icon>
+          <wa-icon
+            name="building"
+            style="color: var(--wa-color-brand-fill-loud); font-size: 1.5em"
+            aria-label="Buildkite logo"
+          >
+          </wa-icon>
           <span class="wa-heading-s wa-desktop-only">Divvun Buildkite</span>
-          <a href="/" class={currentPath === "/" ? "active" : ""}>Overview</a>
+          <a href="/" class={currentPath === "/" ? "active" : ""} aria-label="Dashboard overview">Overview</a>
           <a
             href="/pipelines"
             class={currentPath === "/pipelines" || currentPath?.startsWith("/pipelines/") ? "active" : ""}
+            aria-label="View all pipelines"
           >
             Pipelines
           </a>
           {session && (
             <>
-              <a href="/agents" class={currentPath === "/agents" ? "active" : ""}>Agents</a>
-              <a href="/queues" class={currentPath === "/queues" ? "active" : ""}>Queues</a>
+              <a href="/agents" class={currentPath === "/agents" ? "active" : ""} aria-label="View build agents">
+                Agents
+              </a>
+              <a href="/queues" class={currentPath === "/queues" ? "active" : ""} aria-label="View build queues">
+                Queues
+              </a>
             </>
           )}
         </div>
@@ -46,10 +56,11 @@ export default function Layout(
                   size="small"
                   appearance="plain"
                   with-caret
+                  aria-label={`User menu for ${session.user.name || session.user.login}`}
                 >
                   <img
                     src={session.user.avatar_url}
-                    alt={session.user.name || session.user.login}
+                    alt={`${session.user.name || session.user.login} profile picture`}
                     style="width: 24px; height: 24px; border-radius: 50%; margin-right: var(--wa-space-xs)"
                   />
                 </wa-button>
@@ -78,7 +89,7 @@ export default function Layout(
             : (
               <wa-button size="small" variant="brand" appearance="outlined">
                 <wa-icon slot="prefix" name="github"></wa-icon>
-                <a href="/auth/login" style="text-decoration: none; color: inherit">
+                <a href="/auth/login" style="text-decoration: none; color: inherit" aria-label="Sign in with GitHub">
                   Sign In
                 </a>
               </wa-button>
@@ -86,23 +97,23 @@ export default function Layout(
         </div>
       </header>
 
-      <nav slot="subheader">
+      <nav slot="subheader" aria-label="Secondary navigation">
         <div class="wa-cluster" style="flex-wrap: nowrap">
-          <wa-button data-toggle-nav appearance="plain" size="small">
+          <wa-button data-toggle-nav appearance="plain" size="small" aria-label="Toggle navigation menu">
             <wa-icon name="bars" label="Menu"></wa-icon>
           </wa-button>
           {breadcrumbs && breadcrumbs.length > 0 && (
-            <wa-breadcrumb style="font-size: var(--wa-font-size-s)">
+            <wa-breadcrumb style="font-size: var(--wa-font-size-s)" aria-label="Breadcrumb navigation">
               <wa-breadcrumb-item>
-                <a href="/" title="Home">
+                <a href="/" title="Home" aria-label="Go to homepage">
                   <wa-icon name="home"></wa-icon>
                 </a>
               </wa-breadcrumb-item>
               {breadcrumbs.map((crumb, index) => (
                 <wa-breadcrumb-item key={index}>
-                  {crumb.href ? <a href={crumb.href}>{crumb.label}</a> : (
-                    crumb.label
-                  )}
+                  {crumb.href
+                    ? <a href={crumb.href} aria-label={`Go to ${crumb.label}`}>{crumb.label}</a>
+                    : <span aria-current="page">{crumb.label}</span>}
                 </wa-breadcrumb-item>
               ))}
             </wa-breadcrumb>
@@ -110,7 +121,7 @@ export default function Layout(
         </div>
       </nav>
 
-      <main>
+      <main role="main" aria-label="Main content">
         <div class="main-container" style="margin: 0 auto; padding: 0 var(--wa-space-m)">
           {children}
         </div>

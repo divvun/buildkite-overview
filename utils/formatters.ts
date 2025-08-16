@@ -158,7 +158,7 @@ export function formatTimeAgo(dateStr: string): string {
 
 export function formatFailingSince(date: Date | string): string {
   const now = new Date()
-  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const dateObj = typeof date === "string" ? new Date(date) : date
   const diffMs = now.getTime() - dateObj.getTime()
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))

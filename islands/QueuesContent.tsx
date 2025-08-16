@@ -1,6 +1,7 @@
 /// <reference path="../types/webawesome.d.ts" />
-import { useEffect, useState } from "preact/hooks"
+import { useCallback, useEffect, useState } from "preact/hooks"
 import EmptyState from "~/components/EmptyState.tsx"
+import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type QueueBuild, type QueueJob, type QueueStatus } from "~/utils/buildkite-data.ts"
 
 interface QueuesData {
@@ -9,20 +10,20 @@ interface QueuesData {
 }
 
 interface QueuesContentProps {
-  initialData: QueuesData
 }
 
-export default function QueuesContent({ initialData }: QueuesContentProps) {
-  const [data, setData] = useState<QueuesData>(initialData)
-  const [isLoading, setIsLoading] = useState(false)
+export default function QueuesContent({}: QueuesContentProps) {
+  const [data, setData] = useState<QueuesData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setIsLoading(true)
       const response = await fetch("/api/queues")
       if (response.ok) {
         const newData = await response.json()
         setData(newData)
+        setHasInitiallyLoaded(true)
       } else {
         console.error("Failed to fetch queues data:", response.status)
       }
@@ -31,7 +32,12 @@ export default function QueuesContent({ initialData }: QueuesContentProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -44,7 +50,27 @@ export default function QueuesContent({ initialData }: QueuesContentProps) {
     return () => {
       globalThis.removeEventListener("autorefresh", handleRefresh)
     }
-  }, [])
+  }, [fetchData])
+
+  // Show loading state initially
+  if (!data && isLoading) {
+    return (
+      <div class="wa-stack wa-gap-l">
+        <SkeletonLoader height="40px" width="200px" />
+        <SkeletonLoader height="120px" />
+        <SkeletonLoader height="120px" />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <wa-callout variant="danger">
+        <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+        Failed to load queues data
+      </wa-callout>
+    )
+  }
 
   const { queueStatus, error } = data
 
@@ -230,7 +256,8 @@ export default function QueuesContent({ initialData }: QueuesContentProps) {
         </wa-card>
       )}
 
-      {queueStatus.length === 0 && !error && (
+      {/* Show loading state only when initially loading */}
+      {queueStatus.length === 0 && !error && !hasInitiallyLoaded && (
         <EmptyState
           icon="loader"
           title="Loading queue data..."
@@ -240,10 +267,19 @@ export default function QueuesContent({ initialData }: QueuesContentProps) {
         />
       )}
 
+      {/* Show empty state when data is loaded but no queues exist */}
+      {queueStatus.length === 0 && !error && hasInitiallyLoaded && (
+        <EmptyState
+          icon="calendar-check"
+          title="All quiet on the build front! 🎉"
+          description="No builds are currently scheduled or running across any queues. This is a good thing - all your pipelines are idle and ready for new work!"
+          variant="success"
+          maxWidth="600px"
+        />
+      )}
+
       {isLoading && (
-        <div
-          style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)"
-        >
+        <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
           Refreshing...
         </div>
       )}

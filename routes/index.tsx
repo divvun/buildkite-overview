@@ -3,12 +3,7 @@ import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import DashboardContent from "~/islands/DashboardContent.tsx"
-import {
-  type AgentMetrics,
-  type FailingPipeline,
-  fetchAgentMetrics,
-  fetchQueueStatus,
-} from "~/utils/buildkite-data.ts"
+import { type AgentMetrics, type FailingPipeline, fetchAgentMetrics, fetchQueueStatus } from "~/utils/buildkite-data.ts"
 import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
@@ -92,19 +87,14 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
               Monitor the status of all Divvun project builds across GitHub organizations
             </p>
           </div>
-          <AutoRefresh enabled={!!session} intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS} />
+          <AutoRefresh
+            enabled
+            intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS}
+          />
         </header>
 
         <DashboardContent
           session={session}
-          initialData={{
-            totalPipelines,
-            runningPipelines,
-            pendingBuilds,
-            agentMetrics,
-            failingPipelines,
-            error,
-          }}
         />
       </div>
 

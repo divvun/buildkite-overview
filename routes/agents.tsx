@@ -97,11 +97,7 @@ export default function Agents(props: { data: AgentsProps; state: AppState }) {
         </div>
 
         <AgentsContent
-          initialData={{
-            agents,
-            orgFilter,
-            error,
-          }}
+          orgFilter={orgFilter}
         />
       </div>
     </Layout>

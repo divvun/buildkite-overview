@@ -1,6 +1,7 @@
 /// <reference path="../types/webawesome.d.ts" />
-import { useEffect, useState } from "preact/hooks"
+import { useCallback, useEffect, useState } from "preact/hooks"
 import EmptyState from "~/components/EmptyState.tsx"
+import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type AppAgent } from "~/utils/buildkite-data.ts"
 import { formatDuration, formatLastSeen, getConnectionIcon, getConnectionVariant } from "~/utils/formatters.ts"
 
@@ -11,19 +12,19 @@ interface AgentsData {
 }
 
 interface AgentsContentProps {
-  initialData: AgentsData
+  orgFilter?: string
 }
 
-export default function AgentsContent({ initialData }: AgentsContentProps) {
-  const [data, setData] = useState<AgentsData>(initialData)
-  const [isLoading, setIsLoading] = useState(false)
+export default function AgentsContent({ orgFilter }: AgentsContentProps) {
+  const [data, setData] = useState<AgentsData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setIsLoading(true)
       const url = new URL("/api/agents", globalThis.location.origin)
-      if (data.orgFilter) {
-        url.searchParams.set("org", data.orgFilter)
+      if (orgFilter) {
+        url.searchParams.set("org", orgFilter)
       }
 
       const response = await fetch(url.toString())
@@ -38,7 +39,12 @@ export default function AgentsContent({ initialData }: AgentsContentProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [orgFilter])
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -51,9 +57,29 @@ export default function AgentsContent({ initialData }: AgentsContentProps) {
     return () => {
       globalThis.removeEventListener("autorefresh", handleRefresh)
     }
-  }, [])
+  }, [fetchData])
 
-  const { agents, orgFilter, error } = data
+  // Show loading state initially
+  if (!data && isLoading) {
+    return (
+      <div class="wa-stack wa-gap-l">
+        <SkeletonLoader height="40px" width="200px" />
+        <SkeletonLoader height="200px" />
+        <SkeletonLoader height="200px" />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <wa-callout variant="danger">
+        <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+        Failed to load agents data
+      </wa-callout>
+    )
+  }
+
+  const { agents, error } = data
 
   // Group agents by queue
   const agentsByQueue = agents.reduce((acc, agent) => {
