@@ -13,8 +13,8 @@ export class BackgroundPoller {
   private isRunning = false
 
   constructor(config: PollingConfig = {
-    pipelineRefreshIntervalMs: 2 * 60 * 1000, // 2 minutes
-    agentRefreshIntervalMs: 5 * 60 * 1000, // 5 minutes
+    pipelineRefreshIntervalMs: 30 * 60 * 1000, // 30 minutes (webhooks handle real-time updates)
+    agentRefreshIntervalMs: 45 * 60 * 1000, // 45 minutes (webhooks handle real-time updates)
     enabled: true,
   }) {
     this.config = config
@@ -35,11 +35,25 @@ export class BackgroundPoller {
       try {
         console.log("🔄 Background poll: Refreshing pipeline data...")
         const startTime = Date.now()
-        await getCacheManager().refreshPipelines()
+        await getCacheManager().getPipelines()
         const duration = Date.now() - startTime
         console.log(`✅ Pipeline data refreshed in ${duration}ms`)
       } catch (error) {
         console.error("❌ Error refreshing pipeline data in background:", error)
+
+        // Check if this is a rate limit error
+        if (error && typeof error === "object" && "graphQLErrors" in error) {
+          const graphQLErrors = (error as any).graphQLErrors || []
+          const rateLimitError = graphQLErrors.find((e: any) =>
+            e.message?.includes("exceeded the limit") || e.message?.includes("rate limit")
+          )
+
+          if (rateLimitError) {
+            const retryMatch = rateLimitError.message?.match(/try again in (\d+) seconds/)
+            const retryAfter = retryMatch ? parseInt(retryMatch[1]) : 600 // Default to 10 minutes
+            console.log(`🚦 Background polling hit rate limit, backing off for ${retryAfter} seconds`)
+          }
+        }
       }
     }, this.config.pipelineRefreshIntervalMs)
 
@@ -48,11 +62,25 @@ export class BackgroundPoller {
       try {
         console.log("🔄 Background poll: Refreshing agent data...")
         const startTime = Date.now()
-        await getCacheManager().refreshAgents()
+        await getCacheManager().getAgents()
         const duration = Date.now() - startTime
         console.log(`✅ Agent data refreshed in ${duration}ms`)
       } catch (error) {
         console.error("❌ Error refreshing agent data in background:", error)
+
+        // Check if this is a rate limit error
+        if (error && typeof error === "object" && "graphQLErrors" in error) {
+          const graphQLErrors = (error as any).graphQLErrors || []
+          const rateLimitError = graphQLErrors.find((e: any) =>
+            e.message?.includes("exceeded the limit") || e.message?.includes("rate limit")
+          )
+
+          if (rateLimitError) {
+            const retryMatch = rateLimitError.message?.match(/try again in (\d+) seconds/)
+            const retryAfter = retryMatch ? parseInt(retryMatch[1]) : 600 // Default to 10 minutes
+            console.log(`🚦 Background polling hit rate limit, backing off for ${retryAfter} seconds`)
+          }
+        }
       }
     }, this.config.agentRefreshIntervalMs)
 
@@ -61,8 +89,8 @@ export class BackgroundPoller {
       try {
         console.log("🔄 Performing initial background data refresh...")
         await Promise.all([
-          getCacheManager().refreshPipelines(),
-          getCacheManager().refreshAgents(),
+          getCacheManager().getPipelines(),
+          getCacheManager().getAgents(),
         ])
         console.log("✅ Initial background data refresh completed")
       } catch (error) {
@@ -120,8 +148,8 @@ export class BackgroundPoller {
 
     try {
       await Promise.all([
-        getCacheManager().refreshPipelines(),
-        getCacheManager().refreshAgents(),
+        getCacheManager().getPipelines(),
+        getCacheManager().getAgents(),
       ])
       const duration = Date.now() - startTime
       console.log(`✅ Manual refresh completed in ${duration}ms`)

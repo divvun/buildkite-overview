@@ -1,8 +1,6 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import BuildJobs from "~/islands/BuildJobs.tsx"
-import { type AppState } from "~/utils/middleware.ts"
-import { type SessionData } from "~/utils/session.ts"
 import {
   type BuildkiteBuild,
   buildkiteClient,
@@ -11,6 +9,9 @@ import {
   GET_PIPELINE_BUILDS,
 } from "~/utils/buildkite-client.ts"
 import { formatDuration, formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
+import { type AppState } from "~/utils/middleware.ts"
+import { withRetry } from "~/utils/retry-helper.ts"
+import { type SessionData } from "~/utils/session.ts"
 
 interface BuildDetailProps {
   session?: SessionData | null
@@ -40,10 +41,14 @@ export const handler = {
       // We need to find the organization for this pipeline
       const fullPipelineSlug = `divvun/${pipelineSlug}` // Default to divvun org
 
-      const result = await buildkiteClient.query(GET_PIPELINE_BUILDS, {
-        pipelineSlug: fullPipelineSlug,
-        first: 100, // Increase limit to find older builds
-      })
+      const result = await withRetry(
+        async () =>
+          await buildkiteClient.query(GET_PIPELINE_BUILDS, {
+            pipelineSlug: fullPipelineSlug,
+            first: 100, // Increase limit to find older builds
+          }).toPromise(),
+        { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },
+      )
 
       if (result.error) {
         console.error("Error fetching pipeline builds:", result.error)
@@ -76,11 +81,19 @@ export const handler = {
       // Fetch jobs for this build
       const decodedId = atob(build.id)
       const uuid = decodedId.split("---")[1]
-      const buildDetailsResult = await buildkiteClient.query(GET_BUILD_DETAILS, {
-        uuid: uuid,
-      })
+      const buildDetailsResult = await withRetry(
+        async () =>
+          await buildkiteClient.query(GET_BUILD_DETAILS, {
+            uuid: uuid,
+          }).toPromise(),
+        { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },
+      )
 
-      const jobs = buildDetailsResult.data?.build?.jobs?.edges?.map((edge) => edge.node) || []
+      const jobs = (buildDetailsResult.data?.build?.jobs?.edges?.map((edge) =>
+        edge?.node
+      ).filter((job): job is NonNullable<typeof job> =>
+        job != null
+      ) || []) as BuildkiteJob[]
       console.log(`Fetched ${jobs.length} jobs for build #${buildNumber}`)
 
       return page(

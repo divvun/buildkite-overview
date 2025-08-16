@@ -13,7 +13,7 @@ const requiredEnvVars = [
 ] as const
 
 // Optional environment variables for development
-const optionalEnvVars = [
+const _optionalEnvVars = [
   "BYPASS_ORG_CHECK", // Set to "true" to bypass GitHub organization requirement
   "REQUIRE_AUTH", // Set to "true" to require authentication for all routes
 ] as const

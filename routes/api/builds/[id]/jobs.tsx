@@ -1,33 +1,26 @@
 import { Context, RouteHandler } from "fresh"
 import { type AppState } from "~/utils/middleware.ts"
-import { buildkiteClient, GET_BUILD_DETAILS } from "~/utils/buildkite-client.ts"
+import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 
 export const handler: RouteHandler<unknown, AppState> = {
   async GET(ctx: Context<AppState>) {
     const buildId = ctx.params.id
 
     try {
-      // Decode the base64 build ID to extract the UUID
-      const decodedId = atob(buildId) // "Build---uuid" format
-      const uuid = decodedId.split("---")[1] // Extract just the UUID part
+      const cacheManager = getCacheManager()
+      const result = await cacheManager.fetchAndCacheBuildById(buildId)
 
-      const result = await buildkiteClient.query(GET_BUILD_DETAILS, {
-        uuid: uuid,
-      })
-
-      if (result.error) {
-        console.error("Error fetching build details:", result.error)
+      if (!result) {
         return new Response(
-          JSON.stringify({ error: "Failed to fetch build jobs" }),
+          JSON.stringify({ error: "Build not found" }),
           {
-            status: 500,
+            status: 404,
             headers: { "Content-Type": "application/json" },
           },
         )
       }
 
-      const build = result.data?.build
-      const jobs = build?.jobs?.edges?.map((edge) => edge.node) || []
+      const { build, jobs } = result
 
       return new Response(
         JSON.stringify({

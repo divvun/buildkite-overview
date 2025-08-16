@@ -68,7 +68,7 @@ export const handler = {
 export default function Home(props: { data: HomeProps; state: AppState }) {
   const { session, totalPipelines, runningPipelines, agentMetrics, failingPipelines, error } = props.data
 
-  const breadcrumbs = null
+  const breadcrumbs = undefined
 
   return (
     <Layout
@@ -112,32 +112,63 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
             </wa-card>
           </a>
 
-          <a href="/agents" style="text-decoration: none; color: inherit">
-            <wa-card class="clickable-card">
-              <div class="wa-stack wa-gap-xs">
-                <div class="wa-flank">
-                  <span class="wa-heading-s">Average Wait Time</span>
-                  <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime)}</wa-badge>
+          {session
+            ? (
+              <a href="/agents" style="text-decoration: none; color: inherit">
+                <wa-card class="clickable-card">
+                  <div class="wa-stack wa-gap-xs">
+                    <div class="wa-flank">
+                      <span class="wa-heading-s">Average Wait Time</span>
+                      <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime)}</wa-badge>
+                    </div>
+                    <div class="wa-caption-m wa-color-text-quiet">
+                      P95: {formatDurationSeconds(agentMetrics.p95WaitTime)} • P99:{" "}
+                      {formatDurationSeconds(agentMetrics.p99WaitTime)}
+                    </div>
+                  </div>
+                </wa-card>
+              </a>
+            )
+            : (
+              <wa-card class="non-clickable">
+                <div class="wa-stack wa-gap-xs">
+                  <div class="wa-flank">
+                    <span class="wa-heading-s">Average Wait Time</span>
+                    <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime)}</wa-badge>
+                  </div>
+                  <div class="wa-caption-m wa-color-text-quiet">
+                    P95: {formatDurationSeconds(agentMetrics.p95WaitTime)} • P99:{" "}
+                    {formatDurationSeconds(agentMetrics.p99WaitTime)}
+                  </div>
                 </div>
-                <div class="wa-caption-m wa-color-text-quiet">
-                  P95: {formatDurationSeconds(agentMetrics.p95WaitTime)} • P99:{" "}
-                  {formatDurationSeconds(agentMetrics.p99WaitTime)}
-                </div>
-              </div>
-            </wa-card>
-          </a>
+              </wa-card>
+            )}
 
-          <a href="/running" style="text-decoration: none; color: inherit">
-            <wa-card class="clickable-card">
-              <div class="wa-stack wa-gap-xs">
-                <div class="wa-flank">
-                  <span class="wa-heading-s">Running Pipelines</span>
-                  <wa-badge variant={runningPipelines > 0 ? "warning" : "neutral"}>{runningPipelines}</wa-badge>
+          {session
+            ? (
+              <a href="/running" style="text-decoration: none; color: inherit">
+                <wa-card class="clickable-card">
+                  <div class="wa-stack wa-gap-xs">
+                    <div class="wa-flank">
+                      <span class="wa-heading-s">Running Pipelines</span>
+                      <wa-badge variant={runningPipelines > 0 ? "warning" : "neutral"}>{runningPipelines}</wa-badge>
+                    </div>
+                    <div class="wa-caption-m wa-color-text-quiet">With active builds</div>
+                  </div>
+                </wa-card>
+              </a>
+            )
+            : (
+              <wa-card class="non-clickable">
+                <div class="wa-stack wa-gap-xs">
+                  <div class="wa-flank">
+                    <span class="wa-heading-s">Running Pipelines</span>
+                    <wa-badge variant={runningPipelines > 0 ? "warning" : "neutral"}>{runningPipelines}</wa-badge>
+                  </div>
+                  <div class="wa-caption-m wa-color-text-quiet">With active builds</div>
                 </div>
-                <div class="wa-caption-m wa-color-text-quiet">With active builds</div>
-              </div>
-            </wa-card>
-          </a>
+              </wa-card>
+            )}
         </div>
 
         {/* Failing Pipelines Section */}

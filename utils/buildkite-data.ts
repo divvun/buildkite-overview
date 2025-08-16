@@ -1,5 +1,6 @@
 import {
   type BuildkiteAgent,
+  type BuildkiteBuild,
   buildkiteClient,
   type BuildkiteOrganization,
   type BuildkitePipeline,
@@ -45,6 +46,11 @@ export interface BuildHistoryItem {
   status: "success" | "failed" | "running" | "cancelled"
   buildNumber: number
   finishedAt?: string
+}
+
+// Minimal interface for pipeline status determination
+interface BuildWithState {
+  state: string
 }
 
 export interface FailingPipeline {
@@ -95,7 +101,7 @@ export interface AppAgent {
   lastSeen?: Date
 }
 
-function mapBuildToHistoryItem(build: any): BuildHistoryItem {
+function mapBuildToHistoryItem(build: BuildkiteBuild): BuildHistoryItem {
   let status: "success" | "failed" | "running" | "cancelled"
 
   switch (build.state) {
@@ -129,7 +135,7 @@ function mapBuildToHistoryItem(build: any): BuildHistoryItem {
   }
 }
 
-function determinePipelineStatus(builds: any[]): string {
+function determinePipelineStatus(builds: BuildWithState[]): string {
   if (!builds || builds.length === 0) {
     return "unknown"
   }
@@ -227,7 +233,12 @@ function mapBuildkitePipelineToApp(pipeline: BuildkitePipeline): AppPipeline {
   return mapped
 }
 
-function mapBuildkiteBuildToApp(build: any, pipelineName: string, pipelineSlug: string, repo?: string): AppBuild {
+function mapBuildkiteBuildToApp(
+  build: BuildkiteBuild,
+  pipelineName: string,
+  pipelineSlug: string,
+  repo?: string,
+): AppBuild {
   const startTime = build.startedAt ? new Date(build.startedAt) : null
   const endTime = build.finishedAt ? new Date(build.finishedAt) : null
 
@@ -316,9 +327,9 @@ export function extractRecentBuildsFromPipelines(pipelines: AppPipeline[], limit
   return allBuilds.slice(0, limit)
 }
 
-export async function enrichPipelinesWithGitHubData(
+export function enrichPipelinesWithGitHubData(
   pipelines: AppPipeline[],
-): Promise<AppPipeline[]> {
+): AppPipeline[] {
   // This function is now deprecated - GitHub enrichment is handled
   // automatically by the cache manager using the GITHUB_APP_TOKEN
   // Just return the pipelines as they already contain GitHub data
@@ -492,8 +503,8 @@ export async function fetchAgentMetrics(): Promise<AgentMetrics> {
 
       const result = await withRetry(
         async () => await buildkiteClient.query(GET_ORGANIZATION_CLUSTERS_AND_METRICS, { slug: orgSlug }).toPromise(),
-        { maxRetries: 2, initialDelay: 1000 },
-      ) as any
+        { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 }, // Allow up to 5 minute delays for rate limiting
+      )
 
       if (result.error) {
         console.error(`Error fetching queue metrics for ${orgSlug}:`, result.error)

@@ -1,5 +1,11 @@
 import { CacheDB } from "./db.ts"
-import { buildkiteClient, GET_ORGANIZATION_AGENTS, GET_ORGANIZATION_PIPELINES_PAGINATED } from "../buildkite-client.ts"
+import {
+  buildkiteClient,
+  GET_BUILD_DETAILS,
+  GET_ORGANIZATION_AGENTS,
+  GET_ORGANIZATION_PIPELINES_PAGINATED,
+  GET_PIPELINE_BUILDS,
+} from "../buildkite-client.ts"
 import { withRetry } from "../retry-helper.ts"
 import { ORGANIZATIONS } from "../formatters.ts"
 import type { AppAgent, AppPipeline } from "../buildkite-data.ts"
@@ -12,6 +18,8 @@ interface MemoryCacheItem<T> {
 export class CacheManager {
   private db: CacheDB
   private memoryCache: Map<string, MemoryCacheItem<any>> = new Map()
+  private inFlightRequests: WeakMap<symbol, Promise<any>> = new WeakMap()
+  private lockSymbols: Map<string, symbol> = new Map()
 
   constructor() {
     this.db = new CacheDB()
@@ -54,46 +62,98 @@ export class CacheManager {
     })
   }
 
-  // Get pipelines with multi-level caching
-  async getPipelines(): Promise<AppPipeline[]> {
-    // L1: Memory cache (1 minute)
-    const memCached = this.getFromMemory<AppPipeline[]>("all-pipelines")
-    if (memCached) {
-      console.log("Cache hit: memory (all-pipelines)")
-      return memCached
+  private async withLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
+    // Check if there's already a symbol (and thus an in-flight request) for this key
+    const existingSymbol = this.lockSymbols.get(key)
+    if (existingSymbol && this.inFlightRequests.has(existingSymbol)) {
+      const existingRequest = this.inFlightRequests.get(existingSymbol)!
+      console.log(`Waiting for in-flight request: ${key}`)
+      return await existingRequest
     }
 
-    // L2: SQLite cache (check each org)
-    const cachedPipelines: AppPipeline[] = []
-    const orgsToFetch: string[] = []
+    // Create a new symbol for this lock
+    const lockSymbol = Symbol(key)
+    this.lockSymbols.set(key, lockSymbol)
 
-    for (const orgSlug of ORGANIZATIONS) {
-      const orgPipelines = this.db.getCachedPipelines(orgSlug)
-      if (orgPipelines.length > 0) {
-        console.log(`Cache hit: database (${orgSlug}, ${orgPipelines.length} pipelines)`)
-        cachedPipelines.push(...orgPipelines)
-      } else {
-        orgsToFetch.push(orgSlug)
-      }
+    // Start a new request and store the promise
+    const promise = operation()
+    this.inFlightRequests.set(lockSymbol, promise)
+
+    try {
+      const result = await promise
+      return result
+    } finally {
+      // Clean up - the WeakMap entry will be GC'd when the symbol is collected
+      this.lockSymbols.delete(key)
     }
-
-    // L3: Fetch missing orgs from Buildkite
-    if (orgsToFetch.length > 0) {
-      console.log(`Fetching fresh data for orgs: ${orgsToFetch.join(", ")}`)
-      const freshPipelines = await this.fetchPipelinesFromBuildkite(orgsToFetch)
-      cachedPipelines.push(...freshPipelines)
-    }
-
-    // Enrich with GitHub data
-    const enrichedPipelines = await this.enrichPipelinesWithGitHub(cachedPipelines)
-
-    // Cache in memory
-    this.setInMemory("all-pipelines", enrichedPipelines, 60) // 1 minute
-
-    return enrichedPipelines
   }
 
-  private async fetchPipelinesFromBuildkite(orgSlugs: string[]): Promise<AppPipeline[]> {
+  // Get pipelines with multi-level caching
+  async getPipelines(): Promise<AppPipeline[]> {
+    // L1: Memory cache (1 minute) - check enriched pipelines first
+    const memCachedEnriched = this.getFromMemory<AppPipeline[]>("all-pipelines-enriched")
+    if (memCachedEnriched) {
+      console.log("Cache hit: memory (all-pipelines-enriched)")
+      return memCachedEnriched
+    }
+
+    // L2: Memory cache for basic pipelines (faster response)
+    const memCachedBasic = this.getFromMemory<AppPipeline[]>("all-pipelines-basic")
+    if (memCachedBasic) {
+      console.log("Cache hit: memory (all-pipelines-basic), triggering background enrichment")
+      // Trigger background enrichment (fire and forget)
+      this.enrichPipelinesInBackground(memCachedBasic)
+      return memCachedBasic
+    }
+
+    // Use locking for pipeline fetching (without GitHub enrichment)
+    return await this.withLock("get-pipelines-basic", async () => {
+      // Double-check memory cache after acquiring lock
+      const memCachedAfterLock = this.getFromMemory<AppPipeline[]>("all-pipelines-enriched")
+      if (memCachedAfterLock) {
+        console.log("Cache hit: memory (all-pipelines-enriched) after lock")
+        return memCachedAfterLock
+      }
+
+      const memCachedBasicAfterLock = this.getFromMemory<AppPipeline[]>("all-pipelines-basic")
+      if (memCachedBasicAfterLock) {
+        console.log("Cache hit: memory (all-pipelines-basic) after lock, triggering background enrichment")
+        this.enrichPipelinesInBackground(memCachedBasicAfterLock)
+        return memCachedBasicAfterLock
+      }
+
+      // L3: SQLite cache (check each org)
+      const cachedPipelines: AppPipeline[] = []
+      const orgsToFetch: string[] = []
+
+      for (const orgSlug of ORGANIZATIONS) {
+        const orgPipelines = this.db.getCachedPipelines(orgSlug)
+        if (orgPipelines.length > 0) {
+          console.log(`Cache hit: database (${orgSlug}, ${orgPipelines.length} pipelines)`)
+          cachedPipelines.push(...orgPipelines)
+        } else {
+          orgsToFetch.push(orgSlug)
+        }
+      }
+
+      // L4: Fetch missing orgs from Buildkite
+      if (orgsToFetch.length > 0) {
+        console.log(`Fetching fresh data for orgs: ${orgsToFetch.join(", ")}`)
+        const freshPipelines = await this.fetchPipelinesFromBuildkite(orgsToFetch)
+        cachedPipelines.push(...freshPipelines)
+      }
+
+      // Cache basic pipelines (without GitHub enrichment) for immediate response
+      this.setInMemory("all-pipelines-basic", cachedPipelines, 60) // 1 minute
+
+      // Trigger background enrichment (fire and forget)
+      this.enrichPipelinesInBackground(cachedPipelines)
+
+      return cachedPipelines
+    })
+  }
+
+  private async fetchPipelinesFromBuildkite(orgSlugs: readonly string[]): Promise<AppPipeline[]> {
     const allPipelines: AppPipeline[] = []
 
     for (const orgSlug of orgSlugs) {
@@ -119,10 +179,10 @@ export class CacheManager {
             async () =>
               await buildkiteClient.query(GET_ORGANIZATION_PIPELINES_PAGINATED, {
                 slug: orgSlug,
-                first: 100,
-                after: cursor,
+                first: 50, // Reduced from 100 to lower complexity points per request
+                after: cursor || undefined,
               }).toPromise(),
-            { maxRetries: 2, initialDelay: 5000 },
+            { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 }, // Allow up to 5 minute delays for rate limiting
           ) as any
 
           const responseTime = Date.now() - startTime
@@ -151,6 +211,23 @@ export class CacheManager {
         } catch (error) {
           console.error(`Failed to fetch pipelines page ${pageCount} for ${orgSlug}:`, error)
           this.db.logApiCall("buildkite", `pipelines/${orgSlug}/page-${pageCount}`, Date.now() - startTime, 500)
+
+          // Check if this is a rate limit error - if so, save what we have and exit gracefully
+          if (error && typeof error === "object" && "graphQLErrors" in error) {
+            const graphQLErrors = (error as any).graphQLErrors || []
+            const rateLimitError = graphQLErrors.find((e: any) =>
+              e.message?.includes("exceeded the limit") || e.message?.includes("rate limit")
+            )
+
+            if (rateLimitError) {
+              console.log(
+                `🚦 Rate limit hit on page ${pageCount}, saving ${allOrgPipelines.length} pipelines collected so far`,
+              )
+              break // Exit gracefully with partial data
+            }
+          }
+
+          // For non-rate-limit errors, stop pagination
           hasNextPage = false
         }
       }
@@ -167,6 +244,29 @@ export class CacheManager {
     return allPipelines
   }
 
+  // Background GitHub enrichment with locking
+  private enrichPipelinesInBackground(pipelines: AppPipeline[]): void {
+    // Fire and forget - don't await this
+    this.withLock("github-enrichment", async () => {
+      console.log(`🔄 Background: Starting GitHub enrichment for ${pipelines.length} pipelines`)
+      const startTime = Date.now()
+
+      try {
+        const enrichedPipelines = await this.enrichPipelinesWithGitHub(pipelines)
+
+        // Cache the enriched results
+        this.setInMemory("all-pipelines-enriched", enrichedPipelines, 60) // 1 minute
+
+        const duration = Date.now() - startTime
+        console.log(`✅ Background: GitHub enrichment completed in ${duration}ms`)
+      } catch (error) {
+        console.error("❌ Background: GitHub enrichment failed:", error)
+      }
+    }).catch((error) => {
+      console.error("❌ Background: GitHub enrichment lock failed:", error)
+    })
+  }
+
   private async enrichPipelinesWithGitHub(pipelines: AppPipeline[]): Promise<AppPipeline[]> {
     const githubToken = Deno.env.get("GITHUB_APP_TOKEN")
     if (!githubToken) {
@@ -175,6 +275,10 @@ export class CacheManager {
     }
 
     console.log(`Enriching ${pipelines.length} pipelines with GitHub data`)
+
+    // Collect batch operations
+    const apiCallBatch: Array<{ service: string; endpoint: string; responseTimeMs: number; statusCode: number }> = []
+    const repoCacheBatch: Array<{ repoPath: string; isPrivate: boolean; ttlSeconds: number }> = []
 
     for (const pipeline of pipelines) {
       if (!pipeline.repo) continue
@@ -207,14 +311,29 @@ export class CacheManager {
         if (response.ok) {
           const data = await response.json()
           isPrivate = data.private
-          this.db.logApiCall("github", `repos/${pipeline.repo}`, responseTime, 200)
+          apiCallBatch.push({
+            service: "github",
+            endpoint: `repos/${pipeline.repo}`,
+            responseTimeMs: responseTime,
+            statusCode: 200,
+          })
         } else if (response.status === 404) {
           // Can't see it with app token, so it's private
           isPrivate = true
-          this.db.logApiCall("github", `repos/${pipeline.repo}`, responseTime, 404)
+          apiCallBatch.push({
+            service: "github",
+            endpoint: `repos/${pipeline.repo}`,
+            responseTimeMs: responseTime,
+            statusCode: 404,
+          })
         } else {
           console.warn(`GitHub API error for ${pipeline.repo}: ${response.status}`)
-          this.db.logApiCall("github", `repos/${pipeline.repo}`, responseTime, response.status)
+          apiCallBatch.push({
+            service: "github",
+            endpoint: `repos/${pipeline.repo}`,
+            responseTimeMs: responseTime,
+            statusCode: response.status,
+          })
         }
 
         // Update pipeline
@@ -223,14 +342,27 @@ export class CacheManager {
           pipeline.tags.push("private")
         }
 
-        // Cache result for 30 minutes
-        this.db.cacheGitHubRepo(pipeline.repo, isPrivate, 30 * 60)
+        // Add to cache batch for 30 minutes
+        repoCacheBatch.push({ repoPath: pipeline.repo, isPrivate, ttlSeconds: 30 * 60 })
       } catch (error) {
         console.error(`Failed to check GitHub repo ${pipeline.repo}:`, error)
-        this.db.logApiCall("github", `repos/${pipeline.repo}`, Date.now() - startTime, 500)
+        apiCallBatch.push({
+          service: "github",
+          endpoint: `repos/${pipeline.repo}`,
+          responseTimeMs: Date.now() - startTime,
+          statusCode: 500,
+        })
         // Default to private on error
         pipeline.visibility = "private"
       }
+    }
+
+    // Execute batch operations
+    try {
+      this.db.batchLogApiCalls(apiCallBatch)
+      this.db.batchCacheGitHubRepos(repoCacheBatch)
+    } catch (error) {
+      console.error("Failed to execute batch database operations:", error)
     }
 
     return pipelines
@@ -245,34 +377,44 @@ export class CacheManager {
       return memCached
     }
 
-    // L2: SQLite cache
-    const cachedAgents: AppAgent[] = []
-    const orgsToFetch: string[] = []
-
-    for (const orgSlug of ORGANIZATIONS) {
-      const orgAgents = this.db.getCachedAgents(orgSlug)
-      if (orgAgents.length > 0) {
-        console.log(`Cache hit: database (agents for ${orgSlug})`)
-        cachedAgents.push(...orgAgents)
-      } else {
-        orgsToFetch.push(orgSlug)
+    // Use locking to prevent concurrent fetches
+    return await this.withLock("get-agents", async () => {
+      // Double-check memory cache after acquiring lock
+      const memCachedAfterLock = this.getFromMemory<AppAgent[]>("all-agents")
+      if (memCachedAfterLock) {
+        console.log("Cache hit: memory (all-agents) after lock")
+        return memCachedAfterLock
       }
-    }
 
-    // L3: Fetch missing orgs from Buildkite
-    if (orgsToFetch.length > 0) {
-      console.log(`Fetching fresh agent data for orgs: ${orgsToFetch.join(", ")}`)
-      const freshAgents = await this.fetchAgentsFromBuildkite(orgsToFetch)
-      cachedAgents.push(...freshAgents)
-    }
+      // L2: SQLite cache
+      const cachedAgents: AppAgent[] = []
+      const orgsToFetch: string[] = []
 
-    // Cache in memory
-    this.setInMemory("all-agents", cachedAgents, 60) // 1 minute
+      for (const orgSlug of ORGANIZATIONS) {
+        const orgAgents = this.db.getCachedAgents(orgSlug)
+        if (orgAgents.length > 0) {
+          console.log(`Cache hit: database (agents for ${orgSlug})`)
+          cachedAgents.push(...orgAgents)
+        } else {
+          orgsToFetch.push(orgSlug)
+        }
+      }
 
-    return cachedAgents
+      // L3: Fetch missing orgs from Buildkite
+      if (orgsToFetch.length > 0) {
+        console.log(`Fetching fresh agent data for orgs: ${orgsToFetch.join(", ")}`)
+        const freshAgents = await this.fetchAgentsFromBuildkite(orgsToFetch)
+        cachedAgents.push(...freshAgents)
+      }
+
+      // Cache in memory
+      this.setInMemory("all-agents", cachedAgents, 60) // 1 minute
+
+      return cachedAgents
+    })
   }
 
-  private async fetchAgentsFromBuildkite(orgSlugs: string[]): Promise<AppAgent[]> {
+  private async fetchAgentsFromBuildkite(orgSlugs: readonly string[]): Promise<AppAgent[]> {
     const allAgents: AppAgent[] = []
 
     for (const orgSlug of orgSlugs) {
@@ -283,7 +425,7 @@ export class CacheManager {
 
         const result = await withRetry(
           async () => await buildkiteClient.query(GET_ORGANIZATION_AGENTS, { slug: orgSlug }).toPromise(),
-          { maxRetries: 2, initialDelay: 5000 },
+          { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 }, // Allow up to 5 minute delays for rate limiting
         ) as any
 
         const responseTime = Date.now() - startTime
@@ -322,7 +464,7 @@ export class CacheManager {
     const latestBuild = builds[0]
 
     const buildStats = builds.reduce(
-      (acc, build) => {
+      (acc: { total: number; passed: number; failed: number }, build: any) => {
         acc.total++
         if (build.state === "PASSED") {
           acc.passed++
@@ -439,19 +581,14 @@ export class CacheManager {
       return "cancelled"
     }
 
-    // Look at recent builds to determine failing vs passing pattern
-    // Consider the last 3 builds to determine the pipeline health trend
-    const recentBuilds = builds.slice(0, 3)
-    const failedBuilds = recentBuilds.filter((build) => ["FAILED", "WAITING_FAILED"].includes(build.state))
-    const passedBuilds = recentBuilds.filter((build) => build.state === "PASSED")
+    // If the latest build passed, the pipeline is passing
+    if (latestBuild && latestBuild.state === "PASSED") {
+      return "passed"
+    }
 
-    // If the latest build failed, or if 2+ of the last 3 builds failed, mark as failing
+    // If the latest build failed, the pipeline is failing
     if (latestBuild && ["FAILED", "WAITING_FAILED"].includes(latestBuild.state)) {
       return "failed"
-    } else if (failedBuilds.length >= 2) {
-      return "failed"
-    } else if (passedBuilds.length > 0) {
-      return "passed"
     }
 
     // Default to the normalized latest build status
@@ -473,28 +610,312 @@ export class CacheManager {
   async refreshPipelines(): Promise<AppPipeline[]> {
     console.log("Forcing refresh of all pipeline data")
 
-    // Clear memory cache
-    this.memoryCache.delete("all-pipelines")
+    // Use locking to prevent concurrent refreshes
+    return await this.withLock("refresh-pipelines", async () => {
+      // Clear memory caches
+      this.memoryCache.delete("all-pipelines-basic")
+      this.memoryCache.delete("all-pipelines-enriched")
 
-    // Fetch fresh data for all orgs
-    const pipelines = await this.fetchPipelinesFromBuildkite(ORGANIZATIONS)
-    const enriched = await this.enrichPipelinesWithGitHub(pipelines)
+      // Fetch fresh data for all orgs
+      const pipelines = await this.fetchPipelinesFromBuildkite(ORGANIZATIONS)
 
-    this.setInMemory("all-pipelines", enriched, 60)
-    return enriched
+      // Cache basic pipelines immediately
+      this.setInMemory("all-pipelines-basic", pipelines, 60)
+
+      // Trigger background enrichment (fire and forget)
+      this.enrichPipelinesInBackground(pipelines)
+
+      return pipelines
+    })
   }
 
   async refreshAgents(): Promise<AppAgent[]> {
     console.log("Forcing refresh of all agent data")
 
-    // Clear memory cache
+    // Use locking to prevent concurrent refreshes
+    return await this.withLock("refresh-agents", async () => {
+      // Clear memory cache
+      this.memoryCache.delete("all-agents")
+
+      // Fetch fresh data for all orgs
+      const agents = await this.fetchAgentsFromBuildkite(ORGANIZATIONS)
+
+      this.setInMemory("all-agents", agents, 60)
+      return agents
+    })
+  }
+
+  // Individual build caching with intelligent TTL
+  async getCachedBuild(pipelineSlug: string, buildNumber: number): Promise<any | null> {
+    // Check memory cache first
+    const memKey = `build-${pipelineSlug}-${buildNumber}`
+    const memCached = this.getFromMemory<any>(memKey)
+    if (memCached) {
+      console.log(`Cache hit: memory (${memKey})`)
+      return memCached
+    }
+
+    // Check SQLite cache
+    const cached = this.db.getCachedBuild(pipelineSlug, buildNumber)
+    if (cached) {
+      console.log(`Cache hit: database (${memKey})`)
+      // Cache in memory for 5 minutes
+      this.setInMemory(memKey, cached, 5 * 60)
+      return cached
+    }
+
+    return null
+  }
+
+  async cacheBuild(pipelineSlug: string, buildNumber: number, build: any): Promise<void> {
+    // Determine TTL based on build state
+    let ttlSeconds: number
+    if (["PASSED", "FAILED", "CANCELED", "WAITING_FAILED"].includes(build.state)) {
+      // Finished builds are immutable - cache for 24 hours (effectively forever)
+      ttlSeconds = 24 * 60 * 60
+    } else {
+      // Running builds need frequent updates - cache for 1 minute
+      ttlSeconds = 60
+    }
+
+    // Cache in database
+    this.db.cacheBuild(pipelineSlug, buildNumber, build, ttlSeconds)
+
+    // Cache in memory for shorter time
+    const memKey = `build-${pipelineSlug}-${buildNumber}`
+    this.setInMemory(memKey, build, Math.min(ttlSeconds, 5 * 60))
+
+    console.log(`Cached build ${pipelineSlug}#${buildNumber} (state: ${build.state}, TTL: ${ttlSeconds}s)`)
+  }
+
+  async getCachedBuildsForPipeline(pipelineSlug: string, limit = 20): Promise<any[]> {
+    return this.db.getCachedBuilds(pipelineSlug, limit)
+  }
+
+  // Individual job caching with intelligent TTL
+  async getCachedJob(pipelineSlug: string, buildNumber: number, jobId: string): Promise<any | null> {
+    // Check memory cache first
+    const memKey = `job-${pipelineSlug}-${buildNumber}-${jobId}`
+    const memCached = this.getFromMemory<any>(memKey)
+    if (memCached) {
+      console.log(`Cache hit: memory (${memKey})`)
+      return memCached
+    }
+
+    // Check SQLite cache
+    const cached = this.db.getCachedJob(pipelineSlug, buildNumber, jobId)
+    if (cached) {
+      console.log(`Cache hit: database (${memKey})`)
+      // Cache in memory for 5 minutes
+      this.setInMemory(memKey, cached, 5 * 60)
+      return cached
+    }
+
+    return null
+  }
+
+  async cacheJob(pipelineSlug: string, buildNumber: number, jobId: string, job: any): Promise<void> {
+    // Determine TTL based on job state
+    let ttlSeconds: number
+    if (["passed", "failed", "canceled"].includes(job.state)) {
+      // Finished jobs are immutable - cache for 24 hours (effectively forever)
+      ttlSeconds = 24 * 60 * 60
+    } else {
+      // Running jobs need frequent updates - cache for 1 minute
+      ttlSeconds = 60
+    }
+
+    // Cache in database
+    this.db.cacheJob(pipelineSlug, buildNumber, jobId, job, ttlSeconds)
+
+    // Cache in memory for shorter time
+    const memKey = `job-${pipelineSlug}-${buildNumber}-${jobId}`
+    this.setInMemory(memKey, job, Math.min(ttlSeconds, 5 * 60))
+
+    console.log(`Cached job ${jobId} in ${pipelineSlug}#${buildNumber} (state: ${job.state}, TTL: ${ttlSeconds}s)`)
+  }
+
+  async getCachedJobsForBuild(pipelineSlug: string, buildNumber: number): Promise<any[]> {
+    return this.db.getCachedJobsForBuild(pipelineSlug, buildNumber)
+  }
+
+  // Job log caching
+  async getCachedJobLog(pipelineSlug: string, buildNumber: number, jobId: string): Promise<string | null> {
+    // Check memory cache first
+    const memKey = `job-log-${pipelineSlug}-${buildNumber}-${jobId}`
+    const memCached = this.getFromMemory<string>(memKey)
+    if (memCached) {
+      console.log(`Cache hit: memory (${memKey})`)
+      return memCached
+    }
+
+    // Check SQLite cache
+    const cached = this.db.getCachedJobLog(pipelineSlug, buildNumber, jobId)
+    if (cached) {
+      console.log(`Cache hit: database (${memKey})`)
+      // Cache in memory for 5 minutes
+      this.setInMemory(memKey, cached, 5 * 60)
+      return cached
+    }
+
+    return null
+  }
+
+  async cacheJobLog(
+    pipelineSlug: string,
+    buildNumber: number,
+    jobId: string,
+    logContent: string,
+    isJobFinished: boolean,
+  ): Promise<void> {
+    // Determine TTL based on job state
+    let ttlSeconds: number
+    if (isJobFinished) {
+      // Finished job logs are immutable - cache for 24 hours (effectively forever)
+      ttlSeconds = 24 * 60 * 60
+    } else {
+      // Running job logs change frequently - cache for 1 minute
+      ttlSeconds = 60
+    }
+
+    // Cache in database
+    this.db.cacheJobLog(pipelineSlug, buildNumber, jobId, logContent, ttlSeconds)
+
+    // Cache in memory for shorter time
+    const memKey = `job-log-${pipelineSlug}-${buildNumber}-${jobId}`
+    this.setInMemory(memKey, logContent, Math.min(ttlSeconds, 5 * 60))
+
+    console.log(
+      `Cached job log ${jobId} in ${pipelineSlug}#${buildNumber} (finished: ${isJobFinished}, TTL: ${ttlSeconds}s)`,
+    )
+  }
+
+  // Cache-aware fetch methods that try cache first, then API
+  async fetchAndCacheBuilds(pipelineSlug: string, limit = 20): Promise<any[]> {
+    // Use locking to prevent concurrent fetches for the same pipeline
+    return await this.withLock(`fetch-builds-${pipelineSlug}-${limit}`, async () => {
+      // Try cache first
+      let builds = await this.getCachedBuildsForPipeline(pipelineSlug, limit)
+
+      if (builds.length === 0) {
+        // No cached builds, fetch from API
+        console.log(`No cached builds for ${pipelineSlug}, fetching from API`)
+        const fullPipelineSlug = `divvun/${pipelineSlug}`
+        const result = await withRetry(
+          async () =>
+            await buildkiteClient.query(GET_PIPELINE_BUILDS, {
+              pipelineSlug: fullPipelineSlug,
+              first: limit,
+            }).toPromise(),
+          { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },
+        )
+
+        if (result.error) {
+          throw new Error(`Failed to fetch builds for ${pipelineSlug}: ${result.error}`)
+        }
+
+        builds = result.data?.pipeline?.builds?.edges?.map((edge) => edge.node) || []
+        console.log(`Fetched ${builds.length} builds for pipeline ${fullPipelineSlug}`)
+
+        // Cache each build
+        for (const build of builds) {
+          await this.cacheBuild(pipelineSlug, build.number, build)
+        }
+      } else {
+        console.log(`Using ${builds.length} cached builds for pipeline ${pipelineSlug}`)
+      }
+
+      return builds
+    })
+  }
+
+  async fetchAndCacheBuildById(buildId: string): Promise<{ build: any; jobs: any[] } | null> {
+    // Use locking to prevent concurrent fetches for the same build
+    return await this.withLock(`fetch-build-${buildId}`, async () => {
+      try {
+        // Decode the base64 build ID to extract the UUID
+        const decodedId = atob(buildId) // "Build---uuid" format
+        const uuid = decodedId.split("---")[1] // Extract just the UUID part
+
+        const result = await withRetry(
+          async () =>
+            await buildkiteClient.query(GET_BUILD_DETAILS, {
+              uuid: uuid,
+            }).toPromise(),
+          { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },
+        )
+
+        if (result.error) {
+          throw new Error(`Failed to fetch build details for ${buildId}: ${result.error}`)
+        }
+
+        const build = result.data?.build
+        if (!build) {
+          return null
+        }
+
+        const jobs = build?.jobs?.edges?.map((edge) =>
+          edge?.node
+        ).filter((job): job is NonNullable<typeof job> => job != null).toReversed() || []
+
+        // Cache the build and jobs if we have pipeline info
+        if (build.pipeline?.slug && build.number) {
+          await this.cacheBuild(build.pipeline.slug, build.number, build)
+
+          // Cache each job using UUID if available, fallback to ID
+          for (const job of jobs) {
+            const jobKey = job.uuid || job.id
+            if (jobKey) {
+              await this.cacheJob(build.pipeline.slug, build.number, jobKey, job)
+            }
+          }
+        }
+
+        return { build, jobs }
+      } catch (error) {
+        console.error(`Error fetching build by ID ${buildId}:`, error)
+        return null
+      }
+    })
+  }
+
+  // Webhook-triggered incremental updates
+  async updatePipelineBuildStatus(pipelineSlug: string, buildNumber: number, state: string): Promise<void> {
+    console.log(`🔄 Updating pipeline ${pipelineSlug} build #${buildNumber} to ${state}`)
+
+    // Invalidate memory cache for this specific build if it's cached
+    const memKey = `build-${pipelineSlug}-${buildNumber}`
+    this.memoryCache.delete(memKey)
+
+    // Invalidate pipeline list cache to refresh status
+    this.memoryCache.delete("all-pipelines")
+  }
+
+  async updateJobStatus(jobId: string, state: string, pipelineSlug: string, buildNumber: number): Promise<void> {
+    console.log(`🔄 Updating job ${jobId} in ${pipelineSlug}#${buildNumber} to ${state}`)
+
+    // Invalidate memory cache for this specific job if it's cached
+    const memKey = `job-${pipelineSlug}-${buildNumber}-${jobId}`
+    this.memoryCache.delete(memKey)
+  }
+
+  async updateAgentStatus(agentId: string, connectionState: string, timestamp?: string): Promise<void> {
+    console.log(`🔄 Updating agent ${agentId} to ${connectionState}`)
+
+    // Invalidate agent cache to force refresh
     this.memoryCache.delete("all-agents")
 
-    // Fetch fresh data for all orgs
-    const agents = await this.fetchAgentsFromBuildkite(ORGANIZATIONS)
+    // TODO: Implement more granular agent status updates
+  }
 
-    this.setInMemory("all-agents", agents, 60)
-    return agents
+  async invalidatePipelineCache(pipelineSlug?: string): Promise<void> {
+    if (pipelineSlug) {
+      console.log(`🗑️ Invalidating cache for pipeline ${pipelineSlug}`)
+      // For now, invalidate all pipeline cache
+      // TODO: Implement pipeline-specific cache invalidation
+    }
+
+    this.memoryCache.delete("all-pipelines")
   }
 
   // Clean shutdown

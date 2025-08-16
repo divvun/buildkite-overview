@@ -95,7 +95,9 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
     const a = document.createElement("a")
     a.href = url
     a.download = filename
-    a.style.display = "none"
+    if (a.style instanceof CSSStyleDeclaration) {
+      a.style.display = "none"
+    }
     document.body.appendChild(a)
     a.click()
 
@@ -315,7 +317,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
 
     // Process the raw log character by character, building logical lines
     while (position < rawLog.length) {
-      let currentLine = { content: "", timestamp: "" }
+      const currentLine = { content: "", timestamp: "" }
       let foundTimestamp = false
 
       // Look for the start of a new logical line (timestamp at beginning or after newline)

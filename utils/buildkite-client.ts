@@ -53,6 +53,7 @@ export interface BuildkiteJob {
   finishedAt?: string
   exitStatus?: number // Only available on JobTypeCommand
   command?: string // Only available on JobTypeCommand
+  passed?: boolean // Only available on JobTypeCommand
   type: string
   retriedInJobId?: string // Only available on JobTypeCommand
   step?: {
@@ -241,6 +242,7 @@ export const GET_BUILD_DETAILS = query((q) => [
         e.node((n) => [
           n.$on("JobTypeCommand", (c) => [
             c.id,
+            c.uuid,
             c.label,
             c.state,
             c.startedAt,
@@ -254,6 +256,7 @@ export const GET_BUILD_DETAILS = query((q) => [
           ]),
           n.$on("JobTypeBlock", (b) => [
             b.id,
+            b.uuid,
             b.state,
             b.label,
             b.step((s) => [
@@ -262,10 +265,12 @@ export const GET_BUILD_DETAILS = query((q) => [
           ]),
           n.$on("JobTypeTrigger", (t) => [
             t.id,
+            t.uuid,
             t.state,
           ]),
           n.$on("JobTypeWait", (w) => [
             w.id,
+            w.uuid,
             w.state,
           ]),
         ]),

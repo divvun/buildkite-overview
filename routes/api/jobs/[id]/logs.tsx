@@ -1,5 +1,6 @@
 import { Context, RouteHandler } from "fresh"
 import { type AppState } from "~/utils/middleware.ts"
+import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 
 const BUILDKITE_API_KEY = Deno.env.get("BUILDKITE_API_KEY")
 const BUILDKITE_REST_API = "https://api.buildkite.com/v2"
@@ -23,6 +24,67 @@ export const handler: RouteHandler<unknown, AppState> = {
       )
     }
 
+    // Extract UUID from GraphQL ID if it's base64 encoded
+    let uuid = jobId
+    try {
+      const decodedId = atob(jobId)
+      if (
+        decodedId.startsWith("JobTypeCommand---") || decodedId.startsWith("JobTypeBlock---") ||
+        decodedId.startsWith("JobTypeTrigger---") || decodedId.startsWith("JobTypeWait---")
+      ) {
+        uuid = decodedId.replace(/^JobType\w+---/, "")
+      }
+    } catch (_e) {
+      // If not base64, use as is
+    }
+
+    const cacheManager = getCacheManager()
+
+    // Try to get log from cache first
+    const cachedLog = await cacheManager.getCachedJobLog(pipelineSlug, parseInt(buildNumber), uuid)
+    if (cachedLog) {
+      console.log(`Cache hit: job log for ${pipelineSlug}#${buildNumber}/${uuid}`)
+      return new Response(
+        JSON.stringify({
+          content: cachedLog,
+          contentType: "text/plain",
+          jobId: uuid,
+          build: buildNumber,
+          pipeline: pipelineSlug,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
+
+    // Get job info to determine if it's finished (for proper caching TTL)
+    let cachedJob = await cacheManager.getCachedJob(pipelineSlug, parseInt(buildNumber), uuid)
+
+    // If we don't have the job cached, fetch the build to get job info
+    if (!cachedJob) {
+      console.log(`No cached job info for ${uuid}, fetching build to get job details`)
+      // We need to find the build ID first - try to get it from the build number
+      const builds = await cacheManager.fetchAndCacheBuilds(pipelineSlug, 50)
+      const targetBuild = builds.find((build) => build.number === parseInt(buildNumber))
+
+      if (targetBuild?.id) {
+        const buildResult = await cacheManager.fetchAndCacheBuildById(targetBuild.id)
+        if (buildResult) {
+          // Find our specific job in the cached build jobs using UUID or ID
+          cachedJob = buildResult.jobs.find((job) =>
+            job.uuid === uuid || job.uuid === jobId || job.id === jobId || job.id === uuid
+          )
+        }
+      }
+    }
+
+    let isJobFinished = false
+    if (cachedJob) {
+      // Job states that indicate completion: passed, failed, canceled
+      isJobFinished = ["passed", "failed", "canceled"].includes(cachedJob.state?.toLowerCase())
+    }
+
     if (!BUILDKITE_API_KEY) {
       return new Response(
         JSON.stringify({
@@ -35,19 +97,8 @@ export const handler: RouteHandler<unknown, AppState> = {
       )
     }
 
-    // Extract UUID from GraphQL ID if it's base64 encoded
-    let uuid = jobId
-    try {
-      const decodedId = atob(jobId)
-      if (
-        decodedId.startsWith("JobTypeCommand---") || decodedId.startsWith("JobTypeBlock---") ||
-        decodedId.startsWith("JobTypeTrigger---") || decodedId.startsWith("JobTypeWait---")
-      ) {
-        uuid = decodedId.replace(/^JobType\w+---/, "")
-      }
-    } catch (e) {
-      // If not base64, use as is
-    }
+    // No cache miss - need to fetch from API
+    console.log(`Cache miss: fetching job log for ${pipelineSlug}#${buildNumber}/${jobId} from API`)
 
     try {
       const logUrl =
@@ -90,6 +141,14 @@ export const handler: RouteHandler<unknown, AppState> = {
       }
 
       const logContent = await response.text()
+
+      // We should always have job info by now, but if not, default to frequent updates
+      if (!cachedJob) {
+        console.warn(`Could not determine job completion status for ${uuid}, defaulting to short TTL`)
+        isJobFinished = false
+      }
+
+      await cacheManager.cacheJobLog(pipelineSlug, parseInt(buildNumber), uuid, logContent, isJobFinished)
 
       return new Response(
         JSON.stringify({

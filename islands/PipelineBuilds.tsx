@@ -45,7 +45,7 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
       }
 
       const data = await response.json()
-      console.log(`Received ${data.length} builds:`, data.map((b) => `#${b.number}`))
+      console.log(`Received ${data.length} builds:`, data.map((b: { number: number }) => `#${b.number}`))
       setBuilds(data)
     } catch (err) {
       console.error("Error fetching builds:", err)

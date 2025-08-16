@@ -12,7 +12,7 @@
     "rules": {
       "tags": ["fresh", "recommended"]
     },
-    "exclude": ["node_modules"]
+    "exclude": ["node_modules", "utils/gql/buildkite.ts"]
   },
   "exclude": ["**/_fresh/*"],
   "imports": {

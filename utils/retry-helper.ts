@@ -24,19 +24,66 @@ export function isRetryableGraphQLError(error: any): RetryableError {
   ) {
     // Try to extract retry-after from error message
     const retryMatch = error.graphQLErrors[0]?.message?.match(/try again in (\d+) seconds/)
-    const retryAfter = retryMatch ? parseInt(retryMatch[1]) : 60
+    let retryAfter = retryMatch ? parseInt(retryMatch[1]) : null
+
+    // Check for ratelimit-reset header in response (preferred method)
+    if (error?.response?.headers) {
+      const rateLimitReset = error.response.headers.get("ratelimit-reset")
+      if (rateLimitReset) {
+        const resetSeconds = parseInt(rateLimitReset)
+        if (!isNaN(resetSeconds)) {
+          retryAfter = resetSeconds
+        }
+      }
+    }
+
+    const finalRetryAfter = retryAfter || 60
+    console.log(`🚦 Rate limit detected: ${error.graphQLErrors[0]?.message}`)
+    // Log rate limit info for debugging
+    if (error?.response?.headers) {
+      const rateLimitHeaders: Record<string, string> = {}
+      for (const [key, value] of error.response.headers.entries()) {
+        if (key.includes("rate")) {
+          rateLimitHeaders[key] = value
+        }
+      }
+      console.log(`📊 Rate limit headers:`, rateLimitHeaders)
+    }
+    console.log(`⏰ Will retry after ${finalRetryAfter} seconds`)
 
     return {
       isRetryable: true,
-      retryAfter,
+      retryAfter: finalRetryAfter,
     }
   }
 
-  // Handle network errors
-  if (error?.networkError) {
-    const statusCode = error.networkError.statusCode
-    if (statusCode === 429 || statusCode >= 500) {
-      return { isRetryable: true, retryAfter: 30 }
+  // Handle network errors (including 429 Too Many Requests)
+  if (error?.networkError || error?.response?.status === 429) {
+    const response = error?.response || error?.networkError
+    const statusCode = response?.status || error?.networkError?.statusCode
+
+    if (statusCode === 429 || statusCode === 409 || statusCode >= 500) {
+      // Check for rate limit headers
+      let retryAfter = 30 // default fallback
+
+      if (response?.headers) {
+        const rateLimitReset = response.headers.get("ratelimit-reset")
+        const retryAfterHeader = response.headers.get("retry-after")
+
+        if (rateLimitReset) {
+          const resetSeconds = parseInt(rateLimitReset)
+          if (!isNaN(resetSeconds)) {
+            retryAfter = resetSeconds
+          }
+        } else if (retryAfterHeader) {
+          const afterSeconds = parseInt(retryAfterHeader)
+          if (!isNaN(afterSeconds)) {
+            retryAfter = afterSeconds
+          }
+        }
+      }
+
+      return { isRetryable: true, retryAfter }
     }
   }
 
@@ -75,7 +122,15 @@ export async function withRetry<T>(
       // Use rate limit retry-after if available, otherwise use exponential backoff
       const waitTime = retryInfo.retryAfter ? retryInfo.retryAfter * 1000 : Math.min(delay, maxDelay)
 
-      console.log(`Retrying operation in ${waitTime}ms (attempt ${attempt + 1}/${maxRetries + 1})`)
+      if (retryInfo.retryAfter) {
+        console.log(
+          `🚦 Rate limited. Waiting ${retryInfo.retryAfter} seconds before retry (attempt ${attempt + 1}/${
+            maxRetries + 1
+          })`,
+        )
+      } else {
+        console.log(`🔄 Retrying operation in ${waitTime}ms (attempt ${attempt + 1}/${maxRetries + 1})`)
+      }
 
       await new Promise((resolve) => setTimeout(resolve, waitTime))
 

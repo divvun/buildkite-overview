@@ -15,13 +15,13 @@ interface LayoutProps {
 }
 
 export default function Layout(
-  { children, title = "Buildkite Overview", currentPath, session, breadcrumbs }: LayoutProps,
+  { children, title: _title = "Buildkite Overview", currentPath, session, breadcrumbs }: LayoutProps,
 ) {
   return (
     <wa-page mobile-breakpoint="768">
       <header slot="header" class="wa-split">
         <div class="wa-cluster">
-          <wa-icon name="building" style={"color: var(--wa-color-brand-fill-loud); font-size: 1.5em" as any}></wa-icon>
+          <wa-icon name="building" style="color: var(--wa-color-brand-fill-loud); font-size: 1.5em"></wa-icon>
           <span class="wa-heading-s wa-desktop-only">Divvun Buildkite</span>
           <a href="/" class={currentPath === "/" ? "active" : ""}>Overview</a>
           <a
@@ -30,8 +30,12 @@ export default function Layout(
           >
             Pipelines
           </a>
-          <a href="/agents" class={currentPath === "/agents" ? "active" : ""}>Agents</a>
-          <a href="/running" class={currentPath === "/running" ? "active" : ""}>Running</a>
+          {session && (
+            <>
+              <a href="/agents" class={currentPath === "/agents" ? "active" : ""}>Agents</a>
+              <a href="/running" class={currentPath === "/running" ? "active" : ""}>Running</a>
+            </>
+          )}
         </div>
         <div class="wa-cluster wa-gap-xs">
           {session
@@ -100,7 +104,7 @@ export default function Layout(
             <wa-icon name="bars" label="Menu"></wa-icon>
           </wa-button>
           {breadcrumbs && breadcrumbs.length > 0 && (
-            <wa-breadcrumb style={"font-size: var(--wa-font-size-s)" as any}>
+            <wa-breadcrumb style="font-size: var(--wa-font-size-s)">
               <wa-breadcrumb-item>
                 <a href="/" title="Home">
                   <wa-icon name="home"></wa-icon>
@@ -126,7 +130,7 @@ export default function Layout(
 
       <footer slot="footer" class="wa-grid wa-gap-xl">
         <div class="wa-cluster" style="flex-wrap: nowrap">
-          <wa-icon name="building" style={"font-size: 1.5em" as any}></wa-icon>
+          <wa-icon name="building" style="font-size: 1.5em"></wa-icon>
           <span class="wa-heading-s">Divvun Buildkite Overview</span>
         </div>
         <div class="wa-stack">

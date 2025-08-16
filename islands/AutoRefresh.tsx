@@ -20,7 +20,7 @@ export default function AutoRefresh({ enabled = false, intervalSeconds = 30 }: A
         setCountdown((prev) => {
           if (prev <= 1) {
             // Refresh the page
-            window.location.reload()
+            globalThis.location.reload()
             return intervalSeconds
           }
           return prev - 1
@@ -36,7 +36,7 @@ export default function AutoRefresh({ enabled = false, intervalSeconds = 30 }: A
   return (
     <div class="wa-stack wa-gap-2xs wa-align-items-end">
       <wa-button
-        variant={isEnabled ? "brand" : "ghost"}
+        variant={isEnabled ? "brand" : "neutral"}
         appearance="outlined"
         size="small"
         onClick={() => setIsEnabled(!isEnabled)}

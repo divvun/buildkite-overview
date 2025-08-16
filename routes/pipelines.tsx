@@ -1,10 +1,11 @@
 import { Context, page } from "fresh"
+import EmptyState from "~/components/EmptyState.tsx"
 import Layout from "~/components/Layout.tsx"
-import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
-import { type SessionData } from "~/utils/session.ts"
+import PipelineFilters from "~/islands/PipelineFilters.tsx"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { getBadgeVariant, getHealthBorderStyle, getStatusIcon } from "~/utils/formatters.ts"
-import EmptyState from "~/components/EmptyState.tsx"
+import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
+import { type SessionData } from "~/utils/session.ts"
 
 interface PipelinesProps {
   session?: SessionData | null
@@ -25,7 +26,7 @@ export const handler = {
       const searchQuery = url.searchParams.get("search") || ""
 
       // Fetch real pipeline data from Buildkite (already enriched with GitHub data)
-      let pipelines = await fetchAllPipelines()
+      const pipelines = await fetchAllPipelines()
 
       // Filter pipelines based on user access
       let visiblePipelines = filterPipelinesForUser(pipelines, ctx.state.session)
@@ -97,25 +98,6 @@ export default function Pipelines(props: { data: PipelinesProps }) {
               Manage and monitor all Buildkite pipelines across organizations
             </p>
           </div>
-          <div class="wa-cluster wa-gap-s">
-            <wa-button
-              variant="brand"
-              appearance="outlined"
-              disabled
-              title="Feature coming soon - create pipelines directly from GitHub repos"
-            >
-              <wa-icon slot="prefix" name="plus"></wa-icon>
-              Create Pipeline
-            </wa-button>
-            <wa-button
-              variant="brand"
-              disabled
-              title="Feature coming soon - sync all pipeline configurations with GitHub"
-            >
-              <wa-icon slot="prefix" name="arrow-rotate-right"></wa-icon>
-              Sync All
-            </wa-button>
-          </div>
         </header>
 
         {error && (
@@ -125,56 +107,10 @@ export default function Pipelines(props: { data: PipelinesProps }) {
           </wa-callout>
         )}
 
-        <div class="wa-cluster wa-gap-m">
-          <form
-            method="GET"
-            style="display: contents"
-            onSubmit={(e) => {
-              e.preventDefault()
-              const formData = new FormData(e.currentTarget)
-              const search = formData.get("search") as string
-              const url = new URL(window.location.href)
-              if (search.trim()) {
-                url.searchParams.set("search", search.trim())
-              } else {
-                url.searchParams.delete("search")
-              }
-              window.location.href = url.toString()
-            }}
-          >
-            <wa-input
-              name="search"
-              placeholder="Filter pipelines..."
-              style={"min-width: 300px" as any}
-              value={searchQuery}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.currentTarget.form?.requestSubmit()
-                }
-              }}
-            >
-              <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
-            </wa-input>
-          </form>
-          <wa-select
-            placeholder="Status"
-            value={statusFilter}
-            onWa-change={(e: any) => {
-              const url = new URL(window.location.href)
-              if (e.target.value) {
-                url.searchParams.set("status", e.target.value)
-              } else {
-                url.searchParams.delete("status")
-              }
-              window.location.href = url.toString()
-            }}
-          >
-            <wa-option value="">All Status</wa-option>
-            <wa-option value="passed">Passed</wa-option>
-            <wa-option value="failed">Failed</wa-option>
-            <wa-option value="running">Running</wa-option>
-          </wa-select>
-        </div>
+        <PipelineFilters
+          initialSearch={searchQuery}
+          initialStatus={statusFilter}
+        />
 
         <div
           class="wa-gap-m"
@@ -185,12 +121,12 @@ export default function Pipelines(props: { data: PipelinesProps }) {
               <EmptyState
                 icon="folder-open"
                 title="No pipelines found"
-                description={searchQuery || statusFilter || orgFilter
+                description={searchQuery || statusFilter
                   ? `No pipelines match your current filters. Try adjusting your search or filters.`
                   : `No Buildkite pipelines found. Check your API configuration or create your first pipeline.`}
                 variant="neutral"
               >
-                {(searchQuery || statusFilter || orgFilter) && (
+                {(searchQuery || statusFilter) && (
                   <wa-button appearance="outlined">
                     <a href="/pipelines" style="text-decoration: none; color: inherit">
                       Clear all filters

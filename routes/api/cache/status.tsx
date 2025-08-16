@@ -2,9 +2,10 @@ import { Context, RouteHandler } from "fresh"
 import { type AppState } from "~/utils/middleware.ts"
 import { requireDivvunOrgAccess } from "~/utils/session.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
+import process from "node:process"
 
 export const handler: RouteHandler<unknown, AppState> = {
-  async GET(ctx: Context<AppState>) {
+  GET(ctx: Context<AppState>) {
     try {
       // Require divvun org access for cache status
       requireDivvunOrgAccess(ctx.req)

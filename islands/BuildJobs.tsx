@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks"
 import JobLogs from "~/islands/JobLogs.tsx"
 import { type BuildkiteJob } from "~/utils/buildkite-client.ts"
-import { getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
+import { getBadgeVariant } from "~/utils/formatters.ts"
 
 interface BuildJobsProps {
   buildId: string
@@ -109,7 +109,7 @@ export default function BuildJobs(
   const [buildNumber, setBuildNumber] = useState<number | null>(initialBuildNumber || null)
   const [pipelineSlug, setPipelineSlug] = useState<string | null>(initialPipelineSlug || null)
 
-  console.log("BuildJobs mounted with", initialJobs.length, "initial jobs")
+  console.log("BuildJobs mounted with", initialJobs.length, "initial jobs", initialJobs)
 
   useEffect(() => {
     // Only fetch if we don't have initial jobs
@@ -136,6 +136,7 @@ export default function BuildJobs(
 
       const data = await response.json()
       setJobs(data.jobs)
+      console.log(data.jobs)
       setBuildNumber(data.buildNumber)
       setPipelineSlug(data.pipelineSlug)
     } catch (err) {
@@ -191,147 +192,150 @@ export default function BuildJobs(
 
   return (
     <div style="background: white; border: 1px solid var(--wa-color-border-subtle); border-radius: var(--wa-border-radius-m); max-width: 1200px">
-      {jobs.map((job, index) => (
-        <div
-          key={job.id}
-          style={`border-bottom: ${index === jobs.length - 1 ? "none" : "1px solid var(--wa-color-border-subtle)"}`}
-        >
+      {jobs.map((job, index) => {
+        const jobKey = job.uuid || job.id
+        return (
           <div
-            style="display: flex; align-items: center; gap: var(--wa-space-s); padding: var(--wa-space-s) var(--wa-space-m); cursor: pointer; hover:background-color: var(--wa-color-neutral-fill-subtle)"
-            onClick={() => handleJobClick(job.id)}
+            key={jobKey}
+            style={`border-bottom: ${index === jobs.length - 1 ? "none" : "1px solid var(--wa-color-border-subtle)"}`}
           >
-            <span style="width: 1rem; text-align: center;">
-              <span
-                style={`font-size: 1rem; color: ${
-                  ["PASSED", "FINISHED"].includes(job.state) && job.passed
-                    ? "var(--wa-color-success-fill-loud)"
-                    : ["FAILED", "CANCELED", "WAITING_FAILED"].includes(job.state) || !job.passed
-                    ? "var(--wa-color-danger-fill-loud)"
-                    : ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED", "CANCELING"].includes(job.state)
-                    ? "var(--wa-color-warning-fill-loud)"
-                    : "var(--wa-color-text-quiet)"
-                }`}
-              >
-                {getJobStatusIcon(job.state, job.passed)}
+            <div
+              style="display: flex; align-items: center; gap: var(--wa-space-s); padding: var(--wa-space-s) var(--wa-space-m); cursor: pointer; hover:background-color: var(--wa-color-neutral-fill-subtle)"
+              onClick={() => handleJobClick(jobKey)}
+            >
+              <span style="width: 1rem; text-align: center;">
+                <span
+                  style={`font-size: 1rem; color: ${
+                    ["PASSED", "FINISHED"].includes(job.state) && job.passed
+                      ? "var(--wa-color-success-fill-loud)"
+                      : ["FAILED", "CANCELED", "WAITING_FAILED"].includes(job.state) || !job.passed
+                      ? "var(--wa-color-danger-fill-loud)"
+                      : ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED", "CANCELING"].includes(job.state)
+                      ? "var(--wa-color-warning-fill-loud)"
+                      : "var(--wa-color-text-quiet)"
+                  }`}
+                >
+                  {getJobStatusIcon(job.state, job.passed ?? false)}
+                </span>
               </span>
-            </span>
 
-            <div style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
-              <div style="display: flex; flex-direction: column; gap: var(--wa-space-3xs)">
-                {getJobTitle(job)
-                  ? (
-                    <>
-                      <span class="wa-body-s">
-                        {getJobTitle(job)}
-                      </span>
-                      {getJobCommand(job) && (
-                        <span class="wa-caption-xs wa-color-text-quiet" style="font-family: monospace">
-                          {getJobCommand(job)!.length > 60
-                            ? `${getJobCommand(job)!.substring(0, 60)}...`
-                            : getJobCommand(job)}
+              <div style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; flex-direction: column; gap: var(--wa-space-3xs)">
+                  {getJobTitle(job)
+                    ? (
+                      <>
+                        <span class="wa-body-s">
+                          {getJobTitle(job)}
                         </span>
-                      )}
-                    </>
-                  )
-                  : getJobCommand(job)
-                  ? (
-                    <span class="wa-body-s" style="font-family: monospace">
-                      {getJobCommand(job)}
-                    </span>
-                  )
-                  : (
-                    <span class="wa-body-s">
-                      Job
+                        {getJobCommand(job) && (
+                          <span class="wa-caption-xs wa-color-text-quiet" style="font-family: monospace">
+                            {getJobCommand(job)!.length > 60
+                              ? `${getJobCommand(job)!.substring(0, 60)}...`
+                              : getJobCommand(job)}
+                          </span>
+                        )}
+                      </>
+                    )
+                    : getJobCommand(job)
+                    ? (
+                      <span class="wa-body-s" style="font-family: monospace">
+                        {getJobCommand(job)}
+                      </span>
+                    )
+                    : (
+                      <span class="wa-body-s">
+                        Job
+                      </span>
+                    )}
+                </div>
+
+                <div style="display: flex; align-items: center; gap: var(--wa-space-m)">
+                  {job.exitStatus !== undefined && job.exitStatus !== null && job.exitStatus !== 0 && (
+                    <span class="wa-caption-xs" style="color: var(--wa-color-danger-text-loud)">
+                      Exit {job.exitStatus}
                     </span>
                   )}
-              </div>
-
-              <div style="display: flex; align-items: center; gap: var(--wa-space-m)">
-                {job.exitStatus !== undefined && job.exitStatus !== null && job.exitStatus !== 0 && (
-                  <span class="wa-caption-xs" style="color: var(--wa-color-danger-text-loud)">
-                    Exit {job.exitStatus}
+                  <span class="wa-caption-s wa-color-text-quiet">
+                    {formatJobTiming(job)}
                   </span>
-                )}
-                <span class="wa-caption-s wa-color-text-quiet">
-                  {formatJobTiming(job)}
-                </span>
-                <span
-                  style={`transform: ${
-                    expandedJob === job.id ? "rotate(90deg)" : "rotate(0deg)"
-                  }; transition: transform 0.2s; font-size: 0.75rem; color: var(--wa-color-text-quiet)`}
-                >
-                  ▶
-                </span>
+                  <span
+                    style={`transform: ${
+                      expandedJob === jobKey ? "rotate(90deg)" : "rotate(0deg)"
+                    }; transition: transform 0.2s; font-size: 0.75rem; color: var(--wa-color-text-quiet)`}
+                  >
+                    ▶
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {expandedJob === job.id && (
-            <div style="border-top: 1px solid var(--wa-color-border-subtle); background: var(--wa-color-neutral-fill-subtle)">
-              <div class="wa-stack wa-gap-s" style="padding: var(--wa-space-m)">
-                <div class="wa-grid wa-gap-s" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
-                  <div class="wa-stack wa-gap-3xs">
-                    <div class="wa-caption-xs wa-color-text-quiet">Started</div>
-                    <div class="wa-caption-s">
-                      {job.startedAt ? new Date(job.startedAt).toLocaleString() : "Not started"}
-                    </div>
-                  </div>
-
-                  <div class="wa-stack wa-gap-3xs">
-                    <div class="wa-caption-xs wa-color-text-quiet">Finished</div>
-                    <div class="wa-caption-s">
-                      {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : "Not finished"}
-                    </div>
-                  </div>
-
-                  <div class="wa-stack wa-gap-3xs">
-                    <div class="wa-caption-xs wa-color-text-quiet">Duration</div>
-                    <div class="wa-caption-s">
-                      {formatDuration(job.startedAt, job.finishedAt)}
-                    </div>
-                  </div>
-
-                  {job.exitStatus !== undefined && job.exitStatus !== null && (
+            {expandedJob === jobKey && (
+              <div style="border-top: 1px solid var(--wa-color-border-subtle); background: var(--wa-color-neutral-fill-subtle)">
+                <div class="wa-stack wa-gap-s" style="padding: var(--wa-space-m)">
+                  <div class="wa-grid wa-gap-s" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
                     <div class="wa-stack wa-gap-3xs">
-                      <div class="wa-caption-xs wa-color-text-quiet">Exit Status</div>
+                      <div class="wa-caption-xs wa-color-text-quiet">Started</div>
                       <div class="wa-caption-s">
-                        <span
-                          style={job.exitStatus === 0
-                            ? "color: var(--wa-color-success-text-loud); font-weight: 600"
-                            : "color: var(--wa-color-danger-text-loud); font-weight: 600"}
-                        >
-                          {job.exitStatus}
-                        </span>
+                        {job.startedAt ? new Date(job.startedAt).toLocaleString() : "Not started"}
+                      </div>
+                    </div>
+
+                    <div class="wa-stack wa-gap-3xs">
+                      <div class="wa-caption-xs wa-color-text-quiet">Finished</div>
+                      <div class="wa-caption-s">
+                        {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : "Not finished"}
+                      </div>
+                    </div>
+
+                    <div class="wa-stack wa-gap-3xs">
+                      <div class="wa-caption-xs wa-color-text-quiet">Duration</div>
+                      <div class="wa-caption-s">
+                        {formatDuration(job.startedAt, job.finishedAt)}
+                      </div>
+                    </div>
+
+                    {job.exitStatus !== undefined && job.exitStatus !== null && (
+                      <div class="wa-stack wa-gap-3xs">
+                        <div class="wa-caption-xs wa-color-text-quiet">Exit Status</div>
+                        <div class="wa-caption-s">
+                          <span
+                            style={job.exitStatus === 0
+                              ? "color: var(--wa-color-success-text-loud); font-weight: 600"
+                              : "color: var(--wa-color-danger-text-loud); font-weight: 600"}
+                          >
+                            {job.exitStatus}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {job.command && (
+                    <div class="wa-stack wa-gap-xs">
+                      <div class="wa-caption-xs wa-color-text-quiet">Command</div>
+                      <div
+                        class="wa-caption-s"
+                        style="font-family: monospace; background: white; padding: var(--wa-space-s); border-radius: var(--wa-border-radius-s); white-space: pre-wrap; border: 1px solid var(--wa-color-border-subtle)"
+                      >
+                        {job.command}
                       </div>
                     </div>
                   )}
-                </div>
 
-                {job.command && (
                   <div class="wa-stack wa-gap-xs">
-                    <div class="wa-caption-xs wa-color-text-quiet">Command</div>
-                    <div
-                      class="wa-caption-s"
-                      style="font-family: monospace; background: white; padding: var(--wa-space-s); border-radius: var(--wa-border-radius-s); white-space: pre-wrap; border: 1px solid var(--wa-color-border-subtle)"
-                    >
-                      {job.command}
-                    </div>
+                    <h5 class="wa-heading-xs">Job Logs</h5>
+                    <JobLogs
+                      jobId={job.uuid || job.id}
+                      buildNumber={buildNumber}
+                      pipelineSlug={pipelineSlug}
+                    />
                   </div>
-                )}
-
-                <div class="wa-stack wa-gap-xs">
-                  <h5 class="wa-heading-xs">Job Logs</h5>
-                  <JobLogs
-                    jobId={job.id}
-                    buildNumber={buildNumber}
-                    pipelineSlug={pipelineSlug}
-                  />
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

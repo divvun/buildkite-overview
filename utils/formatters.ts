@@ -7,28 +7,30 @@ export const BUILD_STATUS_MAP: Record<string, string> = {
   // Buildkite API uppercase formats
   "PASSED": "passed",
   "FAILED": "failed",
-  "CANCELED": "failed",
+  "CANCELED": "cancelled",
   "WAITING_FAILED": "failed",
   "RUNNING": "running",
   "SCHEDULED": "running",
   "CREATING": "running",
   "WAITING": "running",
   "BLOCKED": "running",
-  "CANCELING": "running",
+  "CANCELING": "cancelled",
   "SKIPPED": "passed",
   "NOT_RUN": "neutral",
   // Already normalized formats
   "passed": "passed",
   "failed": "failed",
   "running": "running",
+  "cancelled": "cancelled",
   "neutral": "neutral",
+  "unknown": "unknown",
 }
 
 export function normalizeStatus(status: string): string {
   return BUILD_STATUS_MAP[status] || "unknown"
 }
 
-export function getBadgeVariant(status: string): string {
+export function getBadgeVariant(status: string): "brand" | "neutral" | "success" | "warning" | "danger" {
   const normalizedStatus = normalizeStatus(status)
   switch (normalizedStatus) {
     case "passed":
@@ -37,6 +39,8 @@ export function getBadgeVariant(status: string): string {
       return "danger"
     case "running":
       return "warning"
+    case "cancelled":
+      return "neutral"
     default:
       return "neutral"
   }
@@ -51,6 +55,8 @@ export function getStatusIcon(status: string): string {
       return "circle-xmark"
     case "running":
       return "spinner"
+    case "cancelled":
+      return "circle-stop"
     default:
       return "circle"
   }
@@ -84,7 +90,7 @@ export function getConnectionIcon(state: string): string {
   }
 }
 
-export function getConnectionVariant(state: string): string {
+export function getConnectionVariant(state: string): "brand" | "neutral" | "success" | "warning" | "danger" {
   switch (state) {
     case "connected":
       return "success"

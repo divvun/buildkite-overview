@@ -1,11 +1,13 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import PipelineBuilds from "~/islands/PipelineBuilds.tsx"
-import { type AppState } from "~/utils/middleware.ts"
-import { type SessionData } from "~/utils/session.ts"
-import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { type BuildkiteBuild, buildkiteClient, GET_PIPELINE_BUILDS } from "~/utils/buildkite-client.ts"
+import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
+import { type AppState } from "~/utils/middleware.ts"
+import { withRetry } from "~/utils/retry-helper.ts"
+import { type SessionData } from "~/utils/session.ts"
+import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 
 interface PipelineDetailProps {
   session?: SessionData | null
@@ -32,15 +34,33 @@ export const handler = {
         )
       }
 
-      // Fetch builds for this pipeline
-      const fullPipelineSlug = `divvun/${pipelineSlug}`
-      const result = await buildkiteClient.query(GET_PIPELINE_BUILDS, {
-        pipelineSlug: fullPipelineSlug,
-        first: 20,
-      })
+      // Try to get builds from cache first
+      const cacheManager = getCacheManager()
+      let builds = await cacheManager.getCachedBuildsForPipeline(pipelineSlug, 20)
 
-      const builds = result.data?.pipeline?.builds?.edges?.map((edge) => edge.node) || []
-      console.log(`Fetched ${builds.length} builds for pipeline ${fullPipelineSlug}`)
+      if (builds.length === 0) {
+        // No cached builds, fetch from API
+        console.log(`No cached builds for ${pipelineSlug}, fetching from API`)
+        const fullPipelineSlug = `divvun/${pipelineSlug}`
+        const result = await withRetry(
+          async () =>
+            await buildkiteClient.query(GET_PIPELINE_BUILDS, {
+              pipelineSlug: fullPipelineSlug,
+              first: 20,
+            }).toPromise(),
+          { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },
+        )
+
+        builds = result.data?.pipeline?.builds?.edges?.map((edge) => edge.node) || []
+        console.log(`Fetched ${builds.length} builds for pipeline ${fullPipelineSlug}`)
+
+        // Cache each build
+        for (const build of builds) {
+          await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+        }
+      } else {
+        console.log(`Using ${builds.length} cached builds for pipeline ${pipelineSlug}`)
+      }
 
       return page(
         {
@@ -101,12 +121,6 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
         <header class="wa-stack wa-gap-s">
           <div class="wa-flank">
-            <wa-button variant="neutral" appearance="outlined">
-              <wa-icon slot="prefix" name="arrow-left"></wa-icon>
-              <a href="/pipelines" style="text-decoration: none; color: inherit">
-                Back to Pipelines
-              </a>
-            </wa-button>
             <div class="wa-cluster wa-gap-s">
               <wa-button
                 variant="brand"
@@ -116,10 +130,6 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
               >
                 <wa-icon slot="prefix" name="play"></wa-icon>
                 New Build
-              </wa-button>
-              <wa-button variant="brand" disabled title="Feature coming soon - sync pipeline settings with repository">
-                <wa-icon slot="prefix" name="arrow-rotate-right"></wa-icon>
-                Sync
               </wa-button>
             </div>
           </div>
