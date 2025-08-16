@@ -4,7 +4,7 @@
     "check": "deno fmt --check . && deno lint . && deno check",
     "dev": "deno run -A --watch=static/,routes/ dev.ts",
     "build": "deno run -A dev.ts build",
-    "compile": "deno compile --include static --include _fresh --include deno.json -A buildkite-overview _fresh/compiled-entry.js",
+    "compile": "deno compile --include static/ --include _fresh --include deno.jsonc -A buildkite-overview _fresh/compiled-entry.js",
     "start": "deno serve -A _fresh/server.js",
     "update": "deno run -A -r jsr:@fresh/update .",
     "gen-gql": "bash ./gen-gql.sh"

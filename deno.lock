@@ -34,6 +34,7 @@
     "jsr:@std/uuid@^1.0.7": "1.0.9",
     "npm:@awesome.me/webawesome@^3.0.0-beta.4": "3.0.0-beta.4",
     "npm:@graphql-typed-document-node/core@^3.2.0": "3.2.0_graphql@16.11.0",
+    "npm:@lit-labs/ssr-client@*": "1.1.7",
     "npm:@opentelemetry/api@^1.9.0": "1.9.0",
     "npm:@preact/signals@^2.2.1": "2.2.1_preact@10.27.0",
     "npm:@types/node@*": "22.15.15",
@@ -363,6 +364,14 @@
       "integrity": "sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==",
       "dependencies": [
         "graphql"
+      ]
+    },
+    "@lit-labs/ssr-client@1.1.7": {
+      "integrity": "sha512-VvqhY/iif3FHrlhkzEPsuX/7h/NqnfxLwVf0p8ghNIlKegRyRqgeaJevZ57s/u/LiFyKgqksRP5n+LmNvpxN+A==",
+      "dependencies": [
+        "@lit/reactive-element",
+        "lit",
+        "lit-html"
       ]
     },
     "@lit-labs/ssr-dom-shim@1.4.0": {
