@@ -1,9 +1,10 @@
 import { Context, page } from "fresh"
-import EmptyState from "~/components/EmptyState.tsx"
 import Layout from "~/components/Layout.tsx"
+import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import PipelineFilters from "~/islands/PipelineFilters.tsx"
+import PipelinesContent from "~/islands/PipelinesContent.tsx"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { getBadgeVariant, getHealthBorderStyle, getStatusIcon } from "~/utils/formatters.ts"
+import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
 import { type SessionData } from "~/utils/session.ts"
 
@@ -98,95 +99,22 @@ export default function Pipelines(props: { data: PipelinesProps }) {
               Manage and monitor all Buildkite pipelines across organizations
             </p>
           </div>
+          <AutoRefresh enabled={!!session} intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS} />
         </header>
-
-        {error && (
-          <wa-callout variant="danger">
-            <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
-            {error}
-          </wa-callout>
-        )}
 
         <PipelineFilters
           initialSearch={searchQuery}
           initialStatus={statusFilter}
         />
 
-        <div
-          class="wa-gap-m"
-          style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--wa-space-m)"
-        >
-          {pipelines.length === 0 && !error
-            ? (
-              <EmptyState
-                icon="folder-open"
-                title="No pipelines found"
-                description={searchQuery || statusFilter
-                  ? `No pipelines match your current filters. Try adjusting your search or filters.`
-                  : `No Buildkite pipelines found. Check your API configuration or create your first pipeline.`}
-                variant="neutral"
-              >
-                {(searchQuery || statusFilter) && (
-                  <wa-button appearance="outlined">
-                    <a href="/pipelines" style="text-decoration: none; color: inherit">
-                      Clear all filters
-                    </a>
-                  </wa-button>
-                )}
-              </EmptyState>
-            )
-            : pipelines.map((pipeline) => (
-              <wa-card key={pipeline.id} class="clickable-card" style={getHealthBorderStyle(pipeline.status)}>
-                <a
-                  href={`/pipelines/${pipeline.slug}`}
-                  style="text-decoration: none; color: inherit; display: block"
-                >
-                  <div class="wa-stack wa-gap-s">
-                    <div class="wa-flank">
-                      <div class="wa-stack wa-gap-3xs">
-                        <div class="wa-flank wa-gap-xs">
-                          <wa-icon
-                            name={getStatusIcon(pipeline.status)}
-                            style={`color: var(--wa-color-${getBadgeVariant(pipeline.status)}-fill-loud)`}
-                          >
-                          </wa-icon>
-                          <span class="wa-heading-s">{pipeline.name}</span>
-                        </div>
-                        <div class="wa-caption-s wa-color-text-quiet">{pipeline.repo || "No repository"}</div>
-                      </div>
-                    </div>
-
-                    <wa-badge variant={getBadgeVariant(pipeline.status)}>
-                      {pipeline.status}
-                    </wa-badge>
-                    <div class="wa-cluster wa-gap-xs" style="flex-wrap: wrap; min-height: 24px">
-                      {pipeline.tags.map((tag) => <wa-tag key={tag}>{tag}</wa-tag>)}
-                    </div>
-
-                    <wa-divider></wa-divider>
-
-                    <div class="wa-flank">
-                      <div class="wa-stack wa-gap-3xs">
-                        <div class="wa-caption-s">Build Stats</div>
-                        <div class="wa-cluster wa-gap-s">
-                          <span class="wa-caption-xs">
-                            <wa-badge variant="success">{pipeline.builds.passed}</wa-badge> passed
-                          </span>
-                          <span class="wa-caption-xs">
-                            <wa-badge variant="danger">{pipeline.builds.failed}</wa-badge> failed
-                          </span>
-                        </div>
-                      </div>
-                      <div class="wa-stack wa-gap-3xs wa-align-items-end">
-                        <div class="wa-caption-s">Last Build</div>
-                        <div class="wa-caption-xs wa-color-text-quiet">{pipeline.lastBuild}</div>
-                      </div>
-                    </div>
-                  </div>
-                </a>
-              </wa-card>
-            ))}
-        </div>
+        <PipelinesContent
+          initialData={{
+            pipelines,
+            statusFilter,
+            searchQuery,
+            error,
+          }}
+        />
       </div>
     </Layout>
   )

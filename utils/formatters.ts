@@ -156,9 +156,10 @@ export function formatTimeAgo(dateStr: string): string {
   return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`
 }
 
-export function formatFailingSince(date: Date): string {
+export function formatFailingSince(date: Date | string): string {
   const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const diffMs = now.getTime() - dateObj.getTime()
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 

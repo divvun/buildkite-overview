@@ -63,6 +63,11 @@ export function hasOrgAccess(session: SessionData, org: string): boolean {
 }
 
 export function requireDivvunOrgAccess(request: Request): SessionData {
+  // Check if BYPASS_ORG_CHECK is enabled for development
+  if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
+    return createMockSession()
+  }
+  
   const session = requireAuth(request)
   if (!hasOrgAccess(session, "divvun")) {
     throw new Response(null, {
