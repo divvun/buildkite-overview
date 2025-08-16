@@ -30,6 +30,5 @@ if (Deno.args.includes("build")) {
   }
   await builder.build()
 } else {
-  // Create symlink for dev mode
   await builder.listen(() => import("./main.ts"))
 }
