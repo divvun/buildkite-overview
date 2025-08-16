@@ -4,7 +4,7 @@ import EmptyState from "~/components/EmptyState.tsx"
 import Layout from "~/components/Layout.tsx"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import { type AppBuild, extractRunningBuildsFromPipelines, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { formatDuration, formatTimeAgo } from "~/utils/formatters.ts"
+import { formatDuration } from "~/utils/formatters.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 
@@ -183,7 +183,7 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
                             {build.repo}
                           </span>
                           <span class="wa-caption-s wa-color-text-quiet">
-                            Started {formatTimeAgo(build.lastRun)}
+                            Started {build.lastRun}
                           </span>
                         </div>
                       </div>

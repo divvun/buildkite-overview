@@ -456,7 +456,9 @@ export function extractRunningBuildsFromPipelines(pipelines: AppPipeline[]): App
   const runningBuilds: AppBuild[] = []
 
   for (const pipeline of pipelines) {
-    if (pipeline.status === "running") {
+    // Check if the latest build is actually running, not just pipeline status
+    const latestBuild = pipeline.last10Builds?.[0]
+    if (latestBuild && ["running", "scheduled", "creating", "waiting", "blocked"].includes(latestBuild.status)) {
       const build: AppBuild = {
         name: pipeline.name,
         status: "running",
@@ -465,7 +467,7 @@ export function extractRunningBuildsFromPipelines(pipelines: AppPipeline[]): App
         repo: pipeline.repo || "unknown",
         url: pipeline.url,
         pipelineSlug: pipeline.slug,
-        number: 1, // Would need individual build details for accurate number
+        number: latestBuild.buildNumber || 1,
       }
 
       runningBuilds.push(build)
