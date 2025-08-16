@@ -62,7 +62,6 @@ export const handler = {
       }
 
       const builds = result.data?.pipeline?.builds?.edges?.map((edge) => edge.node) || []
-      console.log(`Found ${builds.length} builds for ${fullPipelineSlug}:`, builds.map((b) => `#${b.number}`))
       const build = builds.find((b) => b.number === buildNumber)
       console.log(`Looking for build #${buildNumber}, found:`, build ? `#${build.number}` : "none")
 

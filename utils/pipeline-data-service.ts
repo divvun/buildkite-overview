@@ -158,24 +158,23 @@ export function countRunningPipelines(pipelines: AppPipeline[]): number {
  * Helper function to determine when a pipeline started failing
  */
 function findFailingSince(builds: BuildHistoryItem[]): Date | null {
-  // Find the first failed build in chronological order (reverse the array since it comes as last 10)
-  const chronologicalBuilds = [...builds].reverse()
+  // builds come as last 10 (most recent first), check if latest build is failed
+  const latestBuild = builds[0]
+  if (!latestBuild || latestBuild.status !== "failed") {
+    return null // Not currently failing
+  }
 
-  for (let i = 0; i < chronologicalBuilds.length; i++) {
-    const build = chronologicalBuilds[i]
-    if (build.status === "failed") {
-      // Find when this failing streak started
-      for (let j = i - 1; j >= 0; j--) {
-        const prevBuild = chronologicalBuilds[j]
-        if (prevBuild.status === "success") {
-          // The failing streak started after this successful build
-          return new Date(build.finishedAt || new Date().toISOString())
-        }
-      }
-      // If we didn't find a successful build before, use the earliest failed build
-      return new Date(build.finishedAt || new Date().toISOString())
+  // Find when this failing streak started by going backwards through recent builds
+  for (let i = 0; i < builds.length; i++) {
+    const build = builds[i]
+    if (build.status === "success") {
+      // Found a successful build, failing streak started after this
+      const failingBuild = builds[i - 1]
+      return failingBuild ? new Date(failingBuild.finishedAt || new Date().toISOString()) : null
     }
   }
 
-  return null
+  // All builds in last 10 are failed, use the oldest one we have
+  const oldestBuild = builds[builds.length - 1]
+  return new Date(oldestBuild.finishedAt || new Date().toISOString())
 }

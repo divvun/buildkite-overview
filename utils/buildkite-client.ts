@@ -123,7 +123,7 @@ export const GET_ORGANIZATION_PIPELINES: TypedDocumentNode<
             tags {
               label
             }
-            builds(last: 10) {
+            builds(first: 10) {
               edges {
                 node {
                   id
@@ -170,7 +170,7 @@ export const GET_ORGANIZATION_PIPELINES_PAGINATED: TypedDocumentNode<
             tags {
               label
             }
-            builds(last: 10) {
+            builds(first: 10) {
               edges {
                 node {
                   id
