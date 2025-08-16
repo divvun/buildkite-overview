@@ -1,6 +1,7 @@
 import { Context, page } from "fresh"
 import { State } from "~/utils.ts"
 import { generateAuthUrl } from "~/utils/auth.ts"
+import { getOptionalSession } from "~/utils/session.ts"
 
 export const config = {
   skipInheritedLayouts: true,
@@ -15,12 +16,9 @@ export const handler = {
     const url = new URL(ctx.req.url)
     const error = url.searchParams.get("error")
 
-    // If already authenticated, redirect to home
-    const sessionCookie = ctx.req.headers.get("cookie")
-      ?.split("; ")
-      .find((c) => c.startsWith("session="))
-
-    if (sessionCookie) {
+    // If already authenticated with a valid session, redirect to home
+    const session = getOptionalSession(ctx.req)
+    if (session) {
       return new Response(null, {
         status: 302,
         headers: { "Location": "/" },

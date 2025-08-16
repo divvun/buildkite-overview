@@ -79,7 +79,7 @@ export default function Pipelines(props: { data: PipelinesProps }) {
   const { session, pipelines = [], statusFilter = "", searchQuery = "", error } = props.data
 
   const breadcrumbs = [
-    { label: "All Pipelines" },
+    { label: "Pipelines" },
   ]
 
   return (

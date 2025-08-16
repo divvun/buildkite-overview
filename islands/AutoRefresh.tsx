@@ -34,23 +34,22 @@ export default function AutoRefresh({ enabled = false, intervalSeconds = 30 }: A
   }, [isEnabled, intervalSeconds])
 
   return (
-    <div class="wa-flank wa-gap-s">
+    <div class="wa-stack wa-gap-2xs wa-align-items-end">
       <wa-button
-        variant={isEnabled ? "success" : "neutral"}
+        variant={isEnabled ? "brand" : "ghost"}
         appearance="outlined"
         size="small"
         onClick={() => setIsEnabled(!isEnabled)}
+        title={`Auto-refresh ${isEnabled ? "ON" : "OFF"}`}
       >
         <wa-icon
-          slot="prefix"
-          name={isEnabled ? "pause" : "play"}
+          name={isEnabled ? "sync" : "sync-disabled"}
         />
-        Auto-refresh {isEnabled ? "ON" : "OFF"}
       </wa-button>
 
       {isEnabled && (
-        <div class="wa-caption-s wa-color-text-quiet">
-          Refreshing in {countdown}s
+        <div class="wa-caption-xs wa-color-text-quiet" style="white-space: nowrap">
+          {countdown}s
         </div>
       )}
     </div>

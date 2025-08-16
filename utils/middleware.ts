@@ -14,6 +14,34 @@ export const sessionMiddleware = define.middleware(async (ctx) => {
   return await ctx.next()
 })
 
+export const requireGlobalAuth = define.middleware(async (ctx) => {
+  // Check if global auth is required via environment variable
+  const requireAuth = Deno.env.get("REQUIRE_AUTH") === "true"
+
+  if (!requireAuth) {
+    // Global auth not required, continue normally
+    return await ctx.next()
+  }
+
+  // Skip auth check for auth routes to avoid infinite redirects
+  if (ctx.url.pathname.startsWith("/auth/")) {
+    return await ctx.next()
+  }
+
+  // Check if user has a valid session
+  const session = getOptionalSession(ctx.req)
+  if (!session) {
+    // No valid session, redirect to login
+    return new Response(null, {
+      status: 302,
+      headers: { "Location": "/auth/login" },
+    })
+  }
+
+  // Valid session exists, continue to route handler
+  return await ctx.next()
+})
+
 export function isPrivatePipeline(pipeline: { repo?: string; visibility?: string; tags?: string[] }): boolean {
   // A pipeline is private if:
   // 1. It has visibility set to "private"

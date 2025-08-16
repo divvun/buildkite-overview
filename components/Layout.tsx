@@ -99,22 +99,22 @@ export default function Layout(
           <wa-button data-toggle-nav appearance="plain" size="small">
             <wa-icon name="bars" label="Menu"></wa-icon>
           </wa-button>
-          <wa-breadcrumb style={"font-size: var(--wa-font-size-s)" as any}>
-            <wa-breadcrumb-item>
-              <a href="/">Divvun</a>
-            </wa-breadcrumb-item>
-            {breadcrumbs
-              ? (
-                breadcrumbs.map((crumb, index) => (
-                  <wa-breadcrumb-item key={index}>
-                    {crumb.href ? <a href={crumb.href}>{crumb.label}</a> : (
-                      crumb.label
-                    )}
-                  </wa-breadcrumb-item>
-                ))
-              )
-              : <wa-breadcrumb-item>{title}</wa-breadcrumb-item>}
-          </wa-breadcrumb>
+          {breadcrumbs && breadcrumbs.length > 0 && (
+            <wa-breadcrumb style={"font-size: var(--wa-font-size-s)" as any}>
+              <wa-breadcrumb-item>
+                <a href="/" title="Home">
+                  <wa-icon name="home"></wa-icon>
+                </a>
+              </wa-breadcrumb-item>
+              {breadcrumbs.map((crumb, index) => (
+                <wa-breadcrumb-item key={index}>
+                  {crumb.href ? <a href={crumb.href}>{crumb.label}</a> : (
+                    crumb.label
+                  )}
+                </wa-breadcrumb-item>
+              ))}
+            </wa-breadcrumb>
+          )}
         </div>
       </nav>
 

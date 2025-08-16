@@ -151,8 +151,22 @@ export function formatFailingSince(date: Date): string {
 export function formatLastSeen(date?: Date): string {
   if (!date) return "Never"
 
+  // Ensure we have a valid Date object
+  let validDate: Date
+  if (date instanceof Date) {
+    validDate = date
+  } else {
+    // Try to convert string to Date
+    validDate = new Date(date as any)
+  }
+
+  // Check if the date is valid
+  if (isNaN(validDate.getTime())) {
+    return "Unknown"
+  }
+
   const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
+  const diffMs = now.getTime() - validDate.getTime()
   const diffMins = Math.floor(diffMs / (1000 * 60))
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))

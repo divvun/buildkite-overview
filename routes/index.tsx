@@ -6,15 +6,12 @@ import { type AppState } from "~/utils/middleware.ts"
 import { type SessionData } from "~/utils/session.ts"
 import {
   type AgentMetrics,
-  type AppBuild,
   type BuildHistoryItem,
   type FailingPipeline,
   fetchAgentMetrics,
-  fetchAllPipelines,
-  fetchFailingPipelines,
-  fetchRecentBuilds,
 } from "~/utils/buildkite-data.ts"
-import { formatDurationSeconds, formatFailingSince, normalizeStatus } from "~/utils/formatters.ts"
+import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
+import { formatDurationSeconds, formatFailingSince } from "~/utils/formatters.ts"
 import EmptyState from "~/components/EmptyState.tsx"
 
 interface HomeProps {
@@ -31,37 +28,23 @@ export const handler = {
     try {
       console.log("Fetching dashboard data...")
 
-      // Fetch all required data in parallel
-      const [allPipelines, failingPipelines, agentMetrics, allRecentBuilds] = await Promise.all([
-        fetchAllPipelines(),
-        fetchFailingPipelines(),
+      // Fetch all dashboard data with a single API call (uses caching)
+      const [dashboardData, agentMetrics] = await Promise.all([
+        fetchDashboardData(),
         fetchAgentMetrics(),
-        fetchRecentBuilds(50), // Keep for running pipelines count
       ])
 
-      // Calculate dashboard statistics
-      const totalPipelines = allPipelines.length
-
-      // Count unique pipelines with running builds, not just running builds
-      const runningBuildPipelineSlugs = new Set(
-        allRecentBuilds
-          .filter((build: AppBuild) => normalizeStatus(build.status) === "running")
-          .map((build: AppBuild) => build.pipelineSlug)
-          .filter(Boolean),
-      )
-      const runningPipelines = runningBuildPipelineSlugs.size
-
       console.log(
-        `Dashboard stats: ${totalPipelines} total pipelines, ${failingPipelines.length} failing, ${runningPipelines} pipelines with running builds`,
+        `Dashboard stats: ${dashboardData.pipelines.length} total pipelines, ${dashboardData.failingPipelines.length} failing, ${dashboardData.runningPipelinesCount} pipelines with running builds`,
       )
 
       return page(
         {
           session: ctx.state.session,
-          totalPipelines,
-          runningPipelines,
+          totalPipelines: dashboardData.pipelines.length,
+          runningPipelines: dashboardData.runningPipelinesCount,
           agentMetrics,
-          failingPipelines,
+          failingPipelines: dashboardData.failingPipelines,
         } satisfies HomeProps,
       )
     } catch (error) {
@@ -85,9 +68,7 @@ export const handler = {
 export default function Home(props: { data: HomeProps; state: AppState }) {
   const { session, totalPipelines, runningPipelines, agentMetrics, failingPipelines, error } = props.data
 
-  const breadcrumbs = [
-    { label: "Overview" },
-  ]
+  const breadcrumbs = null
 
   return (
     <Layout
@@ -97,17 +78,15 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
       breadcrumbs={breadcrumbs}
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
-        <header>
-          <h1 class="wa-heading-l">Build Overview</h1>
-          <p class="wa-body-m wa-color-text-quiet">
-            Monitor the status of all Divvun project builds across GitHub organizations
-          </p>
-        </header>
-
-        <div class="wa-flank" style="max-width: 1000px">
-          <div></div>
+        <header style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--wa-space-m)">
+          <div>
+            <h1 class="wa-heading-l">Build Overview</h1>
+            <p class="wa-body-m wa-color-text-quiet">
+              Monitor the status of all Divvun project builds across GitHub organizations
+            </p>
+          </div>
           <AutoRefresh enabled={!!session} intervalSeconds={60} />
-        </div>
+        </header>
 
         {error && (
           <wa-callout variant="danger">
@@ -180,12 +159,17 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
                       style="text-decoration: none; color: inherit; display: block"
                     >
                       <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--wa-space-m)">
-                        <div class="wa-stack wa-gap-3xs">
-                          <div class="wa-flank wa-gap-s">
-                            <span class="wa-heading-s">{pipeline.name}</span>
+                        <div class="wa-stack wa-gap-3xs" style="min-width: 0; flex: 1">
+                          <div style="display: grid; grid-template-columns: 1fr auto; gap: var(--wa-space-s); align-items: center">
+                            <span
+                              class="wa-heading-s"
+                              style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+                            >
+                              {pipeline.name}
+                            </span>
                             <wa-badge variant="danger">
                               <wa-icon slot="prefix" name="triangle-exclamation"></wa-icon>
-                              Failed
+                              FAILED
                             </wa-badge>
                           </div>
                           <div class="wa-caption-s wa-color-text-quiet">

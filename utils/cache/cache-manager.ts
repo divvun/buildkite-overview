@@ -362,16 +362,24 @@ export class CacheManager {
       repo = (sshMatch || httpsMatch)?.[1]
     }
 
+    // Map actual builds to BuildHistoryItem format
+    const buildHistory = builds.map((build: any) => ({
+      status: this.normalizeStatus(build.state) as "success" | "failed" | "running" | "cancelled",
+      buildNumber: build.number,
+      finishedAt: build.finishedAt || build.createdAt,
+    }))
+
     return {
       id: pipeline.id,
       name: pipeline.name,
       slug: pipeline.slug,
       repo,
-      status: this.normalizeStatus(latestBuild?.state || "NOT_RUN"),
+      status: this.determinePipelineStatus(builds),
       lastBuild,
       tags: pipeline.tags?.map((tag: any) => tag.label) || [],
       visibility: pipeline.visibility.toLowerCase(),
       builds: buildStats,
+      buildHistory,
       url: pipeline.url,
     }
   }
@@ -387,6 +395,7 @@ export class CacheManager {
       version: agent.version,
       ipAddress: agent.ipAddress,
       organization: orgSlug,
+      queueKey: agent.clusterQueue?.key,
       metadata: undefined,
       currentJob: undefined,
       createdAt: new Date(agent.createdAt),
@@ -411,6 +420,42 @@ export class CacheManager {
       "NOT_RUN": "unknown",
     }
     return statusMap[status] || status.toLowerCase()
+  }
+
+  private determinePipelineStatus(builds: any[]): string {
+    if (!builds || builds.length === 0) {
+      return "unknown"
+    }
+
+    const latestBuild = builds[0]
+
+    // If the latest build is running, the pipeline is running
+    if (latestBuild && ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED"].includes(latestBuild.state)) {
+      return "running"
+    }
+
+    // If the latest build is cancelled, the pipeline is cancelled
+    if (latestBuild && ["CANCELED", "CANCELING"].includes(latestBuild.state)) {
+      return "cancelled"
+    }
+
+    // Look at recent builds to determine failing vs passing pattern
+    // Consider the last 3 builds to determine the pipeline health trend
+    const recentBuilds = builds.slice(0, 3)
+    const failedBuilds = recentBuilds.filter((build) => ["FAILED", "WAITING_FAILED"].includes(build.state))
+    const passedBuilds = recentBuilds.filter((build) => build.state === "PASSED")
+
+    // If the latest build failed, or if 2+ of the last 3 builds failed, mark as failing
+    if (latestBuild && ["FAILED", "WAITING_FAILED"].includes(latestBuild.state)) {
+      return "failed"
+    } else if (failedBuilds.length >= 2) {
+      return "failed"
+    } else if (passedBuilds.length > 0) {
+      return "passed"
+    }
+
+    // Default to the normalized latest build status
+    return this.normalizeStatus(latestBuild?.state || "NOT_RUN")
   }
 
   // Get cache statistics

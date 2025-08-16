@@ -315,6 +315,9 @@ export interface BuildkiteAgent {
   createdAt: string
   connectedAt?: string
   disconnectedAt?: string
+  clusterQueue?: {
+    key: string
+  }
 }
 
 export const GET_ORGANIZATION_AGENTS: TypedDocumentNode<
@@ -339,6 +342,70 @@ export const GET_ORGANIZATION_AGENTS: TypedDocumentNode<
             createdAt
             connectedAt
             disconnectedAt
+            clusterQueue {
+              key
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+export const GET_ORGANIZATION_CLUSTERS_AND_METRICS: TypedDocumentNode<
+  {
+    organization: {
+      clusters: {
+        edges: Array<{
+          node: {
+            id: string
+            uuid: string
+            name: string
+            queues: {
+              edges: Array<{
+                node: {
+                  id: string
+                  uuid: string
+                  key: string
+                  metrics: {
+                    connectedAgentsCount: number
+                    runningJobsCount: number
+                    timestamp: string
+                    waitingJobsCount: number
+                  }
+                }
+              }>
+            }
+          }
+        }>
+      }
+    }
+  },
+  { slug: string }
+> = gql`
+  query GetOrganizationClustersAndMetrics($slug: ID!) {
+    organization(slug: $slug) {
+      clusters(first: 10) {
+        edges {
+          node {
+            id
+            uuid
+            name
+            queues(first: 10) {
+              edges {
+                node {
+                  id
+                  uuid
+                  key
+                  metrics {
+                    connectedAgentsCount
+                    runningJobsCount
+                    timestamp
+                    waitingJobsCount
+                  }
+                }
+              }
+            }
           }
         }
       }

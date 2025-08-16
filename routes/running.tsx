@@ -4,7 +4,7 @@ import Layout from "~/components/Layout.tsx"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import { type AppState } from "~/utils/middleware.ts"
 import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
-import { type AppBuild, fetchRunningBuilds } from "~/utils/buildkite-data.ts"
+import { type AppBuild, extractRunningBuildsFromPipelines, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { formatDuration, formatTimeAgo } from "~/utils/formatters.ts"
 import EmptyState from "~/components/EmptyState.tsx"
 
@@ -16,40 +16,43 @@ interface RunningProps {
 
 export const handler = {
   async GET(ctx: Context<AppState>) {
-    // Require authentication and divvun organization membership
-    const session = requireDivvunOrgAccess(ctx.req)
-
     try {
-      console.log("Fetching running builds data...")
+      // Require authentication and divvun organization membership
+      const session = requireDivvunOrgAccess(ctx.req)
 
-      let runningBuilds = await fetchRunningBuilds()
+      try {
+        console.log("Fetching running builds data...")
 
-      // Sort by most recently started
-      runningBuilds.sort((a, b) => {
-        if (a.lastRun === "now" && b.lastRun !== "now") return -1
-        if (b.lastRun === "now" && a.lastRun !== "now") return 1
-        return 0
-      })
+        // Fetch all pipelines once and extract running builds (no duplicate API calls)
+        const allPipelines = await fetchAllPipelines()
+        const runningBuilds = extractRunningBuildsFromPipelines(allPipelines)
 
-      console.log(`Found ${runningBuilds.length} running builds`)
+        console.log(`Found ${runningBuilds.length} running builds`)
 
-      return page(
-        {
-          session,
-          runningBuilds,
-        } satisfies RunningProps,
-      )
+        return page(
+          {
+            session,
+            runningBuilds,
+          } satisfies RunningProps,
+        )
+      } catch (error) {
+        console.error("Error fetching running builds data:", error)
+
+        return page(
+          {
+            session,
+            runningBuilds: [],
+            error:
+              "Unable to fetch currently running builds. This may be a temporary network issue or API rate limiting. Please wait a moment and try again.",
+          } satisfies RunningProps,
+        )
+      }
     } catch (error) {
-      console.error("Error fetching running builds data:", error)
-
-      return page(
-        {
-          session,
-          runningBuilds: [],
-          error:
-            "Unable to fetch currently running builds. This may be a temporary network issue or API rate limiting. Please wait a moment and try again.",
-        } satisfies RunningProps,
-      )
+      // Handle authentication errors (thrown as Response objects)
+      if (error instanceof Response) {
+        return error // Return the redirect response
+      }
+      throw error // Re-throw actual errors
     }
   },
 }
@@ -58,8 +61,7 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
   const { session, runningBuilds, error } = props.data
 
   const breadcrumbs = [
-    { label: "Overview", href: "/" },
-    { label: "Running Builds" },
+    { label: "Running" },
   ]
 
   // No organization grouping needed
@@ -82,12 +84,8 @@ export default function Running(props: { data: RunningProps; state: AppState }) 
         <div class="wa-flank" style="max-width: 1000px">
           <div class="wa-cluster wa-gap-m">
             <div class="wa-stack wa-gap-3xs">
-              <div class="wa-body-s wa-color-text-quiet">Running Builds</div>
+              <div class="wa-body-s wa-color-text-quiet">Active Builds</div>
               <div class="wa-heading-s">{runningBuilds.length}</div>
-            </div>
-            <div class="wa-stack wa-gap-3xs">
-              <div class="wa-body-s wa-color-text-quiet">Organizations</div>
-              <div class="wa-heading-s">{organizations.length}</div>
             </div>
           </div>
           <AutoRefresh enabled intervalSeconds={30} />
