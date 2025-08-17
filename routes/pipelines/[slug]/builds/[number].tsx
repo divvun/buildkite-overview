@@ -30,7 +30,7 @@ export const handler = {
       return page(
         {
           session: ctx.state.session,
-          error: "Invalid build number",
+          error: ctx.state.t("invalid-build-number"),
           pipelineSlug,
         } satisfies BuildDetailProps,
       )
@@ -69,9 +69,11 @@ export const handler = {
         return page(
           {
             session: ctx.state.session,
-            error: `Build #${buildNumber} not found in pipeline "${pipelineSlug}". Available builds: ${
-              builds.map((b) => `#${b.number}`).join(", ") || "none"
-            }`,
+            error: ctx.state.t("build-not-found-in-pipeline", {
+              number: buildNumber,
+              pipeline: pipelineSlug,
+              builds: builds.map((b) => `#${b.number}`).join(", ") || "none",
+            }),
             pipelineSlug,
           } satisfies BuildDetailProps,
         )
@@ -117,16 +119,20 @@ export const handler = {
   },
 }
 
-export default function BuildDetail(props: { data: BuildDetailProps }) {
+export default function BuildDetail(props: { data: BuildDetailProps; state: AppState }) {
   const { session, build, jobs = [], pipelineSlug, error } = props.data
 
   if (error || !build) {
     return (
-      <Layout title="Build Not Found" currentPath={`/pipelines/${pipelineSlug}`} session={session}>
+      <Layout
+        title={props.state.t("build-not-found-title")}
+        currentPath={`/pipelines/${pipelineSlug}`}
+        session={session}
+      >
         <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
           <wa-callout variant="danger">
             <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
-            {error || "Build not found"}
+            {error || props.state.t("build-not-found")}
           </wa-callout>
 
           <wa-button>
@@ -141,14 +147,14 @@ export default function BuildDetail(props: { data: BuildDetailProps }) {
   }
 
   const breadcrumbs = [
-    { label: "Pipelines", href: "/pipelines" },
+    { label: props.state.t("pipelines-breadcrumb"), href: "/pipelines" },
     { label: build.pipeline.name, href: `/pipelines/${pipelineSlug}` },
-    { label: `Build #${build.number}` },
+    { label: props.state.t("build-number", { number: build.number }) },
   ]
 
   return (
     <Layout
-      title={`Build #${build.number} - ${build.pipeline.name}`}
+      title={props.state.t("build-page-title", { number: build.number, pipeline: build.pipeline.name })}
       currentPath={`/pipelines/${pipelineSlug}`}
       session={session}
       breadcrumbs={breadcrumbs}
@@ -187,7 +193,7 @@ export default function BuildDetail(props: { data: BuildDetailProps }) {
                 style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud); font-size: 1.5rem` as any}
               >
               </wa-icon>
-              <h1 class="wa-heading-l">Build #{build.number}</h1>
+              <h1 class="wa-heading-l">{props.state.t("build-number", { number: build.number })}</h1>
               <wa-badge variant={getBadgeVariant(build.state)}>
                 {build.state}
               </wa-badge>
@@ -195,10 +201,11 @@ export default function BuildDetail(props: { data: BuildDetailProps }) {
 
             <div class="wa-cluster wa-gap-l">
               <div class="wa-caption-m wa-color-text-quiet">
-                Duration: {formatDuration(build.startedAt, build.finishedAt)}
+                {props.state.t("duration-label")}: {formatDuration(build.startedAt, build.finishedAt)}
               </div>
               <div class="wa-caption-m wa-color-text-quiet">
-                Started: {build.startedAt ? formatTimeAgo(build.startedAt) : "Not started"}
+                {props.state.t("started-label-colon")}:{" "}
+                {build.startedAt ? formatTimeAgo(build.startedAt) : props.state.t("not-started")}
               </div>
             </div>
           </div>
@@ -228,7 +235,7 @@ export default function BuildDetail(props: { data: BuildDetailProps }) {
         </header>
         <wa-divider></wa-divider>
         <section>
-          <h2 class="wa-heading-m">Jobs</h2>
+          <h2 class="wa-heading-m">{props.state.t("jobs-heading")}</h2>
           <BuildJobs
             buildId={build.id}
             buildNumber={build.number}

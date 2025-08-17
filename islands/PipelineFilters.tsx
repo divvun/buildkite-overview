@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface PipelineFiltersProps {
   initialSearch?: string
@@ -6,6 +7,7 @@ interface PipelineFiltersProps {
 }
 
 export default function PipelineFilters({ initialSearch = "", initialStatus = "" }: PipelineFiltersProps) {
+  const { t } = useLocalization()
   const [search, setSearch] = useState(initialSearch)
   const [status, setStatus] = useState(initialStatus)
 
@@ -54,7 +56,7 @@ export default function PipelineFilters({ initialSearch = "", initialStatus = ""
       >
         <wa-input
           name="search"
-          placeholder="Filter pipelines..."
+          placeholder={t("filter-pipelines-placeholder")}
           style="min-width: 300px"
           value={search}
           onInput={(e: Event) => setSearch((e.target as HTMLInputElement).value)}
@@ -65,17 +67,17 @@ export default function PipelineFilters({ initialSearch = "", initialStatus = ""
       </form>
 
       <wa-select
-        placeholder="Status"
+        placeholder={t("status-placeholder")}
         value={status}
         onChange={handleStatusChange}
       >
-        <wa-option value="">All Status</wa-option>
-        <wa-option value="passed">Passed</wa-option>
-        <wa-option value="failed">Failed</wa-option>
-        <wa-option value="running">Running</wa-option>
-        <wa-option value="cancelled">Cancelled</wa-option>
-        <wa-option value="neutral">Neutral</wa-option>
-        <wa-option value="unknown">Unknown</wa-option>
+        <wa-option value="">{t("all-status")}</wa-option>
+        <wa-option value="passed">{t("status-passed")}</wa-option>
+        <wa-option value="failed">{t("status-failed")}</wa-option>
+        <wa-option value="running">{t("status-running")}</wa-option>
+        <wa-option value="cancelled">{t("status-cancelled")}</wa-option>
+        <wa-option value="neutral">{t("status-neutral")}</wa-option>
+        <wa-option value="unknown">{t("status-unknown")}</wa-option>
       </wa-select>
     </div>
   )

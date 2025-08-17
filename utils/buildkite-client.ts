@@ -3,6 +3,10 @@ import { createClient, fetchExchange } from "@urql/preact"
 import { gql } from "graphql-tag"
 import { $, query } from "./gql/buildkite.ts"
 
+function bkKey() {
+  return typeof Deno !== "undefined" ? Deno.env.get("BUILDKITE_API_KEY") : ""
+}
+
 // Only access Deno on the server side
 const BUILDKITE_API_ENDPOINT = "https://graphql.buildkite.com/v1"
 
@@ -11,7 +15,7 @@ export const buildkiteClient = createClient({
   exchanges: [fetchExchange],
   fetchOptions: {
     headers: {
-      "Authorization": `Bearer ${typeof Deno !== "undefined" ? Deno.env.get("BUILDKITE_API_KEY") : ""}`,
+      "Authorization": `Bearer ${bkKey()}`,
       "Content-Type": "application/json",
     },
   },
@@ -496,10 +500,6 @@ const BUILDKITE_REST_ENDPOINT = "https://api.buildkite.com/v2"
 
 // REST API client for fetching builds by state
 export async function fetchBuildsByState(orgSlug: string, states: string[]): Promise<BuildkiteBuildRest[]> {
-  if (!BUILDKITE_API_KEY) {
-    throw new Error("BUILDKITE_API_KEY environment variable is required")
-  }
-
   const stateParams = states.map((state) => `state[]=${encodeURIComponent(state)}`).join("&")
   const url =
     `${BUILDKITE_REST_ENDPOINT}/organizations/${orgSlug}/builds?${stateParams}&include_retried_jobs=false&per_page=100`
@@ -509,7 +509,7 @@ export async function fetchBuildsByState(orgSlug: string, states: string[]): Pro
   try {
     const response = await fetch(url, {
       headers: {
-        "Authorization": `Bearer ${BUILDKITE_API_KEY}`,
+        "Authorization": `Bearer ${bkKey()}`,
         "Accept": "application/json",
       },
     })

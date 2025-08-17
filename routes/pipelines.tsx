@@ -1,10 +1,8 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
-import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import PipelineFilters from "~/islands/PipelineFilters.tsx"
 import PipelinesContent from "~/islands/PipelinesContent.tsx"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
 import { type SessionData } from "~/utils/session.ts"
 
@@ -56,6 +54,9 @@ export const handler = {
         }, search: ${searchQuery || "none"}), ${runningCount} running`,
       )
 
+      // Set the page title
+      ctx.state.title = ctx.state.t("pipelines-title")
+
       return page(
         {
           session: ctx.state.session,
@@ -68,6 +69,9 @@ export const handler = {
     } catch (error) {
       console.error("Error fetching pipelines:", error)
 
+      // Set the page title
+      ctx.state.title = ctx.state.t("pipelines-title")
+
       return page(
         {
           session: ctx.state.session,
@@ -75,40 +79,35 @@ export const handler = {
           statusFilter: "",
           searchQuery: "",
           runningPipelines: 0,
-          error:
-            "Unable to load pipelines from Buildkite. This usually indicates an authentication issue. Please verify your BUILDKITE_API_KEY environment variable is set correctly and has the necessary permissions.",
+          error: ctx.state.t("pipeline-load-error"),
         } satisfies PipelinesProps,
       )
     }
   },
 }
 
-export default function Pipelines(props: { data: PipelinesProps }) {
+export default function Pipelines(props: { data: PipelinesProps; state: AppState }) {
   const { session, pipelines = [], statusFilter = "", searchQuery = "", runningPipelines = 0, error } = props.data
 
   const breadcrumbs = [
-    { label: "Pipelines" },
+    { label: props.state.t("pipelines-breadcrumb") },
   ]
 
   return (
     <Layout
-      title="All Pipelines"
+      title={props.state.t("pipelines-title")}
       currentPath="/pipelines"
       session={session}
       breadcrumbs={breadcrumbs}
+      t={props.state.t}
+      state={props.state}
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
-        <header class="wa-flank">
-          <div>
-            <h1 class="wa-heading-l">All Pipelines</h1>
-            <p class="wa-body-m wa-color-text-quiet">
-              Manage and monitor all Buildkite pipelines across organizations
-            </p>
-          </div>
-          <AutoRefresh
-            enabled
-            intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS}
-          />
+        <header>
+          <h1 class="wa-heading-l">{props.state.t("pipelines-title")}</h1>
+          <p class="wa-body-m wa-color-text-quiet">
+            {props.state.t("pipelines-description")}
+          </p>
         </header>
 
         <PipelineFilters

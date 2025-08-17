@@ -1,5 +1,6 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type QueueBuild, type QueueJob, type QueueStatus } from "~/utils/buildkite-data.ts"
@@ -13,8 +14,10 @@ interface QueuesContentProps {
 }
 
 export default function QueuesContent({}: QueuesContentProps) {
+  const { t } = useLocalization()
   const [data, setData] = useState<QueuesData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -67,7 +70,7 @@ export default function QueuesContent({}: QueuesContentProps) {
     return (
       <wa-callout variant="danger">
         <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
-        Failed to load queues data
+        {t("failed-to-load-queues")}
       </wa-callout>
     )
   }
@@ -85,19 +88,19 @@ export default function QueuesContent({}: QueuesContentProps) {
       <div class="wa-flank">
         <div class="wa-cluster wa-gap-m">
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Active Queues</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("active-queues")}</div>
             <div class="wa-heading-s">{totalQueues}</div>
           </div>
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Running Jobs</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("running-jobs")}</div>
             <div class="wa-heading-s">{totalRunningJobs}</div>
           </div>
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Queued Jobs</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("queued-jobs")}</div>
             <div class="wa-heading-s">{totalQueuedJobs}</div>
           </div>
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Available Agents</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("available-agents")}</div>
             <div class="wa-heading-s">{totalAvailableAgents}</div>
           </div>
         </div>
@@ -113,7 +116,7 @@ export default function QueuesContent({}: QueuesContentProps) {
       {/* Queue Overview */}
       <wa-card>
         <div style="padding: var(--wa-space-m)">
-          <h3 class="wa-heading-s" style="margin-bottom: var(--wa-space-s)">Queue Overview</h3>
+          <h3 class="wa-heading-s" style="margin-bottom: var(--wa-space-s)">{t("queue-overview")}</h3>
           {queueStatus.length > 0
             ? (
               <div class="wa-grid wa-gap-s" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
@@ -121,33 +124,39 @@ export default function QueuesContent({}: QueuesContentProps) {
                   <div key={queue.queueKey} class="wa-stack wa-gap-3xs">
                     <div class="wa-flank wa-gap-s">
                       <span class="wa-body-s wa-font-weight-semibold">
-                        {queue.queueKey === "default" ? "Default" : queue.queueKey}
+                        {queue.queueKey === "default" ? t("default-queue") : queue.queueKey}
                       </span>
                       <wa-badge variant={queue.availableAgents > 0 ? "success" : "warning"}>
-                        {queue.availableAgents}/{queue.connectedAgents} available
+                        {t("available-agents-ratio", {
+                          available: queue.availableAgents,
+                          total: queue.connectedAgents,
+                        })}
                       </wa-badge>
                     </div>
                     <div class="wa-cluster wa-gap-s">
                       {queue.runningJobs.length > 0 && (
                         <span class="wa-caption-s wa-color-text-quiet">
-                          🏃 {queue.runningJobs.length} running
+                          {t("running-count", { count: queue.runningJobs.length })}
                         </span>
                       )}
                       {queue.scheduledJobs.length > 0 && (
                         <span class="wa-caption-s wa-color-text-quiet">
-                          ⏳ {queue.scheduledJobs.length} queued
+                          {t("queued-count", { count: queue.scheduledJobs.length })}
                         </span>
                       )}
                       {queue.runningJobs.length === 0 && queue.scheduledJobs.length === 0 && (
                         <span class="wa-caption-s wa-color-text-quiet">
-                          💤 idle
+                          {t("idle-status")}
                         </span>
                       )}
                     </div>
                     {queue.scheduledJobs.length > 0 && (
                       <div class="wa-caption-xs wa-color-text-quiet">
-                        Next: {queue.scheduledJobs.slice(0, 2).map((job: QueueJob) => job.pipelineName).join(", ")}
-                        {queue.scheduledJobs.length > 2 && ` +${queue.scheduledJobs.length - 2} more`}
+                        {t("next-label", {
+                          jobs: queue.scheduledJobs.slice(0, 2).map((job: QueueJob) => job.pipelineName).join(", "),
+                        })}
+                        {queue.scheduledJobs.length > 2 &&
+                          ` ${t("more-builds", { count: queue.scheduledJobs.length - 2 })}`}
                       </div>
                     )}
                   </div>
@@ -157,11 +166,11 @@ export default function QueuesContent({}: QueuesContentProps) {
             : (
               <div class="wa-stack wa-gap-s">
                 <div class="wa-flank wa-gap-s">
-                  <span class="wa-body-s wa-color-text-quiet">💤 All queues are idle</span>
-                  <wa-badge variant="success">No builds pending</wa-badge>
+                  <span class="wa-body-s wa-color-text-quiet">{t("queues-idle-status")}</span>
+                  <wa-badge variant="success">{t("no-builds-pending")}</wa-badge>
                 </div>
                 <p class="wa-caption-s wa-color-text-quiet">
-                  No builds are currently scheduled or running across any queues
+                  {t("all-queues-idle-description")}
                 </p>
               </div>
             )}
@@ -172,14 +181,18 @@ export default function QueuesContent({}: QueuesContentProps) {
       {queueStatus.length > 0 && (
         <wa-card>
           <div style="padding: var(--wa-space-m)">
-            <h3 class="wa-heading-s" style="margin-bottom: var(--wa-space-s)">Queue Details</h3>
+            <h3 class="wa-heading-s" style="margin-bottom: var(--wa-space-s)">{t("queue-details")}</h3>
             <div class="wa-stack wa-gap-m">
               {queueStatus
                 .filter((queue) => queue.scheduledJobs.length > 0)
                 .map((queue) => (
                   <wa-details
                     key={queue.queueKey}
-                    summary={`📋 ${queue.queueKey} queue (${queue.scheduledBuilds.length} builds, ${queue.scheduledJobs.length} jobs waiting)`}
+                    summary={t("queue-summary", {
+                      queue: queue.queueKey,
+                      builds: queue.scheduledBuilds.length,
+                      jobs: queue.scheduledJobs.length,
+                    })}
                   >
                     <div style="margin-top: var(--wa-space-s)">
                       <div class="wa-stack wa-gap-m">
@@ -192,26 +205,26 @@ export default function QueuesContent({}: QueuesContentProps) {
                             <div class="wa-flank wa-gap-s">
                               <div class="wa-stack wa-gap-3xs">
                                 <span class="wa-body-s wa-font-weight-semibold">
-                                  Build #{build.buildNumber} - {build.pipelineName}
+                                  {t("build-number", { number: build.buildNumber })} - {build.pipelineName}
                                 </span>
                                 <span class="wa-caption-s wa-color-text-quiet">
                                   {build.repo && `${build.repo} • `}
-                                  Scheduled: {new Date(build.scheduledAt).toLocaleString()}
+                                  {t("scheduled-label")} {new Date(build.scheduledAt).toLocaleString()}
                                 </span>
                               </div>
                               <div class="wa-cluster wa-gap-s">
                                 <wa-badge variant="warning">
-                                  {build.jobs.length} job{build.jobs.length !== 1 ? "s" : ""}
+                                  {t("job-count", { count: build.jobs.length })}
                                 </wa-badge>
                                 <a href={build.buildUrl} target="_blank" rel="noopener" class="wa-caption-s">
-                                  View build ↗
+                                  {t("view-build-external")}
                                 </a>
                               </div>
                             </div>
                             {build.jobs.length > 0 && (
                               <div class="wa-stack wa-gap-3xs">
                                 <span class="wa-caption-s wa-color-text-quiet wa-font-weight-semibold">
-                                  Jobs in this build:
+                                  {t("jobs-in-build")}
                                 </span>
                                 <div class="wa-stack wa-gap-2xs">
                                   {build.jobs.map((job: QueueJob) => (
@@ -221,14 +234,14 @@ export default function QueuesContent({}: QueuesContentProps) {
                                       style="padding: var(--wa-space-s); background: var(--wa-color-neutral-fill); border-radius: var(--wa-border-radius-xs)"
                                     >
                                       <span class="wa-caption-s">
-                                        Job #{job.id.slice(-8)} •{" "}
-                                        {job.agentQueryRules?.join(", ") || "No specific requirements"}
+                                        {t("job-number", { id: job.id.slice(-8) })} •{" "}
+                                        {job.agentQueryRules?.join(", ") || t("no-requirements")}
                                       </span>
                                       <a
                                         href={`/pipelines/${job.pipelineSlug}/builds/${job.buildNumber}`}
                                         class="wa-caption-xs"
                                       >
-                                        View build →
+                                        {t("view-build-details")}
                                       </a>
                                     </div>
                                   ))}
@@ -246,8 +259,8 @@ export default function QueuesContent({}: QueuesContentProps) {
             {queueStatus.filter((queue) => queue.scheduledJobs.length > 0).length === 0 && (
               <EmptyState
                 icon="check-circle"
-                title="No queued builds! 🎉"
-                description="All queues are clear. Check back later for new activity."
+                title={t("no-queued-builds-title")}
+                description={t("no-queued-builds-desc")}
                 variant="success"
                 maxWidth="600px"
               />
@@ -260,8 +273,8 @@ export default function QueuesContent({}: QueuesContentProps) {
       {queueStatus.length === 0 && !error && !hasInitiallyLoaded && (
         <EmptyState
           icon="loader"
-          title="Loading queue data..."
-          description="Gathering information about build queues and agent availability."
+          title={t("loading-queue-data-title")}
+          description={t("loading-queue-data-desc")}
           variant="neutral"
           maxWidth="600px"
         />
@@ -271,8 +284,8 @@ export default function QueuesContent({}: QueuesContentProps) {
       {queueStatus.length === 0 && !error && hasInitiallyLoaded && (
         <EmptyState
           icon="calendar-check"
-          title="All quiet on the build front! 🎉"
-          description="No builds are currently scheduled or running across any queues. This is a good thing - all your pipelines are idle and ready for new work!"
+          title={t("all-quiet-title")}
+          description={t("all-quiet-desc")}
           variant="success"
           maxWidth="600px"
         />
@@ -280,7 +293,7 @@ export default function QueuesContent({}: QueuesContentProps) {
 
       {isLoading && (
         <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
-          Refreshing...
+          {t("refreshing")}
         </div>
       )}
     </>

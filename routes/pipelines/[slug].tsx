@@ -29,7 +29,7 @@ export const handler = {
         return page(
           {
             session: ctx.state.session,
-            error: `Pipeline "${pipelineSlug}" not found`,
+            error: ctx.state.t("pipeline-not-found"),
           } satisfies PipelineDetailProps,
         )
       }
@@ -75,15 +75,14 @@ export const handler = {
       return page(
         {
           session: ctx.state.session,
-          error:
-            "Unable to load pipeline information. The pipeline may not exist, or you may not have permission to view it. Please check the pipeline name and your access permissions.",
+          error: ctx.state.t("pipeline-load-error"),
         } satisfies PipelineDetailProps,
       )
     }
   },
 }
 
-export default function PipelineDetail(props: { data: PipelineDetailProps }) {
+export default function PipelineDetail(props: { data: PipelineDetailProps; state: AppState }) {
   const { session, pipeline, builds = [], error } = props.data
 
   // Get the most recent build for display
@@ -91,17 +90,23 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
 
   if (error || !pipeline) {
     return (
-      <Layout title="Pipeline Not Found" currentPath="/pipelines" session={session}>
+      <Layout
+        title={props.state.t("pipeline-not-found-title")}
+        currentPath="/pipelines"
+        session={session}
+        t={props.state.t}
+        state={props.state}
+      >
         <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
           <wa-callout variant="danger">
             <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
-            {error || "Pipeline not found"}
+            {error || props.state.t("pipeline-not-found")}
           </wa-callout>
 
           <wa-button>
             <wa-icon slot="prefix" name="arrow-left"></wa-icon>
             <a href="/pipelines" style="text-decoration: none; color: inherit">
-              Back to Pipelines
+              {props.state.t("back-to-pipelines")}
             </a>
           </wa-button>
         </div>
@@ -110,13 +115,13 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
   }
 
   const breadcrumbs = [
-    { label: "Pipelines", href: "/pipelines" },
+    { label: props.state.t("pipelines-breadcrumb"), href: "/pipelines" },
     { label: pipeline.name },
   ]
 
   return (
     <Layout
-      title={`${pipeline.name} - Pipeline`}
+      title={props.state.t("pipeline-page-title", { name: pipeline.name })}
       currentPath="/pipelines"
       session={session}
       breadcrumbs={breadcrumbs}
@@ -129,10 +134,10 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
                 variant="brand"
                 appearance="outlined"
                 disabled
-                title="Feature coming soon - trigger new builds from the interface"
+                title={props.state.t("feature-coming-soon")}
               >
                 <wa-icon slot="prefix" name="play"></wa-icon>
-                New Build
+                {props.state.t("new-build")}
               </wa-button>
             </div>
           </div>
@@ -156,10 +161,10 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
               <div class="wa-cluster wa-gap-s">
                 <div class="wa-caption-m wa-color-text-quiet">
                   <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                  {pipeline.repo || "No repository"}
+                  {pipeline.repo || props.state.t("no-repository")}
                 </div>
                 <div class="wa-caption-m wa-color-text-quiet">
-                  Last build: {pipeline.lastBuild}
+                  {props.state.t("last-build-label")}: {pipeline.lastBuild}
                 </div>
               </div>
             </div>
@@ -174,15 +179,15 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
           <wa-card>
             <div class="wa-stack wa-gap-xs">
               <div class="wa-flank">
-                <span class="wa-heading-s">Total Builds</span>
+                <span class="wa-heading-s">{props.state.t("total-builds")}</span>
                 <wa-badge variant="brand">{pipeline.builds.total}</wa-badge>
               </div>
               <div class="wa-caption-m wa-color-text-quiet">
                 {latestBuild
-                  ? `Last build ${
+                  ? `${props.state.t("last-build-label")} ${
                     formatTimeAgo(latestBuild.createdAt || latestBuild.startedAt || new Date().toISOString())
                   }`
-                  : "No builds yet"}
+                  : props.state.t("no-builds-yet")}
               </div>
             </div>
           </wa-card>
@@ -190,7 +195,7 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
           <wa-card>
             <div class="wa-stack wa-gap-xs">
               <div class="wa-flank">
-                <span class="wa-heading-s">Success Rate</span>
+                <span class="wa-heading-s">{props.state.t("success-rate")}</span>
                 <wa-badge
                   variant={pipeline.builds.total > 0 && (pipeline.builds.passed / pipeline.builds.total) >= 0.9
                     ? "success"
@@ -200,7 +205,10 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
                 </wa-badge>
               </div>
               <div class="wa-caption-m wa-color-text-quiet">
-                {pipeline.builds.passed} passed, {pipeline.builds.failed} failed
+                {props.state.t("builds-passed-failed", {
+                  passed: pipeline.builds.passed,
+                  failed: pipeline.builds.failed,
+                })}
               </div>
             </div>
           </wa-card>
@@ -208,19 +216,19 @@ export default function PipelineDetail(props: { data: PipelineDetailProps }) {
           <wa-card>
             <div class="wa-stack wa-gap-xs">
               <div class="wa-flank">
-                <span class="wa-heading-s">Visibility</span>
+                <span class="wa-heading-s">{props.state.t("visibility")}</span>
                 <wa-badge variant={pipeline.visibility === "private" ? "brand" : "success"}>
                   <wa-icon slot="prefix" name={pipeline.visibility === "private" ? "lock" : "globe"}></wa-icon>
-                  {pipeline.visibility || "Unknown"}
+                  {pipeline.visibility || props.state.t("visibility-unknown")}
                 </wa-badge>
               </div>
-              <div class="wa-caption-m wa-color-text-quiet">Repository access</div>
+              <div class="wa-caption-m wa-color-text-quiet">{props.state.t("repository-access")}</div>
             </div>
           </wa-card>
         </div>
 
         <section>
-          <h2 class="wa-heading-m">Recent Builds</h2>
+          <h2 class="wa-heading-m">{props.state.t("recent-builds-title")}</h2>
           <PipelineBuilds pipelineSlug={pipeline.slug} initialBuilds={builds} />
         </section>
       </div>

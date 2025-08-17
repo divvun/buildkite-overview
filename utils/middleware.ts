@@ -1,9 +1,15 @@
+import { FluentBundle } from "@fluent/bundle"
 import { define, State } from "~/utils.ts"
 import { createMockSession, getOptionalSession, type SessionData } from "~/utils/session.ts"
+import type { SupportedLocale } from "~/utils/localization.ts"
 
-// Extend the State interface to include session
+// Extend the State interface to include session and localization
 export interface AppState extends State {
   session?: SessionData | null
+  locale: SupportedLocale
+  l10n: FluentBundle
+  t: (id: string, args?: Record<string, unknown>) => string
+  title?: string
 }
 
 export const sessionMiddleware = define.middleware(async (ctx) => {
@@ -18,6 +24,52 @@ export const sessionMiddleware = define.middleware(async (ctx) => {
 
   // Continue to the route handler
   return await ctx.next()
+})
+
+export const localizationMiddleware = define.middleware(async (ctx) => {
+  const { createTranslationFunction, getLocalizationBundle, negotiateLocale } = await import("~/utils/localization.ts")
+
+  // First check for lang cookie, then fall back to Accept-Language header
+  const langCookie = ctx.req.headers.get("cookie")
+    ?.split("; ")
+    .find((c) => c.startsWith("lang="))
+    ?.split("=")[1]
+
+  const acceptLanguageHeader = ctx.req.headers.get("Accept-Language")
+  const locale = langCookie || negotiateLocale(acceptLanguageHeader || undefined)
+
+  // Create localization bundle
+  const bundle = await getLocalizationBundle(locale)
+  const t = createTranslationFunction(bundle)
+
+  // Add to context state
+  ctx.state.locale = locale
+  ctx.state.l10n = bundle
+  ctx.state.t = t
+  ctx.state.title = t("app-title") // Default title, routes can override
+
+  // Get the response and set headers
+  const response = await ctx.next()
+
+  if (response instanceof Response) {
+    // Create a new response with the proper headers
+    const newResponse = new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: new Headers(response.headers),
+    })
+
+    newResponse.headers.set("Content-Language", locale)
+
+    // Append to Vary header if it exists, otherwise set it
+    const existingVary = newResponse.headers.get("Vary")
+    const varyValue = existingVary ? `${existingVary}, Accept-Language` : "Accept-Language"
+    newResponse.headers.set("Vary", varyValue)
+
+    return newResponse
+  }
+
+  return response
 })
 
 export const requireGlobalAuth = define.middleware(async (ctx) => {

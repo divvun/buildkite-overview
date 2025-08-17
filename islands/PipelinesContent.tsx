@@ -1,5 +1,6 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
@@ -21,6 +22,7 @@ interface PipelinesContentProps {
 const PIPELINES_PER_PAGE = 24 // 3 columns x 8 rows
 
 export default function PipelinesContent({ statusFilter, searchQuery }: PipelinesContentProps) {
+  const { t } = useLocalization()
   const [data, setData] = useState<PipelinesData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -101,7 +103,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
     return (
       <wa-callout variant="danger">
         <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
-        Failed to load pipelines data
+        {t("failed-to-load-pipelines")}
       </wa-callout>
     )
   }
@@ -150,16 +152,16 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
           ? (
             <EmptyState
               icon="folder-open"
-              title="No pipelines found"
+              title={t("no-pipelines-found-title")}
               description={searchQuery || statusFilter
-                ? `No pipelines match your current filters. Try adjusting your search or filters.`
+                ? t("no-pipelines-filter-desc")
                 : `No Buildkite pipelines found. Check your API configuration or create your first pipeline.`}
               variant="neutral"
             >
               {(searchQuery || statusFilter) && (
                 <wa-button appearance="outlined">
                   <a href="/pipelines" style="text-decoration: none; color: inherit">
-                    Clear all filters
+                    {t("clear-all-filters")}
                   </a>
                 </wa-button>
               )}
@@ -184,7 +186,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
                             </wa-icon>
                             <span class="wa-heading-s">{pipeline.name}</span>
                           </div>
-                          <div class="wa-caption-s wa-color-text-quiet">{pipeline.repo || "No repository"}</div>
+                          <div class="wa-caption-s wa-color-text-quiet">{pipeline.repo || t("no-repository")}</div>
                         </div>
                       </div>
 
@@ -199,18 +201,18 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
 
                       <div class="wa-flank">
                         <div class="wa-stack wa-gap-3xs">
-                          <div class="wa-caption-s">Build Stats</div>
+                          <div class="wa-caption-s">{t("build-stats")}</div>
                           <div class="wa-cluster wa-gap-s">
                             <span class="wa-caption-xs">
-                              <wa-badge variant="success">{pipeline.builds.passed}</wa-badge> passed
+                              <wa-badge variant="success">{pipeline.builds.passed}</wa-badge> {t("passed-count")}
                             </span>
                             <span class="wa-caption-xs">
-                              <wa-badge variant="danger">{pipeline.builds.failed}</wa-badge> failed
+                              <wa-badge variant="danger">{pipeline.builds.failed}</wa-badge> {t("failed-count")}
                             </span>
                           </div>
                         </div>
                         <div class="wa-stack wa-gap-3xs wa-align-items-end">
-                          <div class="wa-caption-s">Last Build</div>
+                          <div class="wa-caption-s">{t("last-build")}</div>
                           <div class="wa-caption-xs wa-color-text-quiet">{pipeline.lastBuild}</div>
                         </div>
                       </div>
@@ -231,7 +233,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
               appearance="outlined"
               disabled={currentPage === 1}
               onClick={() => handlePageChange(1)}
-              title="First page"
+              title={t("first-page")}
             >
               <wa-icon name="angles-left" />
             </wa-button>
@@ -241,7 +243,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
               appearance="outlined"
               disabled={currentPage === 1}
               onClick={() => handlePageChange(currentPage - 1)}
-              title="Previous page"
+              title={t("previous-page")}
             >
               <wa-icon name="chevron-left" />
             </wa-button>
@@ -283,7 +285,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
               appearance="outlined"
               disabled={currentPage === totalPages}
               onClick={() => handlePageChange(currentPage + 1)}
-              title="Next page"
+              title={t("next-page")}
             >
               <wa-icon name="chevron-right" />
             </wa-button>
@@ -293,21 +295,25 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
               appearance="outlined"
               disabled={currentPage === totalPages}
               onClick={() => handlePageChange(totalPages)}
-              title="Last page"
+              title={t("last-page")}
             >
               <wa-icon name="angles-right" />
             </wa-button>
           </div>
 
           <div class="wa-caption-s wa-color-text-quiet">
-            Showing {startIndex + 1}-{Math.min(endIndex, pipelines.length)} of {pipelines.length} pipelines
+            {t("showing-results", {
+              start: startIndex + 1,
+              end: Math.min(endIndex, pipelines.length),
+              total: pipelines.length,
+            })}
           </div>
         </div>
       )}
 
       {isLoading && (
         <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
-          Refreshing...
+          {t("refreshing")}
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface JobLogsProps {
   jobId: string
@@ -14,6 +15,7 @@ interface LogData {
 }
 
 export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsProps) {
+  const { t } = useLocalization()
   const [logData, setLogData] = useState<LogData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
@@ -47,7 +49,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
 
   const fetchLogs = async () => {
     if (!buildNumber || !pipelineSlug) {
-      setError("Missing build number or pipeline slug")
+      setError(t("missing-build-info"))
       return
     }
 
@@ -64,16 +66,14 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
       const data = await response.json()
 
       if (!response.ok || data.error) {
-        setError(data.error || `Failed to fetch logs: ${response.status}`)
+        setError(data.error || t("failed-to-fetch-logs"))
         return
       }
 
       setLogData(data)
     } catch (err) {
       console.error("Error fetching logs:", err)
-      setError(
-        "Unable to load job logs. The logs may not be available yet, or there may be a temporary issue accessing them. Please try again in a moment.",
-      )
+      setError(t("error-fetching-logs"))
     } finally {
       setLoading(false)
     }
@@ -582,7 +582,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
           {loading && (
             <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-m)">
               <wa-icon name="spinner" style="color: var(--wa-color-brand-fill-loud)" />
-              <p class="wa-caption-s wa-color-text-quiet">Loading logs...</p>
+              <p class="wa-caption-s wa-color-text-quiet">{t("loading-logs")}</p>
             </div>
           )}
 
@@ -611,7 +611,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                 style="padding: var(--wa-space-xs) var(--wa-space-s); border-bottom: 1px solid var(--wa-color-border-subtle); background: var(--wa-color-neutral-fill-quiet)"
               >
                 <div class="wa-caption-xs wa-color-text-quiet">
-                  Job Logs ({Math.ceil(logData.content.length / 1024)} KB)
+                  {t("job-logs-size", { size: Math.ceil(logData.content.length / 1024) })}
                 </div>
                 <div class="wa-cluster wa-gap-xs">
                   <wa-button
@@ -620,11 +620,11 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                     onClick={() => setShowTimestamps(!showTimestamps)}
                   >
                     <wa-icon slot="prefix" name="clock" />
-                    {showTimestamps ? "Hide" : "Show"} Timestamps
+                    {showTimestamps ? t("hide-timestamps") : t("show-timestamps")} {t("timestamps")}
                   </wa-button>
                   <wa-button size="small" appearance="plain">
                     <wa-icon slot="prefix" name="copy" />
-                    Copy
+                    {t("copy")}
                   </wa-button>
                   <wa-button
                     size="small"
@@ -632,7 +632,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                     onClick={() => downloadLogs()}
                   >
                     <wa-icon slot="prefix" name="download" />
-                    Download
+                    {t("download")}
                   </wa-button>
                 </div>
               </div>
@@ -769,7 +769,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
           {!logData?.content && !loading && !error && (
             <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-m)">
               <wa-icon name="file-lines" style="font-size: 1.5rem; color: var(--wa-color-neutral-fill-loud)" />
-              <p class="wa-caption-s wa-color-text-quiet">No logs available for this job</p>
+              <p class="wa-caption-s wa-color-text-quiet">{t("no-logs-available")}</p>
             </div>
           )}
         </div>

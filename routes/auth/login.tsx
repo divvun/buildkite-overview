@@ -1,6 +1,6 @@
 import { Context, page } from "fresh"
-import { State } from "~/utils.ts"
 import { generateAuthUrl } from "~/utils/auth.ts"
+import { type AppState } from "~/utils/middleware.ts"
 import { getOptionalSession } from "~/utils/session.ts"
 
 export const config = {
@@ -12,7 +12,7 @@ interface LoginProps {
 }
 
 export const handler = {
-  GET(ctx: Context<State>) {
+  GET(ctx: Context<AppState>) {
     const url = new URL(ctx.req.url)
     const error = url.searchParams.get("error")
 
@@ -28,7 +28,7 @@ export const handler = {
     return page({ error: error || undefined })
   },
 
-  async POST(ctx: Context<State>) {
+  async POST(ctx: Context<AppState>) {
     try {
       const { url, state, codeVerifier } = await generateAuthUrl()
 
@@ -58,25 +58,24 @@ export const handler = {
   },
 }
 
-export default function Login(props: { data: LoginProps }) {
+export default function Login(props: { data: LoginProps; state: AppState }) {
   const { error } = props.data
   let errorMessage = ""
   switch (error) {
     case "oauth_error":
-      errorMessage = "Authentication failed. Please try again."
+      errorMessage = props.state.t("auth-failed")
       break
     case "missing_parameters":
-      errorMessage = "Invalid authentication response."
+      errorMessage = props.state.t("invalid-auth-response")
       break
     case "state_mismatch":
-      errorMessage = "Security validation failed. Please try again."
+      errorMessage = props.state.t("security-validation-failed")
       break
     case "insufficient_access":
-      errorMessage =
-        "You don't have access to the required GitHub organizations (divvun or giellalt). You may need to re-authenticate to update your organization permissions."
+      errorMessage = props.state.t("insufficient-access-error")
       break
     case "callback_error":
-      errorMessage = "Authentication error occurred. Please try again."
+      errorMessage = props.state.t("auth-error-occurred")
       break
   }
 
@@ -85,7 +84,7 @@ export default function Login(props: { data: LoginProps }) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign In - Buildkite Overview</title>
+        <title>{props.state.t("login-page-title")}</title>
         <link rel="stylesheet" href="/webawesome/styles/webawesome.css" />
         <script type="module" src="/webawesome/webawesome.loader.js"></script>
       </head>
@@ -99,9 +98,9 @@ export default function Login(props: { data: LoginProps }) {
               <div class="wa-stack wa-gap-s wa-align-items-center">
                 <wa-icon name="building" style={"font-size: 3rem; color: var(--wa-color-brand-fill-loud)" as any}>
                 </wa-icon>
-                <h1 class="wa-heading-l">Divvun Buildkite</h1>
+                <h1 class="wa-heading-l">{props.state.t("divvun-buildkite")}</h1>
                 <p class="wa-body-m wa-color-text-quiet wa-text-center">
-                  Sign in with your GitHub account to access the build overview dashboard
+                  {props.state.t("login-description")}
                 </p>
               </div>
 
@@ -121,13 +120,15 @@ export default function Login(props: { data: LoginProps }) {
                       style={"font-size: 1.2em" as any}
                     >
                     </wa-icon>
-                    {error === "insufficient_access" ? "Try Different Account" : "Sign in with GitHub"}
+                    {error === "insufficient_access"
+                      ? props.state.t("try-different-account")
+                      : props.state.t("sign-in-github")}
                   </wa-button>
                 </form>
                 {error === "insufficient_access" && (
                   <div class="wa-stack wa-gap-xs wa-align-items-center">
                     <p class="wa-caption-s wa-color-text-quiet wa-text-center">
-                      Choose a different account or re-authorize to update organization permissions
+                      {props.state.t("choose-different-account-desc")}
                     </p>
                     <p class="wa-caption-xs wa-color-text-quiet wa-text-center">
                       You can also{" "}
@@ -140,7 +141,7 @@ export default function Login(props: { data: LoginProps }) {
                         style="color: var(--wa-color-brand-fill-loud)"
                         class="wa-cluster wa-gap-xs"
                       >
-                        review app permissions on GitHub
+                        {props.state.t("review-app-permissions")}
                         <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
                       </a>
                     </p>
@@ -150,10 +151,10 @@ export default function Login(props: { data: LoginProps }) {
                 <div class="wa-stack wa-gap-xs wa-align-items-center">
                   <wa-callout variant="neutral">
                     <wa-icon slot="icon" name="circle-info" variant="regular"></wa-icon>
-                    Requires membership of <code>divvun</code> or <code>giellalt</code> organizations
+                    {props.state.t("requires-membership", { org1: "divvun", org2: "giellalt" })}
                   </wa-callout>
                   <p class="wa-caption-xs wa-color-text-quiet wa-text-center">
-                    We only access your public profile and organization membership
+                    {props.state.t("access-description")}
                   </p>
                 </div>
               </div>

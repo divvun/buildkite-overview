@@ -1,5 +1,6 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type AppAgent } from "~/utils/buildkite-data.ts"
@@ -16,6 +17,7 @@ interface AgentsContentProps {
 }
 
 export default function AgentsContent({ orgFilter }: AgentsContentProps) {
+  const { t } = useLocalization()
   const [data, setData] = useState<AgentsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -74,7 +76,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
     return (
       <wa-callout variant="danger">
         <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
-        Failed to load agents data
+        {t("failed-to-load-agents")}
       </wa-callout>
     )
   }
@@ -112,19 +114,19 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
       <div class="wa-flank">
         <div class="wa-cluster wa-gap-m">
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Total Agents</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("total-agents")}</div>
             <div class="wa-heading-s">{agents.length}</div>
           </div>
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Connected</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("connected")}</div>
             <div class="wa-heading-s">{connectedAgents}</div>
           </div>
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Running Jobs</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("running-jobs")}</div>
             <div class="wa-heading-s">{runningJobs}</div>
           </div>
           <div class="wa-stack wa-gap-3xs">
-            <div class="wa-body-s wa-color-text-quiet">Pending Jobs</div>
+            <div class="wa-body-s wa-color-text-quiet">{t("pending-jobs")}</div>
             <div class="wa-heading-s">{pendingJobs}</div>
           </div>
         </div>
@@ -140,13 +142,13 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
       {/* Queue Filter */}
       {queues.length > 1 && (
         <div class="wa-cluster wa-gap-s" style="flex-wrap: wrap">
-          <span class="wa-body-s">Queue:</span>
+          <span class="wa-body-s">{t("queue-label")}</span>
           <a
             href="/agents"
             class={`wa-button ${!orgFilter ? "wa-button-primary" : "wa-button-secondary"}`}
             style="text-decoration: none"
           >
-            All ({agents.length})
+            {t("all-agents")} ({agents.length})
           </a>
           {queues.map((queue) => (
             <a
@@ -155,7 +157,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
               class={`wa-button ${orgFilter === queue ? "wa-button-primary" : "wa-button-secondary"}`}
               style="text-decoration: none"
             >
-              {queue === "unassigned" ? "Unassigned" : queue} ({agentsByQueue[queue].length})
+              {queue === "unassigned" ? t("unassigned-agents") : queue} ({agentsByQueue[queue].length})
             </a>
           ))}
         </div>
@@ -165,8 +167,8 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
         ? (
           <EmptyState
             icon="server"
-            title="No agents found"
-            description={orgFilter ? `No agents found for queue "${orgFilter}"` : "No agents found across all queues"}
+            title={t("no-agents")}
+            description={orgFilter ? t("no-agents-for-queue", { queue: orgFilter }) : t("no-agents-all-queues")}
             variant="neutral"
             maxWidth="900px"
           />
@@ -180,11 +182,13 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                   <div class="wa-flank">
                     <div class="wa-stack wa-gap-3xs">
                       <h2 class="wa-heading-m">
-                        {queueKey === "unassigned" ? "Unassigned Agents" : `Queue: ${queueKey}`}
+                        {queueKey === "unassigned" ? t("unassigned-agents") : `${t("queue-prefix")} ${queueKey}`}
                       </h2>
                     </div>
                     <wa-badge variant="neutral">
-                      {agentsByQueue[queueKey].length} agent{agentsByQueue[queueKey].length !== 1 ? "s" : ""}
+                      {agentsByQueue[queueKey].length === 1
+                        ? t("agent-count", { count: agentsByQueue[queueKey].length })
+                        : t("agent-count-plural", { count: agentsByQueue[queueKey].length })}
                     </wa-badge>
                   </div>
 
@@ -206,7 +210,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                 </div>
                                 <wa-badge variant={getConnectionVariant(agent.connectionState)}>
                                   <wa-icon slot="prefix" name={getConnectionIcon(agent.connectionState)}></wa-icon>
-                                  {agent.connectionState}
+                                  {t(`connection-${agent.connectionState}`)}
                                 </wa-badge>
                               </div>
 
@@ -215,14 +219,14 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                   <div class="wa-stack wa-gap-3xs">
                                     <div class="wa-flank wa-gap-s">
                                       <span class="wa-body-s wa-color-text-loud">
-                                        Running: {agent.currentJob.pipelineName}
+                                        {t("running-label")} {agent.currentJob.pipelineName}
                                       </span>
                                       <wa-badge variant="warning">
-                                        Build #{agent.currentJob.buildNumber}
+                                        {t("build-number", { number: agent.currentJob.buildNumber })}
                                       </wa-badge>
                                     </div>
                                     <div class="wa-caption-s wa-color-text-quiet">
-                                      Duration:{" "}
+                                      {t("duration-label")}
                                       {agent.currentJob.duration || formatDuration(agent.currentJob.startedAt)}
                                       {agent.currentJob.url && (
                                         <>
@@ -231,7 +235,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                             href={`/pipelines/${agent.currentJob.pipelineSlug}/builds/${agent.currentJob.buildNumber}`}
                                             class="wa-cluster wa-gap-xs"
                                           >
-                                            View build
+                                            {t("view-build")}
                                             <wa-icon name="arrow-right" style="font-size: 0.75em">
                                             </wa-icon>
                                           </a>
@@ -255,7 +259,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                 </div>
                               )}
                               <div class="wa-caption-s wa-color-text-quiet">
-                                Last seen: {formatLastSeen(agent.lastSeen)}
+                                {t("last-seen")} {formatLastSeen(agent.lastSeen)}
                               </div>
                             </div>
                           </div>
@@ -263,7 +267,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                           {agent.metadata && agent.metadata.length > 0 && (
                             <details style="margin-top: var(--wa-space-s)">
                               <summary class="wa-caption-s wa-color-text-quiet" style="cursor: pointer">
-                                Metadata ({agent.metadata.length} items)
+                                {t("metadata-label", { count: agent.metadata.length })}
                               </summary>
                               <div
                                 class="wa-grid wa-gap-3xs"
@@ -290,7 +294,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
 
       {isLoading && (
         <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
-          Refreshing...
+          {t("refreshing")}
         </div>
       )}
     </>

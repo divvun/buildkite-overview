@@ -1,5 +1,6 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
@@ -21,6 +22,7 @@ interface DashboardContentProps {
 }
 
 export default function DashboardContent({ session }: DashboardContentProps) {
+  const { t } = useLocalization()
   // Pure client-side state - no initial data from server
   const [data, setData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -85,7 +87,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
     return (
       <wa-callout variant="danger">
         <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
-        Failed to load dashboard data
+        {t("failed-to-load-dashboard")}
       </wa-callout>
     )
   }
@@ -109,12 +111,12 @@ export default function DashboardContent({ session }: DashboardContentProps) {
         <a
           href="/pipelines"
           style="text-decoration: none; color: inherit"
-          aria-label={`View all ${totalPipelines} pipelines`}
+          aria-label={t("view-all-pipelines-aria", { count: totalPipelines })}
         >
           <wa-card class="clickable-card">
             <div class="wa-stack wa-gap-xs">
-              <div class="wa-flank">
-                <span class="wa-heading-s">Total Pipelines</span>
+              <div class="wa-stack wa-gap-2xs">
+                <span class="wa-heading-s">{t("stats-total-pipelines")}</span>
                 <wa-badge variant="brand">{totalPipelines}</wa-badge>
               </div>
             </div>
@@ -126,14 +128,14 @@ export default function DashboardContent({ session }: DashboardContentProps) {
             <a
               href="/agents"
               style="text-decoration: none; color: inherit"
-              aria-label={`View agents, current average wait time: ${
-                formatDurationSeconds(agentMetrics.averageWaitTime)
-              }`}
+              aria-label={t("view-agents-wait-time-aria", {
+                waitTime: formatDurationSeconds(agentMetrics.averageWaitTime),
+              })}
             >
               <wa-card class="clickable-card">
                 <div class="wa-stack wa-gap-xs">
-                  <div class="wa-flank">
-                    <span class="wa-heading-s">Average Wait Time</span>
+                  <div class="wa-stack wa-gap-2xs">
+                    <span class="wa-heading-s">{t("average-wait-time")}</span>
                     <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime)}</wa-badge>
                   </div>
                 </div>
@@ -143,8 +145,8 @@ export default function DashboardContent({ session }: DashboardContentProps) {
           : (
             <wa-card class="non-clickable">
               <div class="wa-stack wa-gap-xs">
-                <div class="wa-flank">
-                  <span class="wa-heading-s">Average Wait Time</span>
+                <div class="wa-stack wa-gap-2xs">
+                  <span class="wa-heading-s">{t("average-wait-time")}</span>
                   <wa-badge variant="neutral" style="text-transform: none">
                     {formatDurationSeconds(agentMetrics.averageWaitTime)}
                   </wa-badge>
@@ -158,12 +160,12 @@ export default function DashboardContent({ session }: DashboardContentProps) {
             <a
               href="/queues"
               style="text-decoration: none; color: inherit"
-              aria-label={`View queues, ${pendingBuilds} pending builds`}
+              aria-label={t("view-queues-pending-aria", { count: pendingBuilds })}
             >
               <wa-card class="clickable-card">
                 <div class="wa-stack wa-gap-xs">
-                  <div class="wa-flank">
-                    <span class="wa-heading-s">Pending Builds</span>
+                  <div class="wa-stack wa-gap-2xs">
+                    <span class="wa-heading-s">{t("stats-pending-builds")}</span>
                     <wa-badge variant={pendingBuilds > 0 ? "warning" : "neutral"}>{pendingBuilds}</wa-badge>
                   </div>
                 </div>
@@ -173,8 +175,8 @@ export default function DashboardContent({ session }: DashboardContentProps) {
           : (
             <wa-card class="non-clickable">
               <div class="wa-stack wa-gap-xs">
-                <div class="wa-flank">
-                  <span class="wa-heading-s">Running Pipelines</span>
+                <div class="wa-stack wa-gap-2xs">
+                  <span class="wa-heading-s">{t("stats-running-pipelines")}</span>
                   <wa-badge variant={runningPipelines > 0 ? "warning" : "neutral"}>{runningPipelines}</wa-badge>
                 </div>
               </div>
@@ -185,9 +187,9 @@ export default function DashboardContent({ session }: DashboardContentProps) {
       {/* Failing Pipelines Section */}
       <section aria-labelledby="failing-pipelines-heading">
         <div class="wa-stack wa-gap-s">
-          <h2 id="failing-pipelines-heading" class="wa-heading-m">Failing Pipelines</h2>
+          <h2 id="failing-pipelines-heading" class="wa-heading-m">{t("failing-pipelines-title")}</h2>
           <p class="wa-body-s wa-color-text-quiet">
-            Shows pipelines currently in failing state, reverse chronological order
+            {t("failing-pipelines-description")}
           </p>
         </div>
 
@@ -200,7 +202,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                     <a
                       href={`/pipelines/${pipeline.slug}`}
                       style="text-decoration: none; color: inherit; display: block"
-                      aria-label={`View details for failing pipeline: ${pipeline.name}`}
+                      aria-label={t("view-failing-pipeline-aria", { name: pipeline.name })}
                     >
                       <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--wa-space-s); gap: var(--wa-space-m)">
                         <div class="wa-stack wa-gap-3xs" style="min-width: 0; flex: 1">
@@ -211,7 +213,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                             {pipeline.name}
                           </span>
                           <div class="wa-caption-s wa-color-text-quiet">
-                            failing since {formatFailingSince(pipeline.failingSince)}
+                            {t("failing-since", { time: formatFailingSince(pipeline.failingSince) })}
                           </div>
                         </div>
 
@@ -229,14 +231,14 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                                     ? "var(--wa-color-warning-fill-loud)"
                                     : "var(--wa-color-neutral-fill-loud)"
                                 }`}
-                                title={`Build #${build.buildNumber}: ${build.status}`}
+                                title={t("build-status-title", { number: build.buildNumber, status: build.status })}
                               >
                               </div>
                             ))}
                           </div>
                           <wa-badge variant="danger">
                             <wa-icon slot="prefix" name="triangle-exclamation"></wa-icon>
-                            FAILED
+                            {t("failed-status")}
                           </wa-badge>
                         </div>
                       </div>
@@ -250,8 +252,8 @@ export default function DashboardContent({ session }: DashboardContentProps) {
             <div style="margin-top: var(--wa-space-m)">
               <EmptyState
                 icon="check-circle"
-                title="No failing pipelines! 🎉"
-                description="All pipelines are currently healthy."
+                title={t("no-failing-pipelines-title")}
+                description={t("no-failing-pipelines-desc")}
                 variant="success"
               />
             </div>
@@ -260,7 +262,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
 
       {isLoading && (
         <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
-          Refreshing...
+          {t("refreshing-ellipsis")}
         </div>
       )}
     </>

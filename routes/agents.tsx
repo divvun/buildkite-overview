@@ -2,9 +2,7 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import AgentsContent from "~/islands/AgentsContent.tsx"
-import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import { type AppAgent, fetchAllAgents } from "~/utils/buildkite-data.ts"
-import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 
@@ -39,6 +37,9 @@ export const handler = {
 
         console.log(`Found ${filteredAgents.length} agents`)
 
+        // Set the page title
+        ctx.state.title = ctx.state.t("agents-title")
+
         return page(
           {
             session,
@@ -49,13 +50,15 @@ export const handler = {
       } catch (error) {
         console.error("Error fetching agents data:", error)
 
+        // Set the page title
+        ctx.state.title = ctx.state.t("agents-title")
+
         return page(
           {
             session,
             agents: [],
             orgFilter,
-            error:
-              "Unable to load agent information. Ensure your Buildkite API token has agent read permissions and try refreshing the page. If the issue persists, check the browser console for more details.",
+            error: ctx.state.t("agents-load-failed"),
           } satisfies AgentsProps,
         )
       }
@@ -73,28 +76,25 @@ export default function Agents(props: { data: AgentsProps; state: AppState }) {
   const { session, agents, orgFilter, error } = props.data
 
   const breadcrumbs = [
-    { label: "Agents" },
+    { label: props.state.t("agents-breadcrumb") },
   ]
 
   return (
     <Layout
-      title="Buildkite Agents"
+      title={props.state.t("agents-title")}
       currentPath="/agents"
       session={session}
       breadcrumbs={breadcrumbs}
+      t={props.state.t}
+      state={props.state}
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
         <header>
-          <h1 class="wa-heading-l">Buildkite Agents</h1>
+          <h1 class="wa-heading-l">{props.state.t("agents-title")}</h1>
           <p class="wa-body-m wa-color-text-quiet">
-            View all agents across organizations and their current status
+            {props.state.t("agents-description")}
           </p>
         </header>
-
-        <div class="wa-flank">
-          <div></div>
-          <AutoRefresh enabled intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS} />
-        </div>
 
         <AgentsContent
           orgFilter={orgFilter}

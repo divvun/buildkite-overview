@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import JobLogs from "~/islands/JobLogs.tsx"
 import { type BuildkiteJob } from "~/utils/buildkite-client.ts"
 import { getBadgeVariant } from "~/utils/formatters.ts"
@@ -54,21 +55,21 @@ function getJobCommand(job: BuildkiteJob): string | null {
   return job.command || null
 }
 
-function formatJobTiming(job: BuildkiteJob): string {
-  const duration = formatDuration(job.startedAt, job.finishedAt)
-  const timeAgo = job.startedAt ? formatTimeAgo(job.startedAt) : "Not started"
+function formatJobTiming(job: BuildkiteJob, t: any): string {
+  const duration = formatDuration(job.startedAt, job.finishedAt, t)
+  const timeAgo = job.startedAt ? formatTimeAgo(job.startedAt, t) : t("not-started")
 
   if (job.startedAt && job.finishedAt) {
-    return `Ran in ${duration}`
+    return t("ran-in", { duration })
   } else if (job.startedAt) {
-    return `Running for ${duration}`
+    return t("running-for", { duration })
   } else {
-    return "Not started"
+    return t("not-started")
   }
 }
 
-function formatDuration(startedAt?: string, finishedAt?: string) {
-  if (!startedAt) return "Not started"
+function formatDuration(startedAt?: string, finishedAt?: string, t?: any) {
+  if (!startedAt) return t("not-started")
 
   const start = new Date(startedAt)
   const end = finishedAt ? new Date(finishedAt) : new Date()
@@ -85,7 +86,7 @@ function formatDuration(startedAt?: string, finishedAt?: string) {
   return `${secs}s`
 }
 
-function formatTimeAgo(dateStr: string) {
+function formatTimeAgo(dateStr: string, t: any) {
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -93,15 +94,16 @@ function formatTimeAgo(dateStr: string) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffMins < 1) return "now"
-  if (diffMins < 60) return `${diffMins} minutes ago`
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`
-  return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`
+  if (diffMins < 1) return t("time-now")
+  if (diffMins < 60) return t("time-minutes-ago", { count: diffMins })
+  if (diffHours < 24) return t("time-hours-ago", { count: diffHours })
+  return t("time-days-ago", { count: diffDays })
 }
 
 export default function BuildJobs(
   { buildId, buildNumber: initialBuildNumber, pipelineSlug: initialPipelineSlug, initialJobs = [] }: BuildJobsProps,
 ) {
+  const { t } = useLocalization()
   const [jobs, setJobs] = useState<BuildkiteJob[]>(initialJobs)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
@@ -125,11 +127,11 @@ export default function BuildJobs(
       const response = await fetch(`/api/builds/${buildId}/jobs`)
       if (!response.ok) {
         const statusText = response.status === 404
-          ? "Build not found"
+          ? t("build-not-found")
           : response.status === 403
-          ? "Insufficient permissions"
+          ? t("insufficient-permissions")
           : `HTTP ${response.status}`
-        throw new Error(`Unable to load jobs: ${statusText}`)
+        throw new Error(t("unable-to-load-jobs", { error: statusText }))
       }
 
       const data = await response.json()
@@ -139,9 +141,7 @@ export default function BuildJobs(
       setPipelineSlug(data.pipelineSlug)
     } catch (err) {
       console.error("Error fetching jobs:", err)
-      setError(
-        "Unable to load job information. This may be due to insufficient permissions or a temporary API issue. Please try again.",
-      )
+      setError(t("unable-to-load-job-info"))
     } finally {
       setLoading(false)
     }
@@ -160,7 +160,7 @@ export default function BuildJobs(
       <wa-card>
         <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-l)">
           <wa-icon name="spinner" style="font-size: 2rem; color: var(--wa-color-brand-fill-loud)" />
-          <p class="wa-body-m wa-color-text-quiet">Loading jobs...</p>
+          <p class="wa-body-m wa-color-text-quiet">{t("loading-jobs")}</p>
         </div>
       </wa-card>
     )
@@ -182,7 +182,7 @@ export default function BuildJobs(
       <wa-card>
         <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-l)">
           <wa-icon name="inbox" style="font-size: 2rem; color: var(--wa-color-neutral-fill-loud)" />
-          <p class="wa-body-m wa-color-text-quiet">No jobs found for this build</p>
+          <p class="wa-body-m wa-color-text-quiet">{t("no-jobs-found")}</p>
         </div>
       </wa-card>
     )
@@ -252,14 +252,14 @@ export default function BuildJobs(
                     )
                     : (
                       <span class="wa-body-s">
-                        Job
+                        {t("job-fallback")}
                       </span>
                     )}
                 </div>
 
                 <div style="display: flex; align-items: center; gap: var(--wa-space-m)">
                   <span class="wa-caption-s wa-color-text-quiet">
-                    {formatJobTiming(job)}
+                    {formatJobTiming(job, t)}
                   </span>
                   <span
                     style={`transform: ${
@@ -277,29 +277,29 @@ export default function BuildJobs(
                 <div class="wa-stack wa-gap-s" style="padding: var(--wa-space-m)">
                   <div class="wa-grid wa-gap-s" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))">
                     <div class="wa-stack wa-gap-3xs">
-                      <div class="wa-caption-xs wa-color-text-quiet">Started</div>
+                      <div class="wa-caption-xs wa-color-text-quiet">{t("started")}</div>
                       <div class="wa-caption-s">
-                        {job.startedAt ? new Date(job.startedAt).toLocaleString() : "Not started"}
+                        {job.startedAt ? new Date(job.startedAt).toLocaleString() : t("not-started")}
                       </div>
                     </div>
 
                     <div class="wa-stack wa-gap-3xs">
-                      <div class="wa-caption-xs wa-color-text-quiet">Finished</div>
+                      <div class="wa-caption-xs wa-color-text-quiet">{t("finished")}</div>
                       <div class="wa-caption-s">
-                        {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : "Not finished"}
+                        {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : t("not-finished")}
                       </div>
                     </div>
 
                     <div class="wa-stack wa-gap-3xs">
-                      <div class="wa-caption-xs wa-color-text-quiet">Duration</div>
+                      <div class="wa-caption-xs wa-color-text-quiet">{t("duration")}</div>
                       <div class="wa-caption-s">
-                        {formatDuration(job.startedAt, job.finishedAt)}
+                        {formatDuration(job.startedAt, job.finishedAt, t)}
                       </div>
                     </div>
 
                     {job.exitStatus !== undefined && job.exitStatus !== null && (
                       <div class="wa-stack wa-gap-3xs">
-                        <div class="wa-caption-xs wa-color-text-quiet">Exit Status</div>
+                        <div class="wa-caption-xs wa-color-text-quiet">{t("exit-status")}</div>
                         <div class="wa-caption-s">
                           <span
                             style={job.exitStatus === 0
@@ -316,7 +316,7 @@ export default function BuildJobs(
                   {
                     /* {job.command && (
                     <div class="wa-stack wa-gap-xs">
-                      <div class="wa-caption-xs wa-color-text-quiet">Command</div>
+                      <div class="wa-caption-xs wa-color-text-quiet">{t("command-label")}</div>
                       <div
                         class="wa-caption-s"
                         style="font-family: monospace; background: white; padding: var(--wa-space-s); border-radius: var(--wa-border-radius-s); white-space: pre-wrap; border: 1px solid var(--wa-color-border-subtle)"
@@ -328,7 +328,7 @@ export default function BuildJobs(
                   }
 
                   <div class="wa-stack wa-gap-xs">
-                    <h5 class="wa-heading-xs">Job Logs</h5>
+                    <h5 class="wa-heading-xs">{t("job-logs-header")}</h5>
                     <JobLogs
                       jobId={job.uuid || job.id}
                       buildNumber={buildNumber}

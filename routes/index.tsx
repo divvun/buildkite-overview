@@ -1,10 +1,8 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
-import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import DashboardContent from "~/islands/DashboardContent.tsx"
 import { type AgentMetrics, type FailingPipeline, fetchAgentMetrics, fetchQueueStatus } from "~/utils/buildkite-data.ts"
-import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
 import { type SessionData } from "~/utils/session.ts"
@@ -38,6 +36,9 @@ export const handler = {
         `Dashboard stats: ${dashboardData.pipelines.length} total pipelines, ${dashboardData.failingPipelines.length} failing, ${dashboardData.runningPipelinesCount} pipelines with running builds`,
       )
 
+      // Set the page title
+      ctx.state.title = ctx.state.t("dashboard-title")
+
       return page(
         {
           session: ctx.state.session,
@@ -51,6 +52,9 @@ export const handler = {
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
 
+      // Set the page title
+      ctx.state.title = ctx.state.t("dashboard-title")
+
       return page(
         {
           session: ctx.state.session,
@@ -59,8 +63,7 @@ export const handler = {
           pendingBuilds: 0,
           agentMetrics: { averageWaitTime: 0, p95WaitTime: 0, p99WaitTime: 0 },
           failingPipelines: [],
-          error:
-            "Unable to load dashboard data. This could be due to: 1) Missing BUILDKITE_API_KEY environment variable, 2) Invalid API key, or 3) Network connectivity issues. Please check your configuration and try again.",
+          error: ctx.state.t("dashboard-load-error"),
         } satisfies HomeProps,
       )
     }
@@ -68,29 +71,33 @@ export const handler = {
 }
 
 export default function Home(props: { data: HomeProps; state: AppState }) {
-  const { session, totalPipelines, runningPipelines, pendingBuilds, agentMetrics, failingPipelines, error } = props.data
+  const {
+    session,
+    totalPipelines,
+    runningPipelines,
+    pendingBuilds,
+    agentMetrics,
+    failingPipelines,
+    error,
+  } = props.data
 
   const breadcrumbs = undefined
 
   return (
     <Layout
-      title="Build Overview"
+      title={props.state.t("dashboard-title")}
       currentPath="/"
       session={session}
       breadcrumbs={breadcrumbs}
+      t={props.state.t}
+      state={props.state}
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
-        <header style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--wa-space-m)">
-          <div>
-            <h1 class="wa-heading-l">Build Overview</h1>
-            <p class="wa-body-m wa-color-text-quiet">
-              Monitor the status of all Divvun project builds across GitHub organizations
-            </p>
-          </div>
-          <AutoRefresh
-            enabled
-            intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS}
-          />
+        <header>
+          <h1 class="wa-heading-l">{props.state.t("dashboard-title")}</h1>
+          <p class="wa-body-m wa-color-text-quiet">
+            {props.state.t("dashboard-description")}
+          </p>
         </header>
 
         <DashboardContent

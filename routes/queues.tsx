@@ -1,10 +1,8 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
-import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import QueuesContent from "~/islands/QueuesContent.tsx"
 import { fetchQueueStatus, type QueueStatus } from "~/utils/buildkite-data.ts"
-import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
 
@@ -28,6 +26,9 @@ export const handler = {
 
         console.log(`Found ${queueStatus.length} queues`)
 
+        // Set the page title
+        ctx.state.title = ctx.state.t("queues-title")
+
         return page(
           {
             session,
@@ -37,12 +38,14 @@ export const handler = {
       } catch (error) {
         console.error("Error fetching queue status:", error)
 
+        // Set the page title
+        ctx.state.title = ctx.state.t("queues-title")
+
         return page(
           {
             session,
             queueStatus: [],
-            error:
-              "Unable to fetch queue status. This may be a temporary network issue or API rate limiting. Please wait a moment and try again.",
+            error: ctx.state.t("queues-load-failed"),
           } satisfies QueuesProps,
         )
       }
@@ -60,28 +63,25 @@ export default function Queues(props: { data: QueuesProps; state: AppState }) {
   const { session, queueStatus, error } = props.data
 
   const breadcrumbs = [
-    { label: "Queues" },
+    { label: props.state.t("queues-breadcrumb") },
   ]
 
   return (
     <Layout
-      title="Queue Management"
+      title={props.state.t("queues-title")}
       currentPath="/queues"
       session={session}
       breadcrumbs={breadcrumbs}
+      t={props.state.t}
+      state={props.state}
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
         <header>
-          <h1 class="wa-heading-l">Queue Management</h1>
+          <h1 class="wa-heading-l">{props.state.t("queues-title")}</h1>
           <p class="wa-body-m wa-color-text-quiet">
-            Monitor build queues, workload distribution, and agent availability
+            {props.state.t("queues-description")}
           </p>
         </header>
-
-        <div class="wa-flank">
-          <div></div>
-          <AutoRefresh enabled intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS} />
-        </div>
 
         <QueuesContent />
       </div>

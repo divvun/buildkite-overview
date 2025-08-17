@@ -1,4 +1,5 @@
 import { useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import { type BuildkiteBuild } from "~/utils/buildkite-client.ts"
 import { formatDuration, formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
 
@@ -8,6 +9,7 @@ interface PipelineBuildsProps {
 }
 
 export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: PipelineBuildsProps) {
+  const { t } = useLocalization()
   const [builds, setBuilds] = useState<BuildkiteBuild[]>(initialBuilds)
   const [loading, setLoading] = useState(false) // Don't load if we have initial builds
   const [error, setError] = useState<string>("")
@@ -35,11 +37,11 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
         const errorText = await response.text()
         console.error(`API error: ${response.status} - ${errorText}`)
         const statusText = response.status === 404
-          ? "Pipeline not found"
+          ? t("pipeline-not-found")
           : response.status === 403
-          ? "Access denied"
+          ? t("access-denied")
           : `HTTP ${response.status}`
-        throw new Error(`Unable to load builds: ${statusText}`)
+        throw new Error(t("unable-to-load-builds", { error: statusText }))
       }
 
       const data = await response.json()
@@ -47,7 +49,7 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
       setBuilds(data)
     } catch (err) {
       console.error("Error fetching builds:", err)
-      setError("Unable to load build history. Please refresh the page or check your connection.")
+      setError(t("unable-to-load-build-history"))
     } finally {
       setLoading(false)
     }
@@ -58,7 +60,7 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
       <wa-card>
         <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-l)">
           <wa-icon name="spinner" style="font-size: 2rem; color: var(--wa-color-brand-fill-loud)" />
-          <p class="wa-body-m wa-color-text-quiet">Loading builds for {pipelineSlug}...</p>
+          <p class="wa-body-m wa-color-text-quiet">{t("loading-builds", { pipeline: pipelineSlug })}</p>
           <p class="wa-caption-s wa-color-text-quiet">
             If this persists, check: /api/pipelines/{pipelineSlug}/builds
           </p>
@@ -73,9 +75,9 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
         <wa-callout variant="danger">
           <wa-icon slot="icon" name="triangle-exclamation" />
           <div class="wa-stack wa-gap-xs">
-            <div>Error: {error}</div>
-            <div class="wa-caption-s">Pipeline: {pipelineSlug}</div>
-            <div class="wa-caption-s">Endpoint: /api/pipelines/{pipelineSlug}/builds</div>
+            <div>{t("error-label")} {error}</div>
+            <div class="wa-caption-s">{t("pipeline-label")} {pipelineSlug}</div>
+            <div class="wa-caption-s">{t("endpoint-label")} /api/pipelines/{pipelineSlug}/builds</div>
           </div>
         </wa-callout>
       </wa-card>
@@ -87,7 +89,7 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
       <wa-card>
         <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-l)">
           <wa-icon name="inbox" style="font-size: 2rem; color: var(--wa-color-neutral-fill-loud)" />
-          <p class="wa-body-m wa-color-text-quiet">No builds found for this pipeline</p>
+          <p class="wa-body-m wa-color-text-quiet">{t("no-builds-found")}</p>
         </div>
       </wa-card>
     )
@@ -114,7 +116,7 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
                   <span class="wa-heading-s">#{build.number}</span>
                 </div>
                 <div class="wa-caption-s wa-color-text-quiet">
-                  {build.message || "No commit message"}
+                  {build.message || t("no-commit-message")}
                 </div>
                 <div class="wa-cluster wa-gap-s">
                   <div class="wa-caption-xs wa-color-text-quiet">
