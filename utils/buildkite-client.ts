@@ -4,19 +4,14 @@ import { gql } from "graphql-tag"
 import { $, query } from "./gql/buildkite.ts"
 
 // Only access Deno on the server side
-const BUILDKITE_API_KEY = typeof Deno !== "undefined" ? Deno.env.get("BUILDKITE_API_KEY") : ""
 const BUILDKITE_API_ENDPOINT = "https://graphql.buildkite.com/v1"
-
-if (typeof Deno !== "undefined" && !BUILDKITE_API_KEY) {
-  throw new Error("BUILDKITE_API_KEY environment variable is required")
-}
 
 export const buildkiteClient = createClient({
   url: BUILDKITE_API_ENDPOINT,
   exchanges: [fetchExchange],
   fetchOptions: {
     headers: {
-      "Authorization": `Bearer ${BUILDKITE_API_KEY}`,
+      "Authorization": `Bearer ${typeof Deno !== "undefined" ? Deno.env.get("BUILDKITE_API_KEY") : ""}`,
       "Content-Type": "application/json",
     },
   },

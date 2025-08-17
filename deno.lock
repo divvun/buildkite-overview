@@ -34,6 +34,8 @@
     "jsr:@std/semver@1": "1.0.5",
     "jsr:@std/uuid@^1.0.7": "1.0.9",
     "npm:@awesome.me/webawesome@^3.0.0-beta.4": "3.0.0-beta.4",
+    "npm:@fluent/bundle@0.18": "0.18.0",
+    "npm:@fluent/langneg@0.7": "0.7.0",
     "npm:@graphql-typed-document-node/core@^3.2.0": "3.2.0_graphql@16.11.0",
     "npm:@lit-labs/ssr-client@*": "1.1.7",
     "npm:@opentelemetry/api@^1.9.0": "1.9.0",
@@ -361,6 +363,12 @@
     "@floating-ui/utils@0.2.10": {
       "integrity": "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="
     },
+    "@fluent/bundle@0.18.0": {
+      "integrity": "sha512-8Wfwu9q8F9g2FNnv82g6Ch/E1AW1wwljsUOolH5NEtdJdv0sZTuWvfCM7c3teB9dzNaJA8rn4khpidpozHWYEA=="
+    },
+    "@fluent/langneg@0.7.0": {
+      "integrity": "sha512-StAM0vgsD1QK+nFikaKs9Rxe3JGNipiXrpmemNGwM4gWERBXPe9gjzsBoKjgBgq1Vyiy+xy/C652QIWY+MPyYw=="
+    },
     "@graphql-typed-document-node/core@3.2.0_graphql@16.11.0": {
       "integrity": "sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==",
       "dependencies": [
@@ -544,6 +552,8 @@
       "jsr:@panva/openid-client@^6.6.2",
       "jsr:@std/fs@^1.0.19",
       "npm:@awesome.me/webawesome@^3.0.0-beta.4",
+      "npm:@fluent/bundle@0.18",
+      "npm:@fluent/langneg@0.7",
       "npm:@graphql-typed-document-node/core@^3.2.0",
       "npm:@preact/signals@^2.2.1",
       "npm:@urql/preact@^4.1.2",

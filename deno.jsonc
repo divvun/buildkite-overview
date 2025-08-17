@@ -27,7 +27,9 @@
     "fresh": "jsr:@fresh/core@^2.0.0-alpha.50",
     "preact": "npm:preact@^10.27.0",
     "@preact/signals": "npm:@preact/signals@^2.2.1",
-    "@db/sqlite": "jsr:@db/sqlite@^0.12.0"
+    "@db/sqlite": "jsr:@db/sqlite@^0.12.0",
+    "@fluent/bundle": "npm:@fluent/bundle@^0.18.0",
+    "@fluent/langneg": "npm:@fluent/langneg@^0.7.0"
   },
   "compilerOptions": {
     "lib": ["dom", "dom.asynciterable", "dom.iterable", "deno.ns"],
