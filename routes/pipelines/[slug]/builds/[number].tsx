@@ -8,7 +8,13 @@ import {
   GET_BUILD_DETAILS,
   GET_PIPELINE_BUILDS,
 } from "~/utils/buildkite-client.ts"
-import { formatDuration, formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
+import {
+  formatDuration,
+  formatTimeAgo,
+  getBadgeVariant,
+  getStatusIcon,
+  getTranslatedStatus,
+} from "~/utils/formatters.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
 import { type SessionData } from "~/utils/session.ts"
@@ -195,7 +201,7 @@ export default function BuildDetail(props: { data: BuildDetailProps; state: AppS
               </wa-icon>
               <h1 class="wa-heading-l">{props.state.t("build-number", { number: build.number })}</h1>
               <wa-badge variant={getBadgeVariant(build.state)}>
-                {build.state}
+                {getTranslatedStatus(build.state, props.state.t)}
               </wa-badge>
             </div>
 

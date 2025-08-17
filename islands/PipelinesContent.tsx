@@ -5,7 +5,7 @@ import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type AppPipeline } from "~/utils/buildkite-data.ts"
-import { getBadgeVariant, getHealthBorderStyle, getStatusIcon } from "~/utils/formatters.ts"
+import { getBadgeVariant, getHealthBorderStyle, getStatusIcon, getTranslatedStatus } from "~/utils/formatters.ts"
 
 interface PipelinesData {
   pipelines: AppPipeline[]
@@ -191,7 +191,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
                       </div>
 
                       <wa-badge variant={getBadgeVariant(pipeline.status)}>
-                        {pipeline.status}
+                        {getTranslatedStatus(pipeline.status, t)}
                       </wa-badge>
                       <div class="wa-cluster wa-gap-xs" style="flex-wrap: wrap; min-height: 24px">
                         {pipeline.tags.map((tag) => <wa-tag key={tag}>{tag}</wa-tag>)}

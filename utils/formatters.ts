@@ -205,3 +205,14 @@ export type Organization = typeof ORGANIZATIONS[number]
 export function isValidOrganization(org: string): org is Organization {
   return ORGANIZATIONS.includes(org as Organization)
 }
+
+// Translation helper for build status strings
+export function getTranslatedStatus(status: string, t: (key: string) => string): string {
+  // Try to translate the status using the status-{STATUS} key pattern
+  const translationKey = `status-${status}`
+  const translation = t(translationKey)
+
+  // If translation is the same as the key, it means no translation was found
+  // Fall back to the original status
+  return translation === translationKey ? status : translation
+}

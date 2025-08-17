@@ -48,3 +48,17 @@ pipeline-not-found = Pipeline not found
 access-denied = Access denied
 unable-to-load-builds = Unable to load builds: {$error}
 unable-to-load-build-history = Unable to load build history. Please refresh the page or check your connection.
+
+# Build status translations
+status-PASSED = Passed
+status-FAILED = Failed  
+status-RUNNING = Running
+status-CANCELED = Canceled
+status-BLOCKED = Blocked
+status-WAITING = Waiting
+status-SCHEDULED = Scheduled
+status-CREATING = Creating
+status-CANCELING = Canceling
+status-SKIPPED = Skipped
+status-NOT_RUN = Not Run
+status-WAITING_FAILED = Waiting Failed

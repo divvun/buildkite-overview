@@ -48,3 +48,17 @@ pipeline-not-found = Pipeline ikke funnet
 access-denied = Tilgang nektet
 unable-to-load-builds = Kan ikke laste bygg: {$error}
 unable-to-load-build-history = Kan ikke laste bygghistorikk. Vennligst oppdater siden eller sjekk tilkoblingen.
+
+# Byggstatus-oversettelser
+status-PASSED = Bestått
+status-FAILED = Mislyktes  
+status-RUNNING = Kjører
+status-CANCELED = Avbrutt
+status-BLOCKED = Blokkert
+status-WAITING = Venter
+status-SCHEDULED = Planlagt
+status-CREATING = Oppretter
+status-CANCELING = Avbryter
+status-SKIPPED = Hoppet over
+status-NOT_RUN = Ikke kjørt
+status-WAITING_FAILED = Venting mislyktes
