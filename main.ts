@@ -1,15 +1,18 @@
 import { App, staticFiles } from "fresh"
 import "jsr:@std/dotenv/load"
 import { define } from "./utils.ts"
-import { type AppState, requireGlobalAuth, sessionMiddleware } from "./utils/middleware.ts"
-import { getCacheManager } from "./utils/cache/cache-manager.ts"
 import { getBackgroundPoller } from "./utils/background-poller.ts"
+import { getCacheManager } from "./utils/cache/cache-manager.ts"
+import { type AppState, requireGlobalAuth, sessionMiddleware } from "./utils/middleware.ts"
 
 // Validate required environment variables
 const requiredEnvVars = [
   "GITHUB_CLIENT_ID",
   "GITHUB_CLIENT_SECRET",
   "BASE_URL",
+  "BUILDKITE_API_KEY",
+  "BUILDKITE_WEBHOOK_TOKEN",
+  "GITHUB_APP_TOKEN",
 ] as const
 
 // Optional environment variables for development
