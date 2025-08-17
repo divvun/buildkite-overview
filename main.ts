@@ -3,7 +3,7 @@ import "jsr:@std/dotenv/load"
 import { define } from "./utils.ts"
 import { getBackgroundPoller } from "./utils/background-poller.ts"
 import { getCacheManager } from "./utils/cache/cache-manager.ts"
-import { type AppState, requireGlobalAuth, sessionMiddleware } from "./utils/middleware.ts"
+import { type AppState, localizationMiddleware, requireGlobalAuth, sessionMiddleware } from "./utils/middleware.ts"
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -58,6 +58,7 @@ export const app = new App<AppState>()
 
 app.use(staticFiles())
 app.use(sessionMiddleware)
+app.use(localizationMiddleware)
 
 // Apply global auth middleware only if REQUIRE_AUTH is enabled
 if (Deno.env.get("REQUIRE_AUTH") === "true") {

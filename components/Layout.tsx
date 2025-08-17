@@ -1,4 +1,5 @@
 import type { ComponentChildren } from "preact"
+import LanguageSelector from "~/islands/LanguageSelector.tsx"
 import type { SessionData } from "~/utils/session.ts"
 
 interface BreadcrumbItem {
@@ -12,42 +13,65 @@ interface LayoutProps {
   currentPath?: string
   session?: SessionData | null
   breadcrumbs?: BreadcrumbItem[]
+  t?: (id: string, args?: Record<string, unknown>) => string
+  state?: { locale?: string }
 }
 
 export default function Layout(
-  { children, title: _title = "Buildkite Overview", currentPath, session, breadcrumbs }: LayoutProps,
+  {
+    children,
+    title: _title,
+    currentPath,
+    session,
+    breadcrumbs,
+    t,
+    state,
+  }: LayoutProps,
 ) {
-  return (
+  // Use provided t function or create a fallback that returns the key
+  const translate = t || ((id: string) => id)
+  const content = (
     <wa-page mobile-breakpoint="768">
       <header slot="header" class="wa-split">
         <div class="wa-cluster">
           <wa-icon
             name="building"
             style="color: var(--wa-color-brand-fill-loud); font-size: 1.5em"
-            aria-label="Buildkite logo"
+            aria-label={translate("buildkite-logo")}
           >
           </wa-icon>
-          <span class="wa-heading-s wa-desktop-only">Divvun Buildkite</span>
-          <a href="/" class={currentPath === "/" ? "active" : ""} aria-label="Dashboard overview">Overview</a>
+          <span class="wa-heading-s wa-desktop-only">{translate("app-title")}</span>
+          <a href="/" class={currentPath === "/" ? "active" : ""} aria-label={translate("dashboard-overview")}>
+            {translate("nav-overview")}
+          </a>
           <a
             href="/pipelines"
             class={currentPath === "/pipelines" || currentPath?.startsWith("/pipelines/") ? "active" : ""}
-            aria-label="View all pipelines"
+            aria-label={translate("view-all-pipelines")}
           >
-            Pipelines
+            {translate("nav-pipelines")}
           </a>
           {session && (
             <>
-              <a href="/agents" class={currentPath === "/agents" ? "active" : ""} aria-label="View build agents">
-                Agents
+              <a
+                href="/agents"
+                class={currentPath === "/agents" ? "active" : ""}
+                aria-label={translate("view-build-agents")}
+              >
+                {translate("nav-agents")}
               </a>
-              <a href="/queues" class={currentPath === "/queues" ? "active" : ""} aria-label="View build queues">
-                Queues
+              <a
+                href="/queues"
+                class={currentPath === "/queues" ? "active" : ""}
+                aria-label={translate("view-build-queues")}
+              >
+                {translate("nav-queues")}
               </a>
             </>
           )}
         </div>
         <div class="wa-cluster wa-gap-xs">
+          <LanguageSelector currentLocale={state?.locale || "en"} />
           {session
             ? (
               <wa-dropdown>
@@ -56,11 +80,11 @@ export default function Layout(
                   size="small"
                   appearance="plain"
                   with-caret
-                  aria-label={`User menu for ${session.user.name || session.user.login}`}
+                  aria-label={translate("user-menu-aria", { user: session.user.name || session.user.login })}
                 >
                   <img
                     src={session.user.avatar_url}
-                    alt={`${session.user.name || session.user.login} profile picture`}
+                    alt={translate("profile-picture-alt", { user: session.user.name || session.user.login })}
                     style="width: 24px; height: 24px; border-radius: 50%; margin-right: var(--wa-space-xs)"
                   />
                 </wa-button>
@@ -73,7 +97,7 @@ export default function Layout(
                     rel="noopener"
                     style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: var(--wa-space-xs)"
                   >
-                    View GitHub Profile
+                    {translate("view-github-profile")}
                     <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
                   </a>
                 </wa-dropdown-item>
@@ -81,7 +105,7 @@ export default function Layout(
                 <wa-dropdown-item>
                   <wa-icon slot="icon" name="arrow-right-from-bracket"></wa-icon>
                   <a href="/auth/logout" style="text-decoration: none; color: inherit">
-                    Sign Out
+                    {translate("logout")}
                   </a>
                 </wa-dropdown-item>
               </wa-dropdown>
@@ -89,30 +113,38 @@ export default function Layout(
             : (
               <wa-button size="small" variant="brand" appearance="outlined">
                 <wa-icon slot="prefix" name="github"></wa-icon>
-                <a href="/auth/login" style="text-decoration: none; color: inherit" aria-label="Sign in with GitHub">
-                  Sign In
+                <a
+                  href="/auth/login"
+                  style="text-decoration: none; color: inherit"
+                  aria-label={translate("sign-in-github")}
+                >
+                  {translate("login")}
                 </a>
               </wa-button>
             )}
         </div>
       </header>
 
-      <nav slot="subheader" aria-label="Secondary navigation">
+      <nav slot="subheader" aria-label={translate("secondary-navigation")}>
         <div class="wa-cluster" style="flex-wrap: nowrap">
-          <wa-button data-toggle-nav appearance="plain" size="small" aria-label="Toggle navigation menu">
-            <wa-icon name="bars" label="Menu"></wa-icon>
+          <wa-button data-toggle-nav appearance="plain" size="small" aria-label={translate("toggle-navigation-menu")}>
+            <wa-icon name="bars" label={translate("menu")}></wa-icon>
           </wa-button>
           {breadcrumbs && breadcrumbs.length > 0 && (
-            <wa-breadcrumb style="font-size: var(--wa-font-size-s)" aria-label="Breadcrumb navigation">
+            <wa-breadcrumb style="font-size: var(--wa-font-size-s)" aria-label={translate("breadcrumb-navigation")}>
               <wa-breadcrumb-item>
-                <a href="/" title="Home" aria-label="Go to homepage">
+                <a href="/" title={translate("home")} aria-label={translate("go-to-homepage")}>
                   <wa-icon name="home"></wa-icon>
                 </a>
               </wa-breadcrumb-item>
               {breadcrumbs.map((crumb, index) => (
                 <wa-breadcrumb-item key={index}>
                   {crumb.href
-                    ? <a href={crumb.href} aria-label={`Go to ${crumb.label}`}>{crumb.label}</a>
+                    ? (
+                      <a href={crumb.href} aria-label={translate("go-to-breadcrumb-aria", { label: crumb.label })}>
+                        {crumb.label}
+                      </a>
+                    )
                     : <span aria-current="page">{crumb.label}</span>}
                 </wa-breadcrumb-item>
               ))}
@@ -121,7 +153,7 @@ export default function Layout(
         </div>
       </nav>
 
-      <main role="main" aria-label="Main content">
+      <main role="main" aria-label={translate("main-content")}>
         <div class="main-container" style="margin: 0 auto; padding: 0 var(--wa-space-m)">
           {children}
         </div>
@@ -130,24 +162,26 @@ export default function Layout(
       <footer slot="footer" class="wa-grid wa-gap-xl">
         <div class="wa-cluster" style="flex-wrap: nowrap">
           <wa-icon name="building" style="font-size: 1.5em"></wa-icon>
-          <span class="wa-heading-s">Divvun Buildkite Overview</span>
+          <span class="wa-heading-s">{translate("divvun-buildkite-overview")}</span>
         </div>
         <div class="wa-stack">
-          <h3 class="wa-heading-xs">Resources</h3>
+          <h3 class="wa-heading-xs">{translate("resources")}</h3>
           <a href="https://buildkite.com/divvun" target="_blank" rel="noopener" class="wa-cluster wa-gap-xs">
-            Buildkite Dashboard
+            {translate("buildkite-dashboard")}
             <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
           </a>
           <a href="https://github.com/divvun" target="_blank" rel="noopener" class="wa-cluster wa-gap-xs">
-            GitHub - divvun
+            {translate("github-divvun")}
             <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
           </a>
           <a href="https://github.com/giellalt" target="_blank" rel="noopener" class="wa-cluster wa-gap-xs">
-            GitHub - giellalt
+            {translate("github-giellalt")}
             <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
           </a>
         </div>
       </footer>
     </wa-page>
   )
+
+  return content
 }

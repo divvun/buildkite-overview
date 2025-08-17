@@ -5,13 +5,19 @@ export interface UnauthorizedAccessProps {
   title?: string
   description?: string
   children?: ComponentChildren
+  t?: (id: string, args?: Record<string, unknown>) => string
 }
 
 export default function UnauthorizedAccess({
-  title = "Access Denied",
-  description = "You need to be a member of the divvun organization to access this page.",
+  title,
+  description,
   children,
+  t,
 }: UnauthorizedAccessProps) {
+  // Use translation function if provided, otherwise fallback to defaults
+  const translate = t || ((id: string) => id)
+  const finalTitle = title || translate("access-denied")
+  const finalDescription = description || translate("unauthorized-description")
   return (
     <wa-card style="margin: var(--wa-space-l) auto;">
       <div class="wa-stack wa-gap-m" style="padding: var(--wa-space-l)">
@@ -20,20 +26,20 @@ export default function UnauthorizedAccess({
             name="shield-exclamation"
             style="font-size: 3rem; color: var(--wa-color-warning-fill-loud)"
           />
-          <h2 class="wa-heading-l">{title}</h2>
+          <h2 class="wa-heading-l">{finalTitle}</h2>
           <p class="wa-body-m wa-color-text-quiet" style="text-align: center">
-            {description}
+            {finalDescription}
           </p>
         </div>
 
         <wa-divider />
 
         <div class="wa-stack wa-gap-s">
-          <h3 class="wa-heading-s">What you can do:</h3>
+          <h3 class="wa-heading-s">{translate("what-you-can-do")}</h3>
           <ul class="wa-stack wa-gap-xs" style="padding-left: var(--wa-space-m)">
-            <li class="wa-body-s">Contact your administrator to request access to the divvun organization</li>
-            <li class="wa-body-s">Verify you're signed in with the correct GitHub account</li>
-            <li class="wa-body-s">Make sure you've accepted the organization invitation if one was sent</li>
+            <li class="wa-body-s">{translate("contact-admin")}</li>
+            <li class="wa-body-s">{translate("verify-account")}</li>
+            <li class="wa-body-s">{translate("accept-invitation")}</li>
           </ul>
         </div>
 
@@ -47,13 +53,13 @@ export default function UnauthorizedAccess({
           <wa-button>
             <wa-icon slot="prefix" name="arrow-left" />
             <a href="/" style="text-decoration: none; color: inherit">
-              Return to Dashboard
+              {translate("return-to-dashboard")}
             </a>
           </wa-button>
           <wa-button variant="brand" appearance="outlined">
             <wa-icon slot="prefix" name="arrow-right-from-bracket" />
             <a href="/auth/logout" style="text-decoration: none; color: inherit">
-              Sign Out
+              {translate("sign-out")}
             </a>
           </wa-button>
         </div>

@@ -1,5 +1,6 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useEffect, useState } from "preact/hooks"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import { buildkiteClient, GET_PIPELINE_BUILDS } from "~/utils/buildkite-client.ts"
 import { formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
 
@@ -17,6 +18,7 @@ interface BuildInfo {
 }
 
 export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHistoryTooltipProps) {
+  const { t } = useLocalization()
   const [builds, setBuilds] = useState<BuildInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
@@ -64,12 +66,10 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
     <div
       class="build-history-tooltip-container"
       style="position: relative; display: inline-block; width: 100%"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       {children}
 
-      {isVisible && (
+      {false && isVisible && (
         <div
           class="build-history-tooltip"
           style={{
@@ -89,13 +89,13 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
           }}
         >
           <div class="wa-stack wa-gap-xs">
-            <div class="wa-caption-s wa-color-text-quiet">Recent Builds</div>
+            <div class="wa-caption-s wa-color-text-quiet">{t("recent-builds-title")}</div>
 
             {isLoading
               ? (
                 <div class="wa-cluster wa-gap-xs wa-align-items-center">
                   <wa-icon name="spinner" style="animation: spin 1s linear infinite; font-size: 0.8rem" />
-                  <span class="wa-caption-xs">Loading...</span>
+                  <span class="wa-caption-xs">{t("loading-ellipsis")}</span>
                 </div>
               )
               : builds.length > 0
@@ -142,7 +142,7 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
                   ))}
                 </div>
               )
-              : <div class="wa-caption-xs wa-color-text-quiet">No recent builds found</div>}
+              : <div class="wa-caption-xs wa-color-text-quiet">{t("no-recent-builds")}</div>}
           </div>
 
           {/* Tooltip arrow */}
