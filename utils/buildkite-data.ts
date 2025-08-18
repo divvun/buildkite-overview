@@ -1,5 +1,4 @@
 import {
-  type BuildkiteAgent,
   type BuildkiteBuild,
   type BuildkitePipeline,
   GET_ORGANIZATION_CLUSTERS_AND_METRICS,
@@ -431,27 +430,6 @@ export function extractFailingPipelinesFromPipelines(pipelines: AppPipeline[]): 
   return failingPipelines
 }
 
-function mapBuildkiteAgentToApp(agent: BuildkiteAgent, orgSlug: string): AppAgent {
-  return {
-    id: agent.id,
-    name: agent.name,
-    hostname: agent.hostname,
-    connectionState: agent.connectionState,
-    isRunningJob: agent.isRunningJob,
-    operatingSystem: agent.operatingSystem?.name,
-    version: agent.version,
-    ipAddress: agent.ipAddress,
-    organization: orgSlug,
-    queueKey: agent.clusterQueue?.key,
-    metadata: undefined, // Not available in simplified query
-    currentJob: undefined, // Not available in simplified query for now
-    createdAt: new Date(agent.createdAt),
-    connectedAt: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
-    disconnectedAt: agent.disconnectedAt ? new Date(agent.disconnectedAt) : undefined,
-    lastSeen: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
-  }
-}
-
 export async function fetchAllAgents(): Promise<AppAgent[]> {
   const cacheManager = getCacheManager()
   return await cacheManager.getAgents()
@@ -484,15 +462,6 @@ export async function fetchRunningBuilds(): Promise<AppBuild[]> {
     console.error("Error fetching running builds:", error)
     return []
   }
-}
-
-/**
- * Extract running builds from pipeline data (no additional API calls)
- * @deprecated Use fetchQueueStatus() and REST API for accurate running builds
- */
-export function extractRunningBuildsFromPipelines(pipelines: AppPipeline[]): AppBuild[] {
-  console.log("extractRunningBuildsFromPipelines is deprecated, returning empty array")
-  return []
 }
 
 export async function fetchAgentMetrics(): Promise<AgentMetrics> {

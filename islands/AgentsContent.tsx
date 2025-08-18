@@ -204,7 +204,6 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                   <div class="wa-caption-s wa-color-text-quiet">
                                     {agent.hostname ? `${agent.hostname} • ` : ""}
                                     {agent.organization}
-                                    {agent.ipAddress ? ` • ${agent.ipAddress}` : ""}
                                     {agent.queueKey && agent.queueKey !== queueKey ? ` • Queue: ${agent.queueKey}` : ""}
                                   </div>
                                 </div>
