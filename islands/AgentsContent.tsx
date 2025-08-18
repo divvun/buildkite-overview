@@ -1,10 +1,10 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
-import { useLocalization } from "~/utils/localization-context.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type AppAgent } from "~/utils/buildkite-data.ts"
 import { formatDuration, formatLastSeen, getConnectionIcon, getConnectionVariant } from "~/utils/formatters.ts"
+import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface AgentsData {
   agents: AppAgent[]
@@ -291,12 +291,6 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
             })}
           </div>
         )}
-
-      {isLoading && (
-        <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
-          {t("refreshing")}
-        </div>
-      )}
     </>
   )
 }

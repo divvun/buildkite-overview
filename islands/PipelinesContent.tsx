@@ -1,11 +1,11 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
-import { useLocalization } from "~/utils/localization-context.tsx"
 import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type AppPipeline } from "~/utils/buildkite-data.ts"
 import { getBadgeVariant, getHealthBorderStyle, getStatusIcon, getTranslatedStatus } from "~/utils/formatters.ts"
+import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface PipelinesData {
   pipelines: AppPipeline[]
@@ -308,12 +308,6 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
               total: pipelines.length,
             })}
           </div>
-        </div>
-      )}
-
-      {isLoading && (
-        <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
-          {t("refreshing")}
         </div>
       )}
     </div>
