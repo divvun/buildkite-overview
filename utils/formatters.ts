@@ -7,21 +7,21 @@ export const BUILD_STATUS_MAP: Record<string, string> = {
   // Buildkite API uppercase formats
   "PASSED": "passed",
   "FAILED": "failed",
-  "CANCELED": "cancelled",
+  "CANCELED": "canceled",
   "WAITING_FAILED": "failed",
   "RUNNING": "running",
   "CREATING": "running",
   "SCHEDULED": "scheduled",
   "WAITING": "waiting",
   "BLOCKED": "blocked",
-  "CANCELING": "cancelled",
+  "CANCELING": "canceled",
   "SKIPPED": "passed",
   "NOT_RUN": "neutral",
   // Already normalized formats
   "passed": "passed",
   "failed": "failed",
   "running": "running",
-  "cancelled": "cancelled",
+  "canceled": "canceled",
   "blocked": "blocked",
   "waiting": "waiting",
   "scheduled": "scheduled",
@@ -47,7 +47,7 @@ export function getBadgeVariant(status: string): "brand" | "neutral" | "success"
     case "waiting":
     case "scheduled":
       return "warning" // Something will happen soon
-    case "cancelled":
+    case "canceled":
       return "neutral"
     default:
       return "neutral"
@@ -69,7 +69,7 @@ export function getStatusIcon(status: string): string {
       return "clock" // Waiting for something
     case "scheduled":
       return "calendar" // Scheduled to run
-    case "cancelled":
+    case "canceled":
       return "circle-stop"
     default:
       return "circle"

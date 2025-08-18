@@ -46,17 +46,19 @@ view-pipeline = View Pipeline
 view-build = View Build
 
 # Build statuses (for job states)
-status-passed = PASSED
-status-finished = FINISHED
-status-failed = FAILED
-status-canceled = CANCELED
-status-running = RUNNING
-status-scheduled = SCHEDULED
-status-creating = CREATING
-status-waiting = WAITING
-status-blocked = BLOCKED
-status-canceling = CANCELING
-status-waiting-failed = WAITING_FAILED
+status-passed = Passed
+status-finished = Finished
+status-failed = Failed
+status-canceled = Canceled
+status-running = Running
+status-scheduled = Scheduled
+status-creating = Creating
+status-waiting = Waiting
+status-blocked = Blocked
+status-canceling = Canceling
+status-waiting-failed = Waiting Failed
+status-neutral = Neutral
+status-unknown = Unknown
 
 # Pagination placeholder
 status-placeholder = Status

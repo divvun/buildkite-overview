@@ -75,7 +75,7 @@ export default function PipelineFilters({ initialSearch = "", initialStatus = ""
         <wa-option value="passed">{t("status-passed")}</wa-option>
         <wa-option value="failed">{t("status-failed")}</wa-option>
         <wa-option value="running">{t("status-running")}</wa-option>
-        <wa-option value="cancelled">{t("status-cancelled")}</wa-option>
+        <wa-option value="canceled">{t("status-canceled")}</wa-option>
         <wa-option value="neutral">{t("status-neutral")}</wa-option>
         <wa-option value="unknown">{t("status-unknown")}</wa-option>
       </wa-select>
