@@ -15,7 +15,7 @@
     },
     "exclude": ["node_modules", "utils/gql/buildkite.ts"]
   },
-  "exclude": ["**/_fresh/*"],
+  "exclude": ["**/_fresh/*", "**/static/webawesome/*", "utils/gql/buildkite.ts"],
   "imports": {
     "@std/fs": "jsr:@std/fs@^1.0.19",
     "~/": "./",

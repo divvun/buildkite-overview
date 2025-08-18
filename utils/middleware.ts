@@ -1,4 +1,4 @@
-import { FluentBundle } from "@fluent/bundle"
+import { FluentBundle, type FluentVariable } from "@fluent/bundle"
 import { define, State } from "~/utils.ts"
 import { createMockSession, getOptionalSession, type SessionData } from "~/utils/session.ts"
 import type { SupportedLocale } from "~/utils/localization.ts"
@@ -16,10 +16,10 @@ export const sessionMiddleware = define.middleware(async (ctx) => {
   // Check if BYPASS_ORG_CHECK is enabled
   if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
     console.log("⚠️  Using mock session for development (BYPASS_ORG_CHECK=true)")
-    ctx.state.session = createMockSession()
+    ;(ctx.state as AppState).session = createMockSession()
   } else {
     // Get session from request (optional, doesn't throw)
-    ctx.state.session = getOptionalSession(ctx.req)
+    ;(ctx.state as AppState).session = getOptionalSession(ctx.req)
   }
 
   // Continue to the route handler
@@ -32,7 +32,7 @@ export const localizationMiddleware = define.middleware(async (ctx) => {
   // First check for lang cookie, then fall back to Accept-Language header
   const langCookie = ctx.req.headers.get("cookie")
     ?.split("; ")
-    .find((c) => c.startsWith("lang="))
+    .find((c: string) => c.startsWith("lang="))
     ?.split("=")[1]
 
   const acceptLanguageHeader = ctx.req.headers.get("Accept-Language")
@@ -40,13 +40,11 @@ export const localizationMiddleware = define.middleware(async (ctx) => {
 
   // Create localization bundle
   const bundle = await getLocalizationBundle(locale)
-  const t = createTranslationFunction(bundle)
-
-  // Add to context state
-  ctx.state.locale = locale
-  ctx.state.l10n = bundle
-  ctx.state.t = t
-  ctx.state.title = t("app-title") // Default title, routes can override
+  const t = createTranslationFunction(bundle) // Add to context state
+  ;(ctx.state as AppState).locale = locale
+  ;(ctx.state as AppState).l10n = bundle
+  ;(ctx.state as AppState).t = t
+  ;(ctx.state as AppState).title = t("app-title") // Default title, routes can override
 
   // Get the response and set headers
   const response = await ctx.next()

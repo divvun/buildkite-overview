@@ -1,12 +1,12 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
-import { buildkiteClient, GET_PIPELINE_BUILDS } from "~/utils/buildkite-client.ts"
+import { GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
 import { formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
 
 interface BuildHistoryTooltipProps {
   pipelineSlug: string
-  children: React.ReactNode
+  children: preact.ComponentChildren
 }
 
 interface BuildInfo {
@@ -29,7 +29,7 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
     setIsLoading(true)
     try {
       const fullPipelineSlug = `divvun/${pipelineSlug}`
-      const result = await buildkiteClient.query(GET_PIPELINE_BUILDS, {
+      const result = await getBuildkiteClient().query(GET_PIPELINE_BUILDS, {
         pipelineSlug: fullPipelineSlug,
         first: 5, // Get last 5 builds
       }).toPromise()
@@ -113,7 +113,7 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
                           style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud); font-size: 0.8rem`}
                         />
                         <span class="wa-caption-xs wa-color-text-loud">#{build.number}</span>
-                        <wa-badge variant={getBadgeVariant(build.state)} size="small">
+                        <wa-badge variant={getBadgeVariant(build.state)}>
                           {build.state}
                         </wa-badge>
                       </div>

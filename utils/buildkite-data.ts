@@ -1,9 +1,9 @@
 import {
   type BuildkiteAgent,
   type BuildkiteBuild,
-  buildkiteClient,
   type BuildkitePipeline,
   GET_ORGANIZATION_CLUSTERS_AND_METRICS,
+  getBuildkiteClient,
 } from "./buildkite-client.ts"
 import { getCacheManager } from "./cache/cache-manager.ts"
 import { formatDuration, formatTimeAgo, normalizeStatus, ORGANIZATIONS } from "./formatters.ts"
@@ -509,7 +509,8 @@ export async function fetchAgentMetrics(): Promise<AgentMetrics> {
       console.log(`Fetching queue metrics for organization: ${orgSlug}`)
 
       const result = await withRetry(
-        async () => await buildkiteClient.query(GET_ORGANIZATION_CLUSTERS_AND_METRICS, { slug: orgSlug }).toPromise(),
+        async () =>
+          await getBuildkiteClient().query(GET_ORGANIZATION_CLUSTERS_AND_METRICS, { slug: orgSlug }).toPromise(),
         { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 }, // Allow up to 5 minute delays for rate limiting
       )
 

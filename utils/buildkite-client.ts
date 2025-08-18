@@ -10,16 +10,28 @@ function bkKey() {
 // Only access Deno on the server side
 const BUILDKITE_API_ENDPOINT = "https://graphql.buildkite.com/v1"
 
-export const buildkiteClient = createClient({
-  url: BUILDKITE_API_ENDPOINT,
-  exchanges: [fetchExchange],
-  fetchOptions: {
-    headers: {
-      "Authorization": `Bearer ${bkKey()}`,
-      "Content-Type": "application/json",
-    },
-  },
-})
+let cachedClient: ReturnType<typeof createClient> | null = null
+
+export function getBuildkiteClient() {
+  if (!cachedClient) {
+    const apiKey = bkKey()
+    if (!apiKey) {
+      throw new Error("BUILDKITE_API_KEY environment variable is not set")
+    }
+
+    cachedClient = createClient({
+      url: BUILDKITE_API_ENDPOINT,
+      exchanges: [fetchExchange],
+      fetchOptions: {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      },
+    })
+  }
+  return cachedClient
+}
 
 export interface BuildkiteBuild {
   id: string
@@ -281,7 +293,7 @@ export const GET_BUILD_DETAILS = query((q) => [
 ])
 
 export const GET_JOB_LOG: TypedDocumentNode<
-  { job: any },
+  { job: BuildkiteJob | null },
   { uuid: string }
 > = gql`
   query GetJobLog($uuid: ID!) {
@@ -507,9 +519,14 @@ export async function fetchBuildsByState(orgSlug: string, states: string[]): Pro
   console.log(`Fetching builds from REST API: ${url}`)
 
   try {
+    const apiKey = bkKey()
+    if (!apiKey) {
+      throw new Error("BUILDKITE_API_KEY environment variable is not set")
+    }
+
     const response = await fetch(url, {
       headers: {
-        "Authorization": `Bearer ${bkKey()}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Accept": "application/json",
       },
     })

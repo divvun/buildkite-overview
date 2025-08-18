@@ -1,4 +1,4 @@
-import { FluentBundle, FluentResource } from "@fluent/bundle"
+import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle"
 import { negotiateLanguages } from "@fluent/langneg"
 
 // Automatically detect supported locales from filesystem
@@ -125,6 +125,23 @@ export async function getLocalizationBundle(locale: SupportedLocale): Promise<Fl
 }
 
 /**
+ * Convert unknown values to FluentVariable types safely
+ */
+function convertToFluentVariables(args: Record<string, unknown>): Record<string, FluentVariable> {
+  const result: Record<string, FluentVariable> = {}
+  for (const [key, value] of Object.entries(args)) {
+    if (typeof value === "string" || typeof value === "number" || value instanceof Date) {
+      result[key] = value
+    } else if (value != null) {
+      // Convert other types to string for safe formatting
+      result[key] = String(value)
+    }
+    // Skip null/undefined values
+  }
+  return result
+}
+
+/**
  * Create a translation function for the given bundle
  */
 export function createTranslationFunction(bundle: FluentBundle) {
@@ -135,7 +152,8 @@ export function createTranslationFunction(bundle: FluentBundle) {
       return id // Return the key as fallback
     }
 
-    const formatted = bundle.formatPattern(message.value, args)
+    const fluentArgs = args ? convertToFluentVariables(args) : null
+    const formatted = bundle.formatPattern(message.value, fluentArgs)
     return formatted
   }
 }
@@ -148,7 +166,8 @@ export function extractTranslations(bundle: FluentBundle): Record<string, string
 
   for (const [id, message] of bundle._messages) {
     if (message.value) {
-      translations[id] = message.value
+      const formatted = bundle.formatPattern(message.value, null)
+      translations[id] = formatted
     }
   }
 

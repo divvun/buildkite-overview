@@ -35,7 +35,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
       setIsLoading(true)
 
       // Show skeleton only if we have existing data (refresh scenario)
-      if (data?.pipelines.length > 0) {
+      if (data?.pipelines && data.pipelines.length > 0) {
         setShowSkeletonOnRefresh(true)
       }
 

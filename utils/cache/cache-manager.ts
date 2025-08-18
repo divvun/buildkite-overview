@@ -1,10 +1,10 @@
 import { CacheDB } from "./db.ts"
 import {
-  buildkiteClient,
   GET_BUILD_DETAILS,
   GET_ORGANIZATION_AGENTS,
   GET_ORGANIZATION_PIPELINES_PAGINATED,
   GET_PIPELINE_BUILDS,
+  getBuildkiteClient,
 } from "../buildkite-client.ts"
 import { withRetry } from "../retry-helper.ts"
 import { ORGANIZATIONS } from "../formatters.ts"
@@ -177,7 +177,7 @@ export class CacheManager {
 
           const result = await withRetry(
             async () =>
-              await buildkiteClient.query(GET_ORGANIZATION_PIPELINES_PAGINATED, {
+              await getBuildkiteClient().query(GET_ORGANIZATION_PIPELINES_PAGINATED, {
                 slug: orgSlug,
                 first: 50, // Reduced from 100 to lower complexity points per request
                 after: cursor || undefined,
@@ -424,7 +424,7 @@ export class CacheManager {
         console.log(`Fetching agents for organization: ${orgSlug}`)
 
         const result = await withRetry(
-          async () => await buildkiteClient.query(GET_ORGANIZATION_AGENTS, { slug: orgSlug }).toPromise(),
+          async () => await getBuildkiteClient().query(GET_ORGANIZATION_AGENTS, { slug: orgSlug }).toPromise(),
           { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 }, // Allow up to 5 minute delays for rate limiting
         ) as any
 
@@ -849,7 +849,7 @@ export class CacheManager {
         const fullPipelineSlug = `divvun/${pipelineSlug}`
         const result = await withRetry(
           async () =>
-            await buildkiteClient.query(GET_PIPELINE_BUILDS, {
+            await getBuildkiteClient().query(GET_PIPELINE_BUILDS, {
               pipelineSlug: fullPipelineSlug,
               first: limit,
             }).toPromise(),
@@ -885,7 +885,7 @@ export class CacheManager {
 
         const result = await withRetry(
           async () =>
-            await buildkiteClient.query(GET_BUILD_DETAILS, {
+            await getBuildkiteClient().query(GET_BUILD_DETAILS, {
               uuid: uuid,
             }).toPromise(),
           { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },

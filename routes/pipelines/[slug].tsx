@@ -1,7 +1,7 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import PipelineBuilds from "~/islands/PipelineBuilds.tsx"
-import { type BuildkiteBuild, buildkiteClient, GET_PIPELINE_BUILDS } from "~/utils/buildkite-client.ts"
+import { type BuildkiteBuild, GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 import { formatTimeAgo, getBadgeVariant, getStatusIcon, getTranslatedStatus } from "~/utils/formatters.ts"
@@ -44,14 +44,14 @@ export const handler = {
         const fullPipelineSlug = `divvun/${pipelineSlug}`
         const result = await withRetry(
           async () =>
-            await buildkiteClient.query(GET_PIPELINE_BUILDS, {
+            await getBuildkiteClient().query(GET_PIPELINE_BUILDS, {
               pipelineSlug: fullPipelineSlug,
               first: 20,
             }).toPromise(),
           { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },
         )
 
-        builds = result.data?.pipeline?.builds?.edges?.map((edge) => edge.node) || []
+        builds = result.data?.pipeline?.builds?.edges?.map((edge: { node: BuildkiteBuild }) => edge.node) || []
         console.log(`Fetched ${builds.length} builds for pipeline ${fullPipelineSlug}`)
 
         // Cache each build

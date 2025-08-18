@@ -1,7 +1,6 @@
-import { RouteHandler } from "fresh"
 import { SUPPORTED_LOCALES, type SupportedLocale } from "~/utils/localization.ts"
 
-export const handler: RouteHandler = async (ctx) => {
+export const handler = async (ctx: any) => {
   try {
     const requestedLocale = ctx.params.locale as string
 
