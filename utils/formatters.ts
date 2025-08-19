@@ -118,7 +118,7 @@ export function getConnectionVariant(state: string): "brand" | "neutral" | "succ
 }
 
 // Time formatting utilities
-export function formatDuration(startedAt?: string, finishedAt?: string): string {
+export function formatDuration(startedAt?: string, finishedAt?: string, locale: string = "en"): string {
   if (!startedAt) return "0s"
 
   const start = new Date(startedAt)
@@ -129,20 +129,51 @@ export function formatDuration(startedAt?: string, finishedAt?: string): string 
   const mins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60))
   const secs = Math.floor((durationMs % (1000 * 60)) / 1000)
 
-  if (hours > 0) return `${hours}h ${mins}m ${secs}s`
-  if (mins > 0) return `${mins}m ${secs}s`
-  return `${secs}s`
+  try {
+    // Use Intl.DurationFormat when it becomes available, for now use abbreviated format
+    const formatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 })
+
+    if (hours > 0) {
+      return `${formatter.format(hours)}h ${formatter.format(mins)}m ${formatter.format(secs)}s`
+    }
+    if (mins > 0) {
+      return `${formatter.format(mins)}m ${formatter.format(secs)}s`
+    }
+    return `${formatter.format(secs)}s`
+  } catch (_error) {
+    // Fallback to simple format
+    if (hours > 0) return `${hours}h ${mins}m ${secs}s`
+    if (mins > 0) return `${mins}m ${secs}s`
+    return `${secs}s`
+  }
 }
 
-export function formatDurationSeconds(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ${seconds % 60}s`
-  const hours = Math.floor(minutes / 60)
-  return `${hours}h ${minutes % 60}m`
+export function formatDurationSeconds(seconds: number, locale: string = "en"): string {
+  try {
+    const formatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 })
+
+    if (seconds < 60) {
+      return `${formatter.format(seconds)}s`
+    }
+
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) {
+      return `${formatter.format(minutes)}m ${formatter.format(seconds % 60)}s`
+    }
+
+    const hours = Math.floor(minutes / 60)
+    return `${formatter.format(hours)}h ${formatter.format(minutes % 60)}m`
+  } catch (_error) {
+    // Fallback to simple format
+    if (seconds < 60) return `${seconds}s`
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ${seconds % 60}s`
+    const hours = Math.floor(minutes / 60)
+    return `${hours}h ${minutes % 60}m`
+  }
 }
 
-export function formatTimeAgo(dateStr: string): string {
+export function formatTimeAgo(dateStr: string, locale: string = "en", t?: (key: string) => string): string {
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -150,27 +181,52 @@ export function formatTimeAgo(dateStr: string): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffMins < 1) return "now"
-  if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`
-  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`
+  if (diffMins < 1) return t?.("time-now") || "now"
+
+  try {
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" })
+
+    if (diffDays > 0) {
+      return rtf.format(-diffDays, "day")
+    } else if (diffHours > 0) {
+      return rtf.format(-diffHours, "hour")
+    } else {
+      return rtf.format(-diffMins, "minute")
+    }
+  } catch (_error) {
+    // Fallback to English if Intl.RelativeTimeFormat fails
+    if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`
+    return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`
+  }
 }
 
-export function formatFailingSince(date: Date | string): string {
+export function formatFailingSince(date: Date | string, locale: string = "en"): string {
   const now = new Date()
   const dateObj = typeof date === "string" ? new Date(date) : date
   const diffMs = now.getTime() - dateObj.getTime()
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffHours < 24) {
-    return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`
+  try {
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" })
+
+    if (diffDays > 0) {
+      return rtf.format(-diffDays, "day")
+    } else {
+      return rtf.format(-diffHours, "hour")
+    }
+  } catch (_error) {
+    // Fallback to English if Intl.RelativeTimeFormat fails
+    if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`
+    }
+    return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`
   }
-  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`
 }
 
-export function formatLastSeen(date?: Date): string {
-  if (!date) return "Never"
+export function formatLastSeen(date?: Date, locale: string = "en", t?: (key: string) => string): string {
+  if (!date) return t?.("time-never") || "Never"
 
   // Ensure we have a valid Date object
   let validDate: Date
@@ -178,12 +234,12 @@ export function formatLastSeen(date?: Date): string {
     validDate = date
   } else {
     // Try to convert string to Date
-    validDate = new Date(date as any)
+    validDate = new Date(date as unknown as string)
   }
 
   // Check if the date is valid
   if (isNaN(validDate.getTime())) {
-    return "Unknown"
+    return t?.("time-unknown") || "Unknown"
   }
 
   const now = new Date()
@@ -192,10 +248,24 @@ export function formatLastSeen(date?: Date): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-  if (diffMins < 1) return "now"
-  if (diffMins < 60) return `${diffMins} min ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  return `${diffDays}d ago`
+  if (diffMins < 1) return t?.("time-now") || "now"
+
+  try {
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" })
+
+    if (diffDays > 0) {
+      return rtf.format(-diffDays, "day")
+    } else if (diffHours > 0) {
+      return rtf.format(-diffHours, "hour")
+    } else {
+      return rtf.format(-diffMins, "minute")
+    }
+  } catch (_error) {
+    // Fallback to English if Intl.RelativeTimeFormat fails
+    if (diffMins < 60) return `${diffMins} min ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    return `${diffDays}d ago`
+  }
 }
 
 // Buildkite organization(s) - these are the actual Buildkite orgs we fetch pipelines from
