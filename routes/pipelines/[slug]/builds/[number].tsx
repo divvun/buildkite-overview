@@ -207,11 +207,13 @@ export default function BuildDetail(props: { data: BuildDetailProps; state: AppS
 
             <div class="wa-cluster wa-gap-l">
               <div class="wa-caption-m wa-color-text-quiet">
-                {props.state.t("duration-label")}: {formatDuration(build.startedAt, build.finishedAt)}
+                {props.state.t("duration-label")}:{" "}
+                {formatDuration(build.startedAt, build.finishedAt, props.state.locale)}
               </div>
               <div class="wa-caption-m wa-color-text-quiet">
-                {props.state.t("started-label-colon")}:{" "}
-                {build.startedAt ? formatTimeAgo(build.startedAt) : props.state.t("not-started")}
+                {props.state.t("started-label-colon")}: {build.startedAt
+                  ? formatTimeAgo(build.startedAt, props.state.locale, props.state.t)
+                  : props.state.t("not-started")}
               </div>
             </div>
           </div>

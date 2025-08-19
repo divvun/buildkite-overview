@@ -17,7 +17,7 @@ interface AgentsContentProps {
 }
 
 export default function AgentsContent({ orgFilter }: AgentsContentProps) {
-  const { t } = useLocalization()
+  const { t, locale } = useLocalization()
   const [data, setData] = useState<AgentsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -226,7 +226,8 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                     </div>
                                     <div class="wa-caption-s wa-color-text-quiet">
                                       {t("duration-label")}
-                                      {agent.currentJob.duration || formatDuration(agent.currentJob.startedAt)}
+                                      {agent.currentJob.duration ||
+                                        formatDuration(agent.currentJob.startedAt, undefined, locale)}
                                       {agent.currentJob.url && (
                                         <>
                                           {" • "}
@@ -258,7 +259,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                 </div>
                               )}
                               <div class="wa-caption-s wa-color-text-quiet">
-                                {t("last-seen")} {formatLastSeen(agent.lastSeen)}
+                                {t("last-seen")} {formatLastSeen(agent.lastSeen, locale, t)}
                               </div>
                             </div>
                           </div>

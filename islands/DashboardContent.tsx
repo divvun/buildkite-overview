@@ -22,7 +22,7 @@ interface DashboardContentProps {
 }
 
 export default function DashboardContent({ session }: DashboardContentProps) {
-  const { t } = useLocalization()
+  const { t, locale } = useLocalization()
   // Pure client-side state - no initial data from server
   const [data, setData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -129,14 +129,14 @@ export default function DashboardContent({ session }: DashboardContentProps) {
               href="/agents"
               style="text-decoration: none; color: inherit"
               aria-label={t("view-agents-wait-time-aria", {
-                waitTime: formatDurationSeconds(agentMetrics.averageWaitTime),
+                waitTime: formatDurationSeconds(agentMetrics.averageWaitTime, locale),
               })}
             >
               <wa-card class="clickable-card">
                 <div class="wa-stack wa-gap-xs">
                   <div class="wa-stack wa-gap-2xs">
                     <span class="wa-heading-s">{t("average-wait-time")}</span>
-                    <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime)}</wa-badge>
+                    <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime, locale)}</wa-badge>
                   </div>
                 </div>
               </wa-card>
@@ -148,7 +148,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                 <div class="wa-stack wa-gap-2xs">
                   <span class="wa-heading-s">{t("average-wait-time")}</span>
                   <wa-badge variant="neutral" style="text-transform: none">
-                    {formatDurationSeconds(agentMetrics.averageWaitTime)}
+                    {formatDurationSeconds(agentMetrics.averageWaitTime, locale)}
                   </wa-badge>
                 </div>
               </div>
@@ -213,7 +213,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                             {pipeline.name}
                           </span>
                           <div class="wa-caption-s wa-color-text-quiet">
-                            {t("failing-since", { time: formatFailingSince(pipeline.failingSince) })}
+                            {t("failing-since", { time: formatFailingSince(pipeline.failingSince, locale) })}
                           </div>
                         </div>
 

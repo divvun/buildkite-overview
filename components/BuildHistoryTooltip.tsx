@@ -18,7 +18,7 @@ interface BuildInfo {
 }
 
 export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHistoryTooltipProps) {
-  const { t } = useLocalization()
+  const { t, locale } = useLocalization()
   const [builds, setBuilds] = useState<BuildInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
@@ -134,7 +134,7 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
                             </div>
                           )}
                           <div class="wa-caption-xs wa-color-text-quiet">
-                            {formatTimeAgo(build.createdAt)}
+                            {formatTimeAgo(build.createdAt, locale, t)}
                           </div>
                         </div>
                       </div>

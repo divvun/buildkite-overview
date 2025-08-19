@@ -2,7 +2,11 @@ import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
 import JobLogs from "~/islands/JobLogs.tsx"
 import { type BuildkiteJob } from "~/utils/buildkite-client.ts"
-import { getBadgeVariant } from "~/utils/formatters.ts"
+import {
+  formatDuration as formatDurationFromUtils,
+  formatTimeAgo as formatTimeAgoFromUtils,
+  getBadgeVariant,
+} from "~/utils/formatters.ts"
 
 interface BuildJobsProps {
   buildId: string
@@ -55,9 +59,9 @@ function getJobCommand(job: BuildkiteJob): string | null {
   return job.command || null
 }
 
-function formatJobTiming(job: BuildkiteJob, t: any): string {
-  const duration = formatDuration(job.startedAt, job.finishedAt, t)
-  const timeAgo = job.startedAt ? formatTimeAgo(job.startedAt, t) : t("not-started")
+function formatJobTiming(job: BuildkiteJob, t: any, locale: string): string {
+  const duration = job.startedAt ? formatDurationFromUtils(job.startedAt, job.finishedAt, locale) : "0s"
+  const timeAgo = job.startedAt ? formatTimeAgoFromUtils(job.startedAt, locale, t) : t("not-started")
 
   if (job.startedAt && job.finishedAt) {
     return t("ran-in", { duration })
@@ -68,42 +72,10 @@ function formatJobTiming(job: BuildkiteJob, t: any): string {
   }
 }
 
-function formatDuration(startedAt?: string, finishedAt?: string, t?: any) {
-  if (!startedAt) return t("not-started")
-
-  const start = new Date(startedAt)
-  const end = finishedAt ? new Date(finishedAt) : new Date()
-  const durationMs = end.getTime() - start.getTime()
-
-  if (durationMs < 0) return "0s"
-
-  const hours = Math.floor(durationMs / (1000 * 60 * 60))
-  const mins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60))
-  const secs = Math.floor((durationMs % (1000 * 60)) / 1000)
-
-  if (hours > 0) return `${hours}h ${mins}m ${secs}s`
-  if (mins > 0) return `${mins}m ${secs}s`
-  return `${secs}s`
-}
-
-function formatTimeAgo(dateStr: string, t: any) {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / (1000 * 60))
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffMins < 1) return t("time-now")
-  if (diffMins < 60) return t("time-minutes-ago", { count: diffMins })
-  if (diffHours < 24) return t("time-hours-ago", { count: diffHours })
-  return t("time-days-ago", { count: diffDays })
-}
-
 export default function BuildJobs(
   { buildId, buildNumber: initialBuildNumber, pipelineSlug: initialPipelineSlug, initialJobs = [] }: BuildJobsProps,
 ) {
-  const { t } = useLocalization()
+  const { t, locale } = useLocalization()
   const [jobs, setJobs] = useState<BuildkiteJob[]>(initialJobs)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
@@ -259,7 +231,7 @@ export default function BuildJobs(
 
                 <div style="display: flex; align-items: center; gap: var(--wa-space-m)">
                   <span class="wa-caption-s wa-color-text-quiet">
-                    {formatJobTiming(job, t)}
+                    {formatJobTiming(job, t, locale)}
                   </span>
                   <span
                     style={`transform: ${
@@ -293,7 +265,7 @@ export default function BuildJobs(
                     <div class="wa-stack wa-gap-3xs">
                       <div class="wa-caption-xs wa-color-text-quiet">{t("duration")}</div>
                       <div class="wa-caption-s">
-                        {formatDuration(job.startedAt, job.finishedAt, t)}
+                        {formatDurationFromUtils(job.startedAt, job.finishedAt, locale)}
                       </div>
                     </div>
 

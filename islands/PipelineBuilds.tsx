@@ -9,7 +9,7 @@ interface PipelineBuildsProps {
 }
 
 export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: PipelineBuildsProps) {
-  const { t } = useLocalization()
+  const { t, locale } = useLocalization()
   const [builds, setBuilds] = useState<BuildkiteBuild[]>(initialBuilds)
   const [loading, setLoading] = useState(false) // Don't load if we have initial builds
   const [error, setError] = useState<string>("")
@@ -131,10 +131,10 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
                   {build.state}
                 </wa-badge>
                 <div class="wa-caption-s">
-                  {formatDuration(build.startedAt, build.finishedAt)}
+                  {formatDuration(build.startedAt, build.finishedAt, locale)}
                 </div>
                 <div class="wa-caption-xs wa-color-text-quiet">
-                  {formatTimeAgo(build.startedAt || build.createdAt)}
+                  {formatTimeAgo(build.startedAt || build.createdAt, locale, t)}
                 </div>
               </div>
             </div>

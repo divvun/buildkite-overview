@@ -185,7 +185,11 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
               <div class="wa-caption-m wa-color-text-quiet">
                 {latestBuild
                   ? `${props.state.t("last-build-label")} ${
-                    formatTimeAgo(latestBuild.createdAt || latestBuild.startedAt || new Date().toISOString())
+                    formatTimeAgo(
+                      latestBuild.createdAt || latestBuild.startedAt || new Date().toISOString(),
+                      props.state.locale,
+                      props.state.t,
+                    )
                   }`
                   : props.state.t("no-builds-yet")}
               </div>
