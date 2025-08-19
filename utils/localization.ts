@@ -130,8 +130,11 @@ export async function getLocalizationBundle(locale: SupportedLocale): Promise<Fl
 function convertToFluentVariables(args: Record<string, unknown>): Record<string, FluentVariable> {
   const result: Record<string, FluentVariable> = {}
   for (const [key, value] of Object.entries(args)) {
-    if (typeof value === "string" || typeof value === "number" || value instanceof Date) {
+    if (typeof value === "string" || value instanceof Date) {
       result[key] = value
+    } else if (typeof value === "number") {
+      // Check for NaN and convert to 0 to prevent Fluent parsing issues
+      result[key] = isNaN(value) ? 0 : value
     } else if (value != null) {
       // Convert other types to string for safe formatting
       result[key] = String(value)

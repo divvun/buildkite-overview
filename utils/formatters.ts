@@ -175,6 +175,12 @@ export function formatDurationSeconds(seconds: number, locale: string = "en"): s
 
 export function formatTimeAgo(dateStr: string, locale: string = "en", t?: (key: string) => string): string {
   const date = new Date(dateStr)
+
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    return t?.("time-unknown") || "Unknown"
+  }
+
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / (1000 * 60))
@@ -216,6 +222,12 @@ export function formatTimeAgo(dateStr: string, locale: string = "en", t?: (key: 
 export function formatFailingSince(date: Date | string, locale: string = "en", t?: (key: string) => string): string {
   const now = new Date()
   const dateObj = typeof date === "string" ? new Date(date) : date
+
+  // Check if the date is valid
+  if (isNaN(dateObj.getTime())) {
+    return t?.("time-unknown") || "Unknown"
+  }
+
   const diffMs = now.getTime() - dateObj.getTime()
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))

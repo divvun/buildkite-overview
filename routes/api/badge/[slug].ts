@@ -100,6 +100,8 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
   const req = ctx.req
   try {
     const slug = ctx.params.slug as string
+    const url = new URL(req.url)
+    const customLabel = url.searchParams.get("label")
 
     if (!slug) {
       return new Response("Pipeline slug is required", { status: 400 })
@@ -115,7 +117,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
 
     if (!result.data?.pipeline) {
       // Return a "not found" badge instead of 404 for better UX
-      const notFoundBadge = generateBadgeSvg(slug, "unknown")
+      const notFoundBadge = generateBadgeSvg(customLabel || slug, "unknown")
       return new Response(notFoundBadge, {
         status: 200,
         headers: {
@@ -148,7 +150,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     const status = latestBuild?.state || "unknown"
 
     // Generate the SVG badge
-    const badgeSvg = generateBadgeSvg(pipeline.name, status)
+    const badgeSvg = generateBadgeSvg(customLabel || pipeline.name, status)
 
     return new Response(badgeSvg, {
       status: 200,
@@ -164,7 +166,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     console.error("Badge API error:", error)
 
     // Return an error badge instead of throwing
-    const errorBadge = generateBadgeSvg(ctx.params.slug || "unknown", "unknown")
+    const errorBadge = generateBadgeSvg(customLabel || ctx.params.slug || "unknown", "unknown")
     return new Response(errorBadge, {
       status: 200, // Still return 200 for better badge service compatibility
       headers: {
