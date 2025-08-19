@@ -1,8 +1,7 @@
 import { Context } from "fresh"
 import { type AgentMetrics, type FailingPipeline, fetchAgentMetrics, fetchQueueStatus } from "~/utils/buildkite-data.ts"
-import { type AppState } from "~/utils/middleware.ts"
+import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
 import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
-import { requireDivvunOrgAccess } from "~/utils/session.ts"
 
 interface DashboardResponse {
   totalPipelines: number
@@ -16,9 +15,6 @@ interface DashboardResponse {
 export const handler = {
   async GET(ctx: Context<AppState>): Promise<Response> {
     try {
-      // Require authentication and divvun organization membership
-      requireDivvunOrgAccess(ctx.req)
-
       console.log("API: Fetching dashboard data...")
 
       // Fetch all dashboard data with a single API call (uses caching)
@@ -28,19 +24,26 @@ export const handler = {
         fetchQueueStatus(),
       ])
 
+      // Filter pipelines based on user access
+      const visiblePipelines = filterPipelinesForUser(dashboardData.pipelines, ctx.state.session)
+      const visibleFailingPipelines = filterPipelinesForUser(dashboardData.failingPipelines, ctx.state.session)
+
+      // Calculate metrics from visible pipelines
+      const runningPipelines = visiblePipelines.filter((p) => p.status === "running").length
+
       // Calculate total pending builds
       const pendingBuilds = queueStatus.reduce((total, queue) => total + queue.scheduledJobs.length, 0)
 
       console.log(
-        `API Dashboard stats: ${dashboardData.pipelines.length} total pipelines, ${dashboardData.failingPipelines.length} failing, ${dashboardData.runningPipelinesCount} pipelines with running builds`,
+        `API Dashboard stats: ${visiblePipelines.length} visible pipelines (${dashboardData.pipelines.length} total), ${visibleFailingPipelines.length} failing, ${runningPipelines} running`,
       )
 
       const response: DashboardResponse = {
-        totalPipelines: dashboardData.pipelines.length,
-        runningPipelines: dashboardData.runningPipelinesCount,
+        totalPipelines: visiblePipelines.length,
+        runningPipelines: runningPipelines,
         pendingBuilds,
         agentMetrics,
-        failingPipelines: dashboardData.failingPipelines,
+        failingPipelines: visibleFailingPipelines,
       }
 
       return new Response(JSON.stringify(response), {
@@ -49,9 +52,9 @@ export const handler = {
     } catch (error) {
       console.error("API Error fetching dashboard data:", error)
 
-      // Handle authentication errors (thrown as Response objects)
+      // Handle response errors
       if (error instanceof Response) {
-        return error // Return the redirect response
+        return error
       }
 
       const errorResponse: DashboardResponse = {

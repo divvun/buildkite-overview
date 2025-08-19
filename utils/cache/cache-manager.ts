@@ -286,7 +286,7 @@ export class CacheManager {
       // Check cache first
       const cached = this.db.getCachedGitHubRepo(pipeline.repo)
       if (cached) {
-        pipeline.visibility = cached.is_private ? "private" : "public"
+        // Only add private tag if GitHub repo is private, don't override Buildkite visibility
         if (cached.is_private && !pipeline.tags.includes("private")) {
           pipeline.tags.push("private")
         }
@@ -306,7 +306,7 @@ export class CacheManager {
         })
 
         const responseTime = Date.now() - startTime
-        let isPrivate = true // Default to private
+        let isPrivate = false // Default to public (don't assume private)
 
         if (response.ok) {
           const data = await response.json()
@@ -318,8 +318,9 @@ export class CacheManager {
             statusCode: 200,
           })
         } else if (response.status === 404) {
-          // Can't see it with app token, so it's private
-          isPrivate = true
+          // Can't see it with app token - could be private or doesn't exist
+          // Don't assume private, keep Buildkite's visibility setting
+          isPrivate = false // Don't override visibility
           apiCallBatch.push({
             service: "github",
             endpoint: `repos/${pipeline.repo}`,
@@ -327,7 +328,30 @@ export class CacheManager {
             statusCode: 404,
           })
         } else {
-          console.warn(`GitHub API error for ${pipeline.repo}: ${response.status}`)
+          // Log detailed error information for debugging
+          let errorBody = ""
+          try {
+            const errorResponse = await response.clone().text()
+            errorBody = errorResponse
+          } catch (e) {
+            errorBody = "Could not read error response body"
+          }
+
+          console.warn(`GitHub API error for ${pipeline.repo}: ${response.status} - ${errorBody}`)
+
+          // Check for rate limit headers
+          const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining")
+          const rateLimitReset = response.headers.get("X-RateLimit-Reset")
+          if (rateLimitRemaining !== null) {
+            console.warn(
+              `GitHub rate limit remaining: ${rateLimitRemaining}, resets at: ${
+                rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000).toISOString() : "unknown"
+              }`,
+            )
+          }
+
+          // Don't override visibility on API errors
+          isPrivate = false
           apiCallBatch.push({
             service: "github",
             endpoint: `repos/${pipeline.repo}`,
@@ -336,14 +360,16 @@ export class CacheManager {
           })
         }
 
-        // Update pipeline
-        pipeline.visibility = isPrivate ? "private" : "public"
-        if (isPrivate && !pipeline.tags.includes("private")) {
+        // Only add private tag if GitHub repo is confirmed private AND we successfully checked it
+        // Don't override Buildkite's visibility setting
+        if (response.ok && isPrivate && !pipeline.tags.includes("private")) {
           pipeline.tags.push("private")
         }
 
-        // Add to cache batch for 30 minutes
-        repoCacheBatch.push({ repoPath: pipeline.repo, isPrivate, ttlSeconds: 30 * 60 })
+        // Add to cache batch for 30 minutes (only if we got a successful response)
+        if (response.ok) {
+          repoCacheBatch.push({ repoPath: pipeline.repo, isPrivate, ttlSeconds: 30 * 60 })
+        }
       } catch (error) {
         console.error(`Failed to check GitHub repo ${pipeline.repo}:`, error)
         apiCallBatch.push({
@@ -352,8 +378,7 @@ export class CacheManager {
           responseTimeMs: Date.now() - startTime,
           statusCode: 500,
         })
-        // Default to private on error
-        pipeline.visibility = "private"
+        // Don't override visibility on errors - keep Buildkite's setting
       }
     }
 

@@ -14,6 +14,7 @@ interface FullscreenLogsProps {
   buildNumber: string
   pipelineSlug: string
   initialLogData?: LogData
+  initialProcessedGroups?: ReturnType<typeof processLogsIntoGroups>
   initialError?: string
   jobCommand?: string
 }
@@ -23,6 +24,7 @@ export default function FullscreenLogs({
   buildNumber,
   pipelineSlug,
   initialLogData,
+  initialProcessedGroups,
   initialError,
   jobCommand,
 }: FullscreenLogsProps) {
@@ -33,23 +35,22 @@ export default function FullscreenLogs({
   const [showTimestamps, setShowTimestamps] = useState(false)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
-  const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>([])
+  const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>(
+    initialProcessedGroups || [],
+  )
 
   useEffect(() => {
-    if (logData?.content) {
-      const groups = processLogsIntoGroups(logData.content)
-      setProcessedGroups(groups)
-
-      // Initialize collapsed state
+    // Initialize collapsed state from processed groups
+    if (processedGroups.length > 0) {
       const initialCollapsed = new Set<number>()
-      groups.forEach((group) => {
+      processedGroups.forEach((group) => {
         if (group.initiallyCollapsed && !group.openPrevious) {
           initialCollapsed.add(group.id)
         }
       })
       setCollapsedGroups(initialCollapsed)
     }
-  }, [logData?.content])
+  }, [processedGroups])
 
   useEffect(() => {
     // Handle ESC key to close window/tab
@@ -374,7 +375,7 @@ export default function FullscreenLogs({
           </div>
         )}
 
-        {logData?.content && (
+        {processedGroups.length > 0 && (
           <table class="log-table">
             <tbody>
               {processedGroups.map((group) => {
@@ -436,7 +437,7 @@ export default function FullscreenLogs({
           </table>
         )}
 
-        {!logData?.content && !error && (
+        {processedGroups.length === 0 && !error && (
           <div style="display: flex; align-items: center; justify-content: center; height: 200px; color: #7d8590;">
             <div>{t("no-logs-available")}</div>
           </div>

@@ -1,5 +1,6 @@
-import { FluentBundle, type FluentVariable } from "@fluent/bundle"
+import { FluentBundle } from "@fluent/bundle"
 import { define, State } from "~/utils.ts"
+import type { SupportedLocale } from "~/utils/localization.ts"
 import {
   createMockSession,
   createSessionCookie,
@@ -8,7 +9,6 @@ import {
   type SessionData,
   shouldRefreshSession,
 } from "~/utils/session.ts"
-import type { SupportedLocale } from "~/utils/localization.ts"
 
 // Extend the State interface to include session and localization
 export interface AppState extends State {

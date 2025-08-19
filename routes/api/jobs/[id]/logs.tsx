@@ -1,6 +1,7 @@
 import { Context, RouteHandler } from "fresh"
-import { type AppState } from "~/utils/middleware.ts"
+import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
+import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
 
 const BUILDKITE_API_KEY = Deno.env.get("BUILDKITE_API_KEY")
 const BUILDKITE_REST_API = "https://api.buildkite.com/v2"
@@ -19,6 +20,42 @@ export const handler: RouteHandler<unknown, AppState> = {
         }),
         {
           status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
+
+    // Check if user has access to this pipeline
+    try {
+      const allPipelines = await fetchAllPipelines()
+      const pipeline = allPipelines.find((p) => p.slug === pipelineSlug)
+
+      if (!pipeline) {
+        return new Response(
+          JSON.stringify({ error: "Job not found" }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      if (!canAccessPipeline(pipeline, ctx.state.session)) {
+        // Return 404 instead of 403 to avoid leaking job existence
+        return new Response(
+          JSON.stringify({ error: "Job not found" }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+    } catch (err) {
+      console.error("Error checking pipeline access:", err)
+      return new Response(
+        JSON.stringify({ error: "Error verifying access" }),
+        {
+          status: 500,
           headers: { "Content-Type": "application/json" },
         },
       )

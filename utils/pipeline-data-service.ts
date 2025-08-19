@@ -62,6 +62,8 @@ export function extractFailingPipelines(pipelines: AppPipeline[]): FailingPipeli
             name: pipeline.name,
             slug: pipeline.slug,
             repo: pipeline.repo,
+            visibility: pipeline.visibility,
+            tags: pipeline.tags,
             failingSince,
             last10Builds,
             url: pipeline.url,

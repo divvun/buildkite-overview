@@ -3,7 +3,7 @@ import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import DashboardContent from "~/islands/DashboardContent.tsx"
 import { type AgentMetrics, type FailingPipeline, fetchAgentMetrics, fetchQueueStatus } from "~/utils/buildkite-data.ts"
-import { type AppState } from "~/utils/middleware.ts"
+import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
 import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
 import { type SessionData } from "~/utils/session.ts"
 
@@ -29,11 +29,18 @@ export const handler = {
         fetchQueueStatus(),
       ])
 
+      // Filter pipelines based on user access
+      const visiblePipelines = filterPipelinesForUser(dashboardData.pipelines, ctx.state.session)
+      const visibleFailingPipelines = filterPipelinesForUser(dashboardData.failingPipelines, ctx.state.session)
+
+      // Calculate metrics from visible pipelines
+      const runningPipelines = visiblePipelines.filter((p) => p.status === "running").length
+
       // Calculate total pending builds
       const pendingBuilds = queueStatus.reduce((total, queue) => total + queue.scheduledJobs.length, 0)
 
       console.log(
-        `Dashboard stats: ${dashboardData.pipelines.length} total pipelines, ${dashboardData.failingPipelines.length} failing, ${dashboardData.runningPipelinesCount} pipelines with running builds`,
+        `Dashboard stats: ${visiblePipelines.length} visible pipelines (${dashboardData.pipelines.length} total), ${visibleFailingPipelines.length} failing, ${runningPipelines} running`,
       )
 
       // Set the page title
@@ -42,11 +49,11 @@ export const handler = {
       return page(
         {
           session: ctx.state.session,
-          totalPipelines: dashboardData.pipelines.length,
-          runningPipelines: dashboardData.runningPipelinesCount,
+          totalPipelines: visiblePipelines.length,
+          runningPipelines: runningPipelines,
           pendingBuilds,
           agentMetrics,
-          failingPipelines: dashboardData.failingPipelines,
+          failingPipelines: visibleFailingPipelines,
         } satisfies HomeProps,
       )
     } catch (error) {

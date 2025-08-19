@@ -53,6 +53,8 @@ export interface FailingPipeline {
   name: string
   slug: string
   repo?: string
+  visibility?: string
+  tags?: string[]
   failingSince: Date
   last10Builds: BuildHistoryItem[]
   url: string

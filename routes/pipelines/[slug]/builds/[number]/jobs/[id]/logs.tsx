@@ -1,6 +1,8 @@
 import { Context, page } from "fresh"
-import { type AppState } from "~/utils/middleware.ts"
+import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
+import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import FullscreenLogs from "~/islands/FullscreenLogs.tsx"
+import { processLogsIntoGroups } from "~/utils/log-processing.tsx"
 
 interface LogData {
   url?: string
@@ -14,6 +16,7 @@ interface FullscreenLogsPageProps {
   buildNumber: string
   pipelineSlug: string
   logData?: LogData
+  processedGroups?: ReturnType<typeof processLogsIntoGroups>
   error?: string
   jobCommand?: string
 }
@@ -26,8 +29,49 @@ export const handler = {
 
     console.log("Handler params:", { pipelineSlug, buildNumber, jobId })
 
+    // First, verify that user has access to this pipeline
+    try {
+      const allPipelines = await fetchAllPipelines()
+      const pipeline = allPipelines.find((p) => p.slug === pipelineSlug)
+
+      if (!pipeline) {
+        return page(
+          {
+            jobId,
+            buildNumber,
+            pipelineSlug,
+            error: "Pipeline not found",
+          } satisfies FullscreenLogsPageProps,
+        )
+      }
+
+      // Check if user has access to this pipeline
+      if (!canAccessPipeline(pipeline, ctx.state.session)) {
+        // Return 404 instead of 403 to avoid leaking pipeline existence
+        return page(
+          {
+            jobId,
+            buildNumber,
+            pipelineSlug,
+            error: "Pipeline not found",
+          } satisfies FullscreenLogsPageProps,
+        )
+      }
+    } catch (err) {
+      console.error("Error checking pipeline access:", err)
+      return page(
+        {
+          jobId,
+          buildNumber,
+          pipelineSlug,
+          error: "Error verifying access",
+        } satisfies FullscreenLogsPageProps,
+      )
+    }
+
     // Fetch logs server-side
     let logData: LogData | undefined
+    let processedGroups: ReturnType<typeof processLogsIntoGroups> | undefined
     let error: string | undefined
     let jobCommand: string | undefined
 
@@ -49,6 +93,13 @@ export const handler = {
       if (response.ok) {
         logData = await response.json()
         console.log("Logs fetched successfully, content length:", logData?.content?.length || 0)
+
+        // Process logs on server side for better performance
+        if (logData?.content) {
+          console.log("Processing logs into groups on server side...")
+          processedGroups = processLogsIntoGroups(logData.content)
+          console.log(`Processed ${processedGroups.length} log groups`)
+        }
       } else {
         const errorData = await response.json()
         error = errorData.error || "Failed to fetch logs"
@@ -94,6 +145,7 @@ export const handler = {
         buildNumber,
         pipelineSlug,
         logData,
+        processedGroups,
         error,
         jobCommand,
       } satisfies FullscreenLogsPageProps,
@@ -102,7 +154,7 @@ export const handler = {
 }
 
 export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageProps }) {
-  const { jobId, buildNumber, pipelineSlug, logData, error, jobCommand } = data
+  const { jobId, buildNumber, pipelineSlug, logData, processedGroups, error, jobCommand } = data
 
   return (
     <html>
@@ -133,6 +185,7 @@ export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageP
           buildNumber={buildNumber}
           pipelineSlug={pipelineSlug}
           initialLogData={logData}
+          initialProcessedGroups={processedGroups}
           initialError={error}
           jobCommand={jobCommand}
         />

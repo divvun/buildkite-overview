@@ -1,6 +1,7 @@
 import { Context } from "fresh"
 import { type BuildkiteBuild, GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
-import { type AppState } from "~/utils/middleware.ts"
+import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
+import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
 
@@ -9,6 +10,25 @@ export const handler = {
     const pipelineSlug = ctx.params.slug
 
     try {
+      // First, verify that user has access to this pipeline
+      const allPipelines = await fetchAllPipelines()
+      const pipeline = allPipelines.find((p) => p.slug === pipelineSlug)
+
+      if (!pipeline) {
+        // Pipeline not found, return 404
+        return new Response(null, {
+          status: 404,
+        })
+      }
+
+      // Check if user has access to this pipeline
+      if (!canAccessPipeline(pipeline, ctx.state.session)) {
+        // Return 404 instead of 403 to avoid leaking pipeline existence
+        return new Response(null, {
+          status: 404,
+        })
+      }
+
       // Try to get builds from cache first
       const cacheManager = getCacheManager()
       let builds = await cacheManager.getCachedBuildsForPipeline(pipelineSlug, 1)

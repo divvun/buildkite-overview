@@ -1,7 +1,6 @@
 import { Context } from "fresh"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess } from "~/utils/session.ts"
 
 interface PipelinesResponse {
   pipelines: AppPipeline[]
@@ -13,9 +12,6 @@ interface PipelinesResponse {
 export const handler = {
   async GET(ctx: Context<AppState>): Promise<Response> {
     try {
-      // Require authentication and divvun organization membership
-      requireDivvunOrgAccess(ctx.req)
-
       // Get filter parameters from URL
       const url = new URL(ctx.req.url)
       const statusFilter = url.searchParams.get("status") || ""
@@ -76,20 +72,20 @@ export const handler = {
         })
       }
     } catch (error) {
-      console.error("API Error with authentication:", error)
+      console.error("API Error:", error)
 
-      // Handle authentication errors (thrown as Response objects)
+      // Handle response errors
       if (error instanceof Response) {
-        return error // Return the redirect response
+        return error
       }
 
       const errorResponse: PipelinesResponse = {
         pipelines: [],
-        error: "Authentication required",
+        error: "Failed to fetch pipelines",
       }
 
       return new Response(JSON.stringify(errorResponse), {
-        status: 401,
+        status: 500,
         headers: { "Content-Type": "application/json" },
       })
     }

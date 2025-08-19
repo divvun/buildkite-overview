@@ -1,6 +1,7 @@
 import { Context, RouteHandler } from "fresh"
-import { type AppState } from "~/utils/middleware.ts"
+import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
+import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
 
 export const handler: RouteHandler<unknown, AppState> = {
   async GET(ctx: Context<AppState>) {
@@ -21,6 +22,23 @@ export const handler: RouteHandler<unknown, AppState> = {
       }
 
       const { build, jobs } = result
+
+      // Check if user has access to the pipeline this build belongs to
+      if (build?.pipeline?.slug) {
+        const allPipelines = await fetchAllPipelines()
+        const pipeline = allPipelines.find((p) => p.slug === build.pipeline.slug)
+
+        if (pipeline && !canAccessPipeline(pipeline, ctx.state.session)) {
+          // Return 404 instead of 403 to avoid leaking build existence
+          return new Response(
+            JSON.stringify({ error: "Build not found" }),
+            {
+              status: 404,
+              headers: { "Content-Type": "application/json" },
+            },
+          )
+        }
+      }
 
       return new Response(
         JSON.stringify({

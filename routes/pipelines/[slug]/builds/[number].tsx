@@ -8,6 +8,7 @@ import {
   GET_PIPELINE_BUILDS,
   getBuildkiteClient,
 } from "~/utils/buildkite-client.ts"
+import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import {
   formatDuration,
   formatTimeAgo,
@@ -15,7 +16,7 @@ import {
   getStatusIcon,
   getTranslatedStatus,
 } from "~/utils/formatters.ts"
-import { type AppState } from "~/utils/middleware.ts"
+import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
 import { type SessionData } from "~/utils/session.ts"
 
@@ -43,6 +44,32 @@ export const handler = {
     }
 
     try {
+      // First, verify that user has access to this pipeline
+      const allPipelines = await fetchAllPipelines()
+      const pipeline = allPipelines.find((p) => p.slug === pipelineSlug)
+
+      if (!pipeline) {
+        return page(
+          {
+            session: ctx.state.session,
+            error: ctx.state.t("pipeline-not-found"),
+            pipelineSlug,
+          } satisfies BuildDetailProps,
+        )
+      }
+
+      // Check if user has access to this pipeline
+      if (!canAccessPipeline(pipeline, ctx.state.session)) {
+        // Return 404 instead of 403 to avoid leaking pipeline existence
+        return page(
+          {
+            session: ctx.state.session,
+            error: ctx.state.t("pipeline-not-found"),
+            pipelineSlug,
+          } satisfies BuildDetailProps,
+        )
+      }
+
       // Buildkite GraphQL API expects format: organization-slug/pipeline-slug
       // We need to find the organization for this pipeline
       const fullPipelineSlug = `divvun/${pipelineSlug}` // Default to divvun org

@@ -130,7 +130,9 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                 <div class="wa-stack wa-gap-xs">
                   <div class="wa-stack wa-gap-2xs">
                     <span class="wa-heading-s">{t("average-wait-time")}</span>
-                    <wa-badge variant="neutral">{formatDurationSeconds(agentMetrics.averageWaitTime, locale)}</wa-badge>
+                    <wa-badge style="text-transform: none" variant="neutral">
+                      {formatDurationSeconds(agentMetrics.averageWaitTime, locale)}
+                    </wa-badge>
                   </div>
                 </div>
               </wa-card>
@@ -140,7 +142,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
             <wa-card class="non-clickable">
               <div class="wa-stack wa-gap-xs">
                 <div class="wa-stack wa-gap-2xs">
-                  <span class="wa-heading-s">{t("average-wait-time")}</span>
+                  <span style="text-transform: none" class="wa-heading-s">{t("average-wait-time")}</span>
                   <wa-badge variant="neutral" style="text-transform: none">
                     {formatDurationSeconds(agentMetrics.averageWaitTime, locale)}
                   </wa-badge>
