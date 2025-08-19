@@ -5,8 +5,8 @@ builds-description = Vis og handter pipelinebygg
 # Byggoversikt
 loading-builds = Lastar bygg for {$pipeline}...
 no-builds-found = Ingen bygg funne for denne pipelinen
-no-commit-message = Inga commit-melding
-build-jobs = Byggjobbar
+no-commit-message = Inga innsjekkingsmelding
+build-jobs = Byggjejobbar
 build-number = Bygg #{$number}
 
 # Byggdetaljar
@@ -15,8 +15,8 @@ started = Starta
 finished = Ferdig
 exit-status = Avslutningsstatus
 build-status = Byggstatus
-commit-message = Commit-melding
-repository = Repository
+commit-message = Innsjekkingsmelding
+repository = Repositorium
 
 # Navigering
 back-to-pipeline = Tilbake til Pipeline
@@ -26,7 +26,7 @@ view-build = Vis Bygg
 
 # Byggtilstandar
 build-running = Køyrer
-build-passed = Bestått
+build-passed = Fullført
 build-failed = Mislukkast
 build-blocked = Blokkert
 build-canceled = Avbrote
@@ -42,15 +42,15 @@ not-finished = Ikkje ferdig
 
 # Feiltilstandar
 build-not-found = Bygg ikkje funne
-failed-to-load-build = Kunne ikkje laste byggdata
-failed-to-load-builds = Kunne ikkje laste byggedata
+failed-to-load-build = Kunne ikkje lasta bygg
+failed-to-load-builds = Kunne ikkje lasta bygg
 pipeline-not-found = Pipeline ikkje funne
 access-denied = Tilgang nekta
-unable-to-load-builds = Kan ikkje laste bygg: {$error}
-unable-to-load-build-history = Kan ikkje laste bygghistorikk. Ver greitt og oppdater sida eller sjekk tilkoplinga.
+unable-to-load-builds = Kan ikkje lasta bygg: {$error}
+unable-to-load-build-history = Kan ikkje lasta byggjehistorikk. Ver grei og oppdater sida eller sjekk tilkoplinga.
 
 # Byggstatus-omsetjingar
-status-PASSED = Bestått
+status-PASSED = Fullført
 status-FAILED = Mislukkast  
 status-RUNNING = Køyrer
 status-CANCELED = Avbrote

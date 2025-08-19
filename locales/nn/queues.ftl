@@ -1,6 +1,6 @@
 # Køar-sidestrenger
-queues-title = Byggkøar
-queues-description = Overvak byggkøar og tilgjengelege agentar
+queues-title = Byggjekøar
+queues-description = Overvak byggjekøar og tilgjengelege agentar
 
 # Køoversikt
 queue-overview = Køoversikt
@@ -26,17 +26,17 @@ more-jobs = +{$count} til
 
 # Bygginformasjon
 build-scheduled = Planlagd: {$time}
-view-build-details = Vis byggdetaljar →
+view-build-details = Vis byggjedetaljar →
 
 # Tomme tilstandar
 no-queued-builds = Ingen køa bygg! 🎉
-no-queued-builds-description = Alle køar er tomme. Sjekk tilbake seinare for ny aktivitet.
-all-queues-idle = Alt stille på byggfronten! 🎉
+no-queued-builds-description = Alle køar er tomme. Kom tilbake seinare for ny aktivitet.
+all-queues-idle = Alt stille på byggjefronten! 🎉
 all-queues-idle-description = Ingen bygg er for tida planlagde eller køyrer på tvers av alle køar. Dette er bra - alle pipelinene dine er ledige og klare for nytt arbeid!
 no-builds-pending = Ingen bygg ventar
 loading-queue-data = Lastar kødata...
-loading-queue-description = Samlar informasjon om byggkøar og tilgjengelege agentar.
-queues-load-failed = Kunne ikkje laste kødata
+loading-queue-description = Samlar informasjon om byggjekøar og tilgjengelege agentar.
+queues-load-failed = Kunne ikkje henta inn kødata
 queues-idle-status = 💤 Alle køar er ledige
 
 # Kødetaljar-visning
@@ -46,7 +46,7 @@ scheduled-label = Planlagt:
 view-build-external = Vis bygg ↗
 job-label = Jobb #{$id}
 no-requirements = Ingen spesifikke krav
-failed-to-load-queues = Kunne ikkje laste kødata
+failed-to-load-queues = Kunne ikkje lasta inn kødata
 default-queue = Standard
 available-agents-ratio = {$available}/{$total} tilgjengelege
 running-count = 🏃 {$count} køyrer
@@ -57,8 +57,8 @@ more-builds = +{$count} til
 
 # Fleire tomme tilstandar
 no-queued-builds-title = Ingen køa bygg! 🎉
-no-queued-builds-desc = Alle køar er tomme. Sjekk tilbake seinare for ny aktivitet.
+no-queued-builds-desc = Alle køar er tomme. Kom tilbake seinare for ny aktivitet.
 loading-queue-data-title = Lastar kødata...
-loading-queue-data-desc = Samlar informasjon om byggkøar og tilgjengelege agentar.
-all-quiet-title = Alt stille på byggfronten! 🎉
+loading-queue-data-desc = Samlar informasjon om byggjekøar og tilgjengelege agentar.
+all-quiet-title = Alt stille på byggjefronten! 🎉
 all-quiet-desc = Ingen bygg er for tida planlagde eller køyrer på tvers av alle køar. Dette er bra - alle pipelinene dine er ledige og klare for nytt arbeid!

@@ -1,5 +1,5 @@
 # Agentar-sidestrenger
-agents-title = Byggagentar
+agents-title = Byggjeagentar
 agents-description = Overvak statusen og helsa til alle Buildkite-agentar
 
 # Agentstatus
@@ -31,17 +31,17 @@ stop-agent = Stopp agent
 
 # Agentmålingar
 agent-wait-times = Agentventetider
-average-wait = Snittleg venting
+average-wait = Gjennomsnittleg ventetid
 p95-wait = 95. persentil
 p99-wait = 99. persentil
 wait-time-seconds = {$seconds}s
 
 # Tomme tilstandar
 no-agents = Ingen agentar funne
-no-agents-description = Ingen byggagentar er tilkopla for tida.
+no-agents-description = Ingen byggjeagentar er tilkopla for tida.
 no-agents-for-queue = Ingen agentar funne for kø "{$queue}"
 no-agents-all-queues = Ingen agentar funne på tvers av alle køar
-agents-load-failed = Kunne ikkje laste agentdata
+agents-load-failed = Kunne ikkje lasta agentdata
 all-agents-idle = Alle agentar er ledige! 🎉
 all-agents-idle-description = Ingen bygg køyrer for tida på tvers av alle agentar.
 
@@ -70,4 +70,4 @@ metadata-label = Metadata ({$count} element)
 
 # UI-tilstand
 refreshing = Oppdaterer...
-failed-to-load-agents = Kunne ikkje laste agentdata
+failed-to-load-agents = Kunne ikkje lasta agentdata

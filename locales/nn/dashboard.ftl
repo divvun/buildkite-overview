@@ -1,5 +1,5 @@
 # Dashboard-sidestrenger
-dashboard-title = Byggoversikt
+dashboard-title = Byggjeoversikt
 dashboard-description = Overvak statusen til alle Divvun-prosjektbygg på tvers av GitHub-organisasjonar
 
 # Dashboard-statistikk
@@ -13,12 +13,12 @@ stats-p99-wait-time = 99. persentil ventetid
 
 # Nye bygg-del
 recent-builds-title = Nye bygg
-recent-builds-description = Siste byggaktivitet på tvers av alle pipelines
+recent-builds-description = Siste byggjeaktivitet på tvers av alle pipelines
 
 # Feilande pipelines-del
 failing-pipelines-title = Feilande pipelines
 failing-pipelines-description = Pipelines som krev merksemd
-failing-since = Feila sidan {$time}
+failing-since = Feila for {$time} sidan
 no-failing-pipelines = Ingen feilande pipelines! 🎉
 no-failing-pipelines-description = Alle pipelines er friske. Flott jobba!
 
@@ -31,9 +31,9 @@ view-logs = Vis loggar
 
 # Tomme tilstandar
 no-recent-builds = Ingen nye bygg
-no-recent-builds-description = Ingen byggaktivitet å vise enno.
-dashboard-load-failed = Kunne ikkje laste dashboard-data
-dashboard-load-error = Kunne ikkje laste dashboard-data. Dette kan koma av: 1) Manglande BUILDKITE_API_KEY miljøvariabel, 2) Ugyldig API-nøkkel, eller 3) Nettverkstilkoblingsproblem. Kontroller konfigurasjonen din og prøv igjen.
+no-recent-builds-description = Ingen byggjeaktivitet å visa enno.
+dashboard-load-failed = Kunne ikkje lasta oversiktsdata
+dashboard-load-error = Kunne ikkje lasta oversiktsdata. Dette kan koma av: 1) Manglande BUILDKITE_API_KEY-miljøvariabel, 2) Ugyldig API-nøkkel, eller 3) Nettverkstilkoblingsproblem. Kontroller konfigurasjonen din og prøv igjen.
 
 # Ingen feilande pipelines-meldingar
 no-failing-pipelines-title = Ingen feilande pipelines! 🎉

@@ -17,13 +17,13 @@ clear-filters = Fjern filter
 pipeline-name = Pipeline
 pipeline-status = Status
 pipeline-last-build = Siste bygg
-pipeline-repo = Repository
+pipeline-repo = Repositorium
 pipeline-tags = Merkelappar
 no-pipelines = Ingen pipelines funne
 no-pipelines-description = Ingen pipelines passar med dei gjeldande filtera.
 
 # Pipeline-detaljar
-build-history = Bygghistorikk
+build-history = Byggjehistorikk
 recent-builds = Nye bygg
 pipeline-settings = Pipeline-innstillingar
 pipeline-triggers = Utløysarar
@@ -37,16 +37,16 @@ builds-count = {$count ->
 
 # Pipeline-statusmeldingar
 pipeline-never-built = Aldri bygd
-pipeline-load-failed = Kunne ikkje laste pipelines
-pipeline-load-error = Kunne ikkje laste pipelines frå Buildkite. Dette tyder vanlegvis på eit autentiseringsproblem. Kontroller at BUILDKITE_API_KEY-miljøvariabelen din er sett korrekt og har dei nødvendige løyva.
+pipeline-load-failed = Kunne ikkje lasta inn pipelines
+pipeline-load-error = Kunne ikkje lasta pipelines frå Buildkite. Dette tyder vanlegvis på eit autentiseringsproblem. Kontroller at BUILDKITE_API_KEY-miljøvariabelen din er sett korrekt og har dei nødvendige løyva.
 
 # Bygghandlingar
-trigger-build = Utløys bygg
+trigger-build = Set i gang bygg
 view-pipeline = Vis pipeline
 view-build = Vis bygg
 
 # Byggstatuser (for jobtilstandar)
-status-passed = BESTÅTT
+status-passed = FULLFØRT
 status-finished = FERDIG
 status-failed = FEILA
 status-canceled = AVBROTE
@@ -76,9 +76,9 @@ pipeline-not-found-title = Pipeline ikkje funne
 build-not-found-title = Bygg ikkje funne
 
 # Fleire manglande strengar
-failed-to-load-pipelines = Kunne ikkje laste pipeline-data
+failed-to-load-pipelines = Kunne ikkje lasta pipeline-data
 build-stats = Byggstatistikk
-passed-count = bestått
+passed-count = fullførde
 failed-count = mislukkast
 last-build = Siste bygg
 all-status = Alle statusar
@@ -93,14 +93,14 @@ filter-pipelines-placeholder = Filtrer pipelines...
 status-placeholder = Status
 
 # Pipeline-vising
-no-repository = Ingen repository
+no-repository = Ingen repositorium
 no-pipelines-found-title = Ingen pipelines funne
-no-pipelines-filter-desc = Ingen pipelines passar med dei gjeldande filtera. Prøv å justere søk eller filter.
+no-pipelines-filter-desc = Ingen pipelines passar med dei gjeldande filtera. Prøv å justera søk eller filter.
 refreshing = Oppdaterer...
 new-build = Nytt bygg
 clear-all-filters = Fjern alle filter
 total-builds = Tal på bygg
 success-rate = Suksessrate
 visibility = Synlegheit
-repository-access = Repository-tilgang
+repository-access = Repositorietilgang
 last-build-label = Siste bygg
