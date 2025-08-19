@@ -1,7 +1,7 @@
 # Hovudgrensesnitt-strengar
 app-title = Divvun Buildkite
 nav-overview = Oversikt
-nav-pipelines = Pipelines
+nav-pipelines = Kommandokøar
 nav-agents = Agentar
 nav-queues = Køar
 login = Logg inn
@@ -28,7 +28,7 @@ disable-auto-refresh = Deaktiver automatisk oppdatering
 # Navigasjon og UI-etikettar
 buildkite-logo = Buildkite-logo
 dashboard-overview = Dashboard-oversikt
-view-all-pipelines = Sjå alle pipelines
+view-all-pipelines = Sjå alle kommandokøar
 view-build-agents = Sjå alle byggjeagentar
 view-build-queues = Sjå alle byggjekøar
 sign-in-github = Logg inn med GitHub
@@ -43,7 +43,7 @@ secondary-navigation = Sekundær navigasjon
 # Sidetitlar og skildringar
 buildkite-overview = Buildkite-oversikt
 access-denied = Tilgang nekta
-pipelines-breadcrumb = Pipelines
+pipelines-breadcrumb = Kommandokøar
 agents-breadcrumb = Agentar
 queues-breadcrumb = Køar
 
@@ -72,7 +72,7 @@ view-github-profile = Sjå GitHub-profil
 
 # Build-relatert
 build-not-found = Bygg ikkje funne
-pipeline-not-found = Pipeline ikkje funne
+pipeline-not-found = Kommandokø ikkje funne
 insufficient-permissions = Utilstrekkelege løyve
 access-denied-description = Tilgang nekta
 invalid-build-number = Ugyldig byggjenummer
@@ -119,7 +119,7 @@ days = {$count ->
 }
 
 # Feilmeldingar for API og nettverksproblem
-failed-fetch-pipelines = Kunne ikkje henta pipelines
+failed-fetch-pipelines = Kunne ikkje henta kommandokøar
 failed-fetch-builds = Kunne ikkje henta bygg
 failed-fetch-jobs = Kunne ikkje henta byggjejobbar
 failed-fetch-agents = Kunne ikkje henta agentdata
@@ -131,7 +131,7 @@ buildkite-api-key-not-configured = Buildkite-API-nøkkel ikkje konfigurert
 access-denied-logs = Tilgang nekta til jobbloggar. Dette kan koma av utilstrekkelege API-løyve eller at loggane er sletta.
 unknown-error = Ukjent feil
 invalid-locale-data = Ugyldig språkdata-format
-missing-build-slug = Manglar byggjenummer eller pipeline-slug
+missing-build-slug = Manglar byggjenummer eller kommandokø-slug
 
 # Footer
 resources = Ressursar
@@ -148,15 +148,15 @@ no-builds-yet = Ingen bygg enno
 started-label = Starta
 
 # Tilgjengelegheitsetikettar
-view-all-pipelines-aria = Vis alle {$count} pipelines
+view-all-pipelines-aria = Vis alle {$count} kommandokøar
 view-agents-wait-time-aria = Vis agentar, gjennomsnittleg ventetid: {$waitTime}
 view-queues-pending-aria = Vis køar, {$count} ventande bygg
-view-failing-pipeline-aria = Vis detaljar for feilande pipeline: {$name}
+view-failing-pipeline-aria = Vis detaljar for feilande kommandokø: {$name}
 build-status-title = Bygg #{$number}: {$status}
 feature-coming-soon = Funksjon kjem snart - set i gang nye bygg frå grensesnittet
 user-menu-aria = Brukarmeny for {$user}
 go-to-breadcrumb-aria = Gå til {$label}
-pipeline-page-title = {$name} - Pipeline
+pipeline-page-title = {$name} - kommandokø
 build-page-title = Bygg #{$number} - {$pipeline}
 build-not-found-title = Bygg ikkje funne
 invalid-build-number = Ugyldig byggjenummer
@@ -238,4 +238,4 @@ time-days-ago = {$count ->
 }
 
 # Feilmeldingar
-build-not-found-in-pipeline = Bygg #{$number} ikkje funne i pipeline "{$pipeline}". Tilgjengelege bygg: {$builds}
+build-not-found-in-pipeline = Bygg #{$number} ikkje funne i kommandokø "{$pipeline}". Tilgjengelege bygg: {$builds}

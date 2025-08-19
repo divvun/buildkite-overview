@@ -1,9 +1,9 @@
 # Pipelines-sidestrenger
-pipelines-title = Alle Pipelines
-pipelines-description = Handter og overvak alle Buildkite-pipelines på tvers av organisasjonar
+pipelines-title = Alle kommandokøar
+pipelines-description = Handter og overvak alle Buildkite-kommandokøar på tvers av organisasjonar
 
 # Pipeline-filter
-filter-search-placeholder = Søk pipelines...
+filter-search-placeholder = Søk kommandokøar...
 filter-status-all = Alle statusar
 filter-status-running = Køyrer
 filter-status-passed = Bestått
@@ -14,18 +14,18 @@ filter-status-blocked = Blokkert
 clear-filters = Fjern filter
 
 # Pipeline-liste
-pipeline-name = Pipeline
+pipeline-name = Kommandokø
 pipeline-status = Status
 pipeline-last-build = Siste bygg
 pipeline-repo = Repositorium
 pipeline-tags = Merkelappar
-no-pipelines = Ingen pipelines funne
-no-pipelines-description = Ingen pipelines passar med dei gjeldande filtera.
+no-pipelines = Ingen kommandokøar funne
+no-pipelines-description = Ingen kommandokøar passar med dei gjeldande filtera.
 
 # Pipeline-detaljar
 build-history = Byggjehistorikk
 recent-builds = Nye bygg
-pipeline-settings = Pipeline-innstillingar
+pipeline-settings = Kommandokø-innstillingar
 pipeline-triggers = Utløysarar
 pipeline-description = Skildring
 last-successful-build = Siste vellukka bygg
@@ -37,12 +37,12 @@ builds-count = {$count ->
 
 # Pipeline-statusmeldingar
 pipeline-never-built = Aldri bygd
-pipeline-load-failed = Kunne ikkje lasta inn pipelines
-pipeline-load-error = Kunne ikkje lasta pipelines frå Buildkite. Dette tyder vanlegvis på eit autentiseringsproblem. Kontroller at BUILDKITE_API_KEY-miljøvariabelen din er sett korrekt og har dei nødvendige løyva.
+pipeline-load-failed = Kunne ikkje lasta inn kommandokøar
+pipeline-load-error = Kunne ikkje lasta kommandokøar frå Buildkite. Dette tyder vanlegvis på eit autentiseringsproblem. Kontroller at BUILDKITE_API_KEY-miljøvariabelen din er sett korrekt og har dei nødvendige løyva.
 
 # Bygghandlingar
 trigger-build = Set i gang bygg
-view-pipeline = Vis pipeline
+view-pipeline = Vis kommandokø
 view-build = Vis bygg
 
 # Byggstatuser (for jobtilstandar)
@@ -64,7 +64,7 @@ status-placeholder = Status
 # Bygghistorikk tooltip og detaljar
 build-number-prefix = Bygg
 view-build-arrow = Vis bygg ↗
-view-pipeline-arrow = Vis pipeline →
+view-pipeline-arrow = Vis kommandokø →
 
 # Lastar og feiltilstandar for bygg
 loading-builds = Lastar bygg...
@@ -72,11 +72,11 @@ no-initial-builds = Ingen tidlegare bygg oppgitt, hentar frå API...
 initial-builds-count = tidlegare bygg
 
 # Sidetitlar for feiltilstandar
-pipeline-not-found-title = Pipeline ikkje funne
+pipeline-not-found-title = Kommandokø ikkje funne
 build-not-found-title = Bygg ikkje funne
 
 # Fleire manglande strengar
-failed-to-load-pipelines = Kunne ikkje lasta pipeline-data
+failed-to-load-pipelines = Kunne ikkje lasta kommandokødata
 build-stats = Byggstatistikk
 passed-count = fullførde
 failed-count = mislukkast
@@ -86,16 +86,16 @@ first-page = Første side
 previous-page = Førre side
 next-page = Neste side
 last-page = Siste side
-showing-results = Viser {$start}-{$end} av {$total} pipelines
+showing-results = Viser {$start}-{$end} av {$total} kommandokøar
 
 # Filter-plasshalderar
-filter-pipelines-placeholder = Filtrer pipelines...
+filter-pipelines-placeholder = Filtrer kommandokøar...
 status-placeholder = Status
 
 # Pipeline-vising
 no-repository = Ingen repositorium
-no-pipelines-found-title = Ingen pipelines funne
-no-pipelines-filter-desc = Ingen pipelines passar med dei gjeldande filtera. Prøv å justera søk eller filter.
+no-pipelines-found-title = Ingen kommandokøar funne
+no-pipelines-filter-desc = Ingen kommandokøar passar med dei gjeldande filtera. Prøv å justera søk eller filter.
 refreshing = Oppdaterer...
 new-build = Nytt bygg
 clear-all-filters = Fjern alle filter

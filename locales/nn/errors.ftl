@@ -34,7 +34,7 @@ failed-to-load-dashboard = Kunne ikkje lasta dashborddata
 
 # Bygg-feilkontekst
 error-label = Feil:
-pipeline-label = Pipeline:
+pipeline-label = Kommandokø:
 endpoint-label = Endepunkt:
 
 # Generelle handlingar
