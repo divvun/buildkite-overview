@@ -37,7 +37,7 @@ job-artifacts = Artefaktar
 # Feiltilstandar
 failed-to-fetch-logs = Kunne ikkje henta loggar
 error-fetching-logs = Feil ved henting av loggar
-missing-build-info = Manglar byggjenummer eller kommandokø-slug
+missing-build-info = Manglar byggjenummer eller kommandokø-slugg
 job-not-found = Jobb ikkje funne
 failed-to-load-job = Kunne ikkje lasta inn jobbdata
 

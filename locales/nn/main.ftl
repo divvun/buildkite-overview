@@ -131,7 +131,7 @@ buildkite-api-key-not-configured = Buildkite-API-nøkkel ikkje konfigurert
 access-denied-logs = Tilgang nekta til jobbloggar. Dette kan koma av utilstrekkelege API-løyve eller at loggane er sletta.
 unknown-error = Ukjent feil
 invalid-locale-data = Ugyldig språkdata-format
-missing-build-slug = Manglar byggjenummer eller kommandokø-slug
+missing-build-slug = Manglar byggjenummer eller kommandokø-slugg
 
 # Footer
 resources = Ressursar
