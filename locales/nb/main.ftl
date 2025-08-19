@@ -19,9 +19,9 @@ error = Feil
 refresh = Oppdater
 refreshing = Oppdaterer...
 refreshing-data = Oppdaterer data...
-auto-refresh-on = Automatisk oppdatering PÅ (hver {$interval}. sekund)
+auto-refresh-on = Automatisk oppdatering PÅ (hvert {$interval}. sekund)
 auto-refresh-off = Automatisk oppdatering AV
-auto-refresh-background = Automatisk oppdatering PÅ (bakgrunnsmodus: hver {$interval}. sekund)
+auto-refresh-background = Automatisk oppdatering PÅ (bakgrunnsmodus: hvert {$interval}. sekund)
 enable-auto-refresh = Aktiver automatisk oppdatering
 disable-auto-refresh = Deaktiver automatisk oppdatering
 
@@ -135,7 +135,7 @@ missing-build-slug = Mangler build-nummer eller pipeline-slug
 
 # Footer
 resources = Ressurser
-divvun-buildkite-overview = Divvun Buildkite Oversikt
+divvun-buildkite-overview = Divvun Buildkite-oversikt
 buildkite-dashboard = Buildkite Dashboard
 github-divvun = GitHub - divvun
 github-giellalt = GitHub - giellalt
@@ -153,7 +153,7 @@ view-agents-wait-time-aria = Vis agenter, gjennomsnittlig ventetid: {$waitTime}
 view-queues-pending-aria = Vis køer, {$count} ventende bygg
 view-failing-pipeline-aria = Vis detaljer for feilende pipeline: {$name}
 build-status-title = Bygg #{$number}: {$status}
-feature-coming-soon = Funksjon kommer snart - utløs nye bygg fra grensesnittet
+feature-coming-soon = Funksjon kommer snart – utløs nye bygg fra grensesnittet
 user-menu-aria = Brukermeny for {$user}
 go-to-breadcrumb-aria = Gå til {$label}
 pipeline-page-title = {$name} - Pipeline
