@@ -964,6 +964,15 @@ export class CacheManager {
     this.memoryCache.delete("all-pipelines")
   }
 
+  // Public methods for external cache access
+  getFromMemoryCache<T>(key: string): T | null {
+    return this.getFromMemory<T>(key)
+  }
+
+  setInMemoryCache<T>(key: string, data: T, ttlSeconds: number): void {
+    this.setInMemory(key, data, ttlSeconds)
+  }
+
   // Clean shutdown
   close(): void {
     this.db.close()

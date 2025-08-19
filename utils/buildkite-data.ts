@@ -465,6 +465,17 @@ export async function fetchRunningBuilds(): Promise<AppBuild[]> {
 }
 
 export async function fetchAgentMetrics(): Promise<AgentMetrics> {
+  // Check cache first (30 second TTL for real-time agent metrics)
+  const cacheManager = getCacheManager()
+  const cacheKey = "agent-metrics"
+  const cached = cacheManager.getFromMemoryCache<AgentMetrics>(cacheKey)
+  if (cached) {
+    console.log("Using cached agent metrics")
+    return cached
+  }
+
+  console.log("Cache miss for agent metrics, fetching from API...")
+
   try {
     // Fetch queue metrics from all organizations
     const queueMetrics: Array<{
@@ -505,7 +516,9 @@ export async function fetchAgentMetrics(): Promise<AgentMetrics> {
 
     if (queueMetrics.length === 0) {
       console.log("No queue metrics available, returning defaults")
-      return { averageWaitTime: 0, p95WaitTime: 0, p99WaitTime: 0 }
+      const defaultMetrics = { averageWaitTime: 0, p95WaitTime: 0, p99WaitTime: 0 }
+      cacheManager.setInMemoryCache(cacheKey, defaultMetrics, 30)
+      return defaultMetrics
     }
 
     // Calculate wait time estimates based on real queue data
@@ -552,11 +565,17 @@ export async function fetchAgentMetrics(): Promise<AgentMetrics> {
       `Queue metrics: ${queueMetrics.length} queues, avg: ${averageWaitTime}s, P95: ${p95WaitTime}s, P99: ${p99WaitTime}s`,
     )
 
-    return {
+    const agentMetrics = {
       averageWaitTime,
       p95WaitTime,
       p99WaitTime,
     }
+
+    // Cache the result for 30 seconds
+    cacheManager.setInMemoryCache(cacheKey, agentMetrics, 30)
+    console.log("Cached agent metrics for 30 seconds")
+
+    return agentMetrics
   } catch (error) {
     console.error("Error fetching agent metrics:", error)
     return { averageWaitTime: 0, p95WaitTime: 0, p99WaitTime: 0 }
@@ -682,6 +701,17 @@ function extractJobsByQueue(builds: any[], jobState: string): Map<string, QueueJ
 
 // Fetch and analyze queue status
 export async function fetchQueueStatus(): Promise<QueueStatus[]> {
+  // Check cache first (30 second TTL for real-time queue status)
+  const cacheManager = getCacheManager()
+  const cacheKey = "queue-status"
+  const cached = cacheManager.getFromMemoryCache<QueueStatus[]>(cacheKey)
+  if (cached) {
+    console.log("Using cached queue status")
+    return cached
+  }
+
+  console.log("Cache miss for queue status, fetching from API...")
+
   try {
     // Import REST API functions
     const { fetchScheduledBuilds, fetchRunningBuildsRest } = await import("./buildkite-client.ts")
@@ -822,6 +852,10 @@ export async function fetchQueueStatus(): Promise<QueueStatus[]> {
       `Analyzed ${queueStatuses.length} queues:`,
       queueStatuses.map((q) => `${q.queueKey}: ${q.runningJobs.length} running, ${q.scheduledJobs.length} scheduled`),
     )
+
+    // Cache the result for 30 seconds
+    cacheManager.setInMemoryCache(cacheKey, queueStatuses, 30)
+    console.log("Cached queue status for 30 seconds")
 
     return queueStatuses
   } catch (error) {
