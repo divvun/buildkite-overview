@@ -56,7 +56,7 @@ status-creating = OPPRETTAR
 status-waiting = VENTAR
 status-blocked = BLOKKERT
 status-canceling = AVBRYT
-status-waiting-failed = VENTING_FEILA
+status-waiting-failed = VENTAR_FEILA
 status-neutral = NØYTRAL
 status-unknown = UKJEND
 

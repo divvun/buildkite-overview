@@ -19,9 +19,9 @@ error = Feil
 refresh = Oppdater
 refreshing = Oppdaterer...
 refreshing-data = Oppdaterer data...
-auto-refresh-on = Automatisk oppdatering PÅ (kvar {$interval}. sekund)
+auto-refresh-on = Automatisk oppdatering PÅ (kvart {$interval}. sekund)
 auto-refresh-off = Automatisk oppdatering AV
-auto-refresh-background = Automatisk oppdatering PÅ (bakgrunnsmodus: kvar {$interval}. sekund)
+auto-refresh-background = Automatisk oppdatering PÅ (bakgrunnsmodus: kvart {$interval}. sekund)
 enable-auto-refresh = Aktiver automatisk oppdatering
 disable-auto-refresh = Deaktiver automatisk oppdatering
 
@@ -129,7 +129,7 @@ failed-cache-action = Kunne ikkje utføra cache-handling
 failed-job-logs = Kunne ikkje henta jobbloggar frå Buildkite API
 buildkite-api-key-not-configured = Buildkite-API-nøkkel ikkje konfigurert
 access-denied-logs = Tilgang nekta til jobbloggar. Dette kan koma av utilstrekkelege API-løyve eller at loggane er sletta.
-unknown-error = Ukjent feil
+unknown-error = Ukjend feil
 invalid-locale-data = Ugyldig språkdata-format
 missing-build-slug = Manglar byggjenummer eller kommandokø-slugg
 
@@ -167,7 +167,7 @@ connection-disconnected = fråkopla
 connection-lost = tapt
 
 # Dashboard-strengar
-failing-since = feilar for {$time} sidan
+failing-since = har feila sidan {$time}
 average-wait-time = Gjennomsnittleg ventetid
 builds-passed-failed = {$passed} fullførde, {$failed} mislukkast
 
@@ -193,7 +193,7 @@ unauthorized-description = Du må vere medlem av divvun-organisasjonen for å f�
 what-you-can-do = Kva du kan gjere:
 contact-admin = Kontakt administratoren din for å be om tilgang til divvun-organisasjonen
 verify-account = Sjekk at du er logga inn med rett GitHub-konto
-accept-invitation = Sørg for at du har akseptert organisasjonsinvitasjonen om ein vart sendt
+accept-invitation = Sørg for at du har akseptert organisasjonsinvitasjonen om ein er sendt
 return-to-dashboard = Tilbake til oversikta
 sign-out = Logg ut
 
@@ -207,7 +207,7 @@ login-description = Logg inn med GitHub-kontoen din for å få tilgang til byggj
 auth-failed = Autentisering feila. Ver grei og prøv igjen.
 invalid-auth-response = Ugyldig autentiseringsrespons.
 security-validation-failed = Tryggleiksvalidering feila. Ver grei og prøv igjen.
-insufficient-access-error = Du har ikkje tilgang til dei nødvendige GitHub-organisasjonane (divvun eller giellalt). Du må kanskje autentisera på nytt for å oppdatera organisasjonsløyva dine.
+insufficient-access-error = Du har ikkje tilgang til dei naudsynte GitHub-organisasjonane (divvun eller giellalt). Du må kanskje autentisera på nytt for å oppdatera organisasjonsløyva dine.
 auth-error-occurred = Autentiseringsfeil oppstod. Ver grei og prøv igjen.
 choose-different-account-desc = Vel ein annan konto eller gje ny autorisasjon for å oppdatera organisasjonsløyve
 review-app-permissions = gå gjennom app-tillatingar på GitHub

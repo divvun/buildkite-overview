@@ -51,12 +51,12 @@ default-queue = Standard
 available-agents-ratio = {$available}/{$total} tilgjengelege
 running-count = 🏃 {$count} køyrer
 queued-count = ⏳ {$count} i kø
-idle-status = 💤 lediggjengde
+idle-status = 💤 lediggåande
 next-label = Neste: {$jobs}
 more-builds = +{$count} til
 
 # Fleire tomme tilstandar
-no-queued-builds-title = Ingen køa bygg! 🎉
+no-queued-builds-title = Ingen bygg i kø! 🎉
 no-queued-builds-desc = Alle køar er tomme. Kom tilbake seinare for ny aktivitet.
 loading-queue-data-title = Lastar kødata...
 loading-queue-data-desc = Samlar informasjon om byggjekøar og tilgjengelege agentar.

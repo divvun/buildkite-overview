@@ -19,15 +19,15 @@ commit-message = Innsjekkingsmelding
 repository = Repositorium
 
 # Navigering
-back-to-pipeline = Tilbake til Kommandokø
-back-to-pipelines = Tilbake til Kommandokøar
-view-pipeline = Vis Kommandokø
-view-build = Vis Bygg
+back-to-pipeline = Tilbake til kommandokø
+back-to-pipelines = Tilbake til kommandokøar
+view-pipeline = Vis kommandokø
+view-build = Vis bygg
 
 # Byggtilstandar
 build-running = Køyrer
 build-passed = Fullført
-build-failed = Mislukkast
+build-failed = Mislukka
 build-blocked = Blokkert
 build-canceled = Avbrote
 build-skipped = Hoppa over
@@ -51,7 +51,7 @@ unable-to-load-build-history = Kan ikkje lasta byggjehistorikk. Ver grei og oppd
 
 # Byggstatus-omsetjingar
 status-PASSED = Fullført
-status-FAILED = Mislukkast  
+status-FAILED = Mislukka
 status-RUNNING = Køyrer
 status-CANCELED = Avbrote
 status-BLOCKED = Blokkert
@@ -61,4 +61,4 @@ status-CREATING = Opprettar
 status-CANCELING = Avbryt
 status-SKIPPED = Hoppa over
 status-NOT_RUN = Ikkje køyrt
-status-WAITING_FAILED = Venting mislukkast
+status-WAITING_FAILED = Venting mislukka

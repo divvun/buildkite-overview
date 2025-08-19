@@ -16,7 +16,7 @@ collapse-all = Skjul alle
 # Jobbstatus
 job-running = Køyrer
 job-passed = Fullført
-job-failed = Mislukkast
+job-failed = Mislukka
 job-canceled = Avbrote
 job-skipped = Hoppa over
 job-blocked = Blokkert
