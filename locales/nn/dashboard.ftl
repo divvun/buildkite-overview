@@ -33,8 +33,8 @@ view-logs = Vis loggar
 no-recent-builds = Ingen nye bygg
 no-recent-builds-description = Ingen byggjeaktivitet å visa enno.
 dashboard-load-failed = Kunne ikkje lasta oversiktsdata
-dashboard-load-error = Kunne ikkje lasta oversiktsdata. Dette kan koma av: 1) Manglande BUILDKITE_API_KEY-miljøvariabel, 2) Ugyldig API-nøkkel, eller 3) Nettverkstilkoblingsproblem. Kontroller konfigurasjonen din og prøv igjen.
+dashboard-load-error = Kunne ikkje lasta oversiktsdata. Dette kan koma av: 1) Manglande BUILDKITE_API_KEY-miljøvariabel, 2) Ugyldig API-nøkkel, eller 3) Nettverkstilkoplingsproblem. Kontroller konfigurasjonen din og prøv igjen.
 
 # Ingen feilande pipelines-meldingar
 no-failing-pipelines-title = Ingen feilande kommandokøar! 🎉
-no-failing-pipelines-desc = Alle kommandokøar er for augneblinken friske.
+no-failing-pipelines-desc = Alle kommandokøane er for augneblinken friske.

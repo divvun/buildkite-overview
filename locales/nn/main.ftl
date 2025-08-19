@@ -54,7 +54,7 @@ next-page = Neste side
 last-page = Siste side
 
 # Generelle tilstandar
-no-repository = Ingen repositorium
+no-repository = Inkje repositorium
 no-commit-message = Inga innsjekkingsmelding
 no-specific-requirements = Ingen spesifikke krav
 unknown = Ukjent
@@ -184,13 +184,13 @@ build-number = Bygg #{$number}
 job-number = Jobb #{$id}
 
 # Autentiseringsside
-try-different-account = Prøv anna konto
+try-different-account = Prøv annan konto
 sign-in-github = Logg inn med GitHub
 
 # Uautorisert tilgang
 access-denied = Tilgang nekta
-unauthorized-description = Du må vere medlem av divvun-organisasjonen for å få tilgang til denne sida.
-what-you-can-do = Kva du kan gjere:
+unauthorized-description = Du må vera medlem av divvun-organisasjonen for å få tilgang til denne sida.
+what-you-can-do = Kva du kan gjera:
 contact-admin = Kontakt administratoren din for å be om tilgang til divvun-organisasjonen
 verify-account = Sjekk at du er logga inn med rett GitHub-konto
 accept-invitation = Sørg for at du har akseptert organisasjonsinvitasjonen om ein er sendt

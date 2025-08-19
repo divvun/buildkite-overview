@@ -59,7 +59,7 @@ share-logs = Share logs
 loading-jobs = Loading jobs...
 no-jobs-found = No jobs found for this build
 job-logs-header = Job Logs
-job-logs-size = Job Logs ({$size} KB)
+job-logs-size = Job Logs ({$size} kB)
 
 # Job timing
 ran-in = Ran in {$duration}

@@ -21,7 +21,7 @@ job-canceled = Avbrote
 job-skipped = Hoppa over
 job-blocked = Blokkert
 job-waiting = Ventar
-job-scheduled = Planlagt
+job-scheduled = Planlagd
 
 # Jobbdetaljar
 job-name = Jobbnamn
@@ -59,7 +59,7 @@ share-logs = Del loggar
 loading-jobs = Lastar jobbar...
 no-jobs-found = Ingen jobbar funne for dette bygget
 job-logs-header = Jobb-loggar
-job-logs-size = Jobb-loggar ({$size} KB)
+job-logs-size = Jobb-loggar ({$size} kB)
 
 # Jobbtiming
 ran-in = Køyrde på {$duration}

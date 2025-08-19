@@ -59,7 +59,7 @@ share-logs = Del logger
 loading-jobs = Laster jobber...
 no-jobs-found = Ingen jobber funnet for dette bygget
 job-logs-header = Jobb-logger
-job-logs-size = Jobb-logger ({$size} KB)
+job-logs-size = Jobb-logger ({$size} kB)
 
 # Jobbtiming
 ran-in = Kjørte på {$duration}

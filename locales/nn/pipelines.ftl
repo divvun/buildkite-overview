@@ -45,7 +45,7 @@ trigger-build = Set i gang bygg
 view-pipeline = Vis kommandokø
 view-build = Vis bygg
 
-# Byggstatuser (for jobtilstandar)
+# Byggstatusar (for jobbtilstandar)
 status-passed = FULLFØRT
 status-finished = FERDIG
 status-failed = FEILA
@@ -70,7 +70,7 @@ view-pipeline-arrow = Vis kommandokø →
 
 # Lastar og feiltilstandar for bygg
 loading-builds = Lastar bygg...
-no-initial-builds = Ingen tidlegare bygg oppgitt, hentar frå API...
+no-initial-builds = Ingen tidlegare bygg oppgjeve, hentar frå API...
 initial-builds-count = tidlegare bygg
 
 # Sidetitlar for feiltilstandar
@@ -95,7 +95,7 @@ filter-pipelines-placeholder = Filtrer kommandokøar...
 status-placeholder = Status
 
 # Pipeline-vising
-no-repository = Ingen repositorium
+no-repository = Inkje repositorium
 no-pipelines-found-title = Ingen kommandokøar funne
 no-pipelines-filter-desc = Ingen kommandokøar passar med dei gjeldande filtera. Prøv å justera søk eller filter.
 refreshing = Oppdaterer...

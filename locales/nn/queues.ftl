@@ -7,7 +7,7 @@ queue-overview = Køoversikt
 queue-details = Kødetaljar
 active-queues = Aktive køar
 running-jobs = Køyrande jobbar
-queued-jobs = Køa jobbar
+queued-jobs = Jobbar i kø
 available-agents = Tilgjengelege agentar
 
 # Køstatus
@@ -25,14 +25,14 @@ next-jobs = Neste: {$jobs}
 more-jobs = +{$count} til
 
 # Bygginformasjon
-build-scheduled = Planlagd: {$time}
+build-scheduled = Planlagt: {$time}
 view-build-details = Vis byggjedetaljar →
 
 # Tomme tilstandar
-no-queued-builds = Ingen køa bygg! 🎉
+no-queued-builds = Ingen bygg i kø! 🎉
 no-queued-builds-description = Alle køar er tomme. Kom attende seinare for ny aktivitet.
 all-queues-idle = Alt stille på byggjefronten! 🎉
-all-queues-idle-description = Ingen bygg er for tida planlagde eller køyrer på tvers av alle køar. Dette er bra - alle kommandokøane dine er ledige og klare for nytt arbeid!
+all-queues-idle-description = Ingen bygg er for tida planlagde eller køyrer på tvers av alle køar. Dette er bra – alle kommandokøane dine er ledige og klare for nytt arbeid!
 no-builds-pending = Ingen bygg ventar
 loading-queue-data = Lastar kødata...
 loading-queue-description = Samlar informasjon om byggjekøar og tilgjengelege agentar.
@@ -61,4 +61,4 @@ no-queued-builds-desc = Alle køar er tomme. Kom attende seinare for ny aktivite
 loading-queue-data-title = Lastar kødata...
 loading-queue-data-desc = Samlar informasjon om byggjekøar og tilgjengelege agentar.
 all-quiet-title = Alt stille på byggjefronten! 🎉
-all-quiet-desc = Ingen bygg er for tida planlagde eller køyrer på tvers av alle køar. Dette er bra - alle kommandokøane dine er ledige og klare for nytt arbeid!
+all-quiet-desc = Ingen bygg er for tida planlagde eller køyrer på tvers av alle køar. Dette er bra – alle kommandokøane dine er ledige og klare for nytt arbeid!
