@@ -57,6 +57,8 @@ status-waiting = VENTER
 status-blocked = BLOKKERT
 status-canceling = AVBRYTER
 status-waiting-failed = VENTING_FEILET
+status-neutral = NØYTRAL
+status-unknown = UKJENT
 
 # Paginering placeholder
 status-placeholder = Status
