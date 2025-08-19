@@ -167,7 +167,7 @@ connection-disconnected = frakoblet
 connection-lost = tapt
 
 # Dashboard-strenger
-failing-since = feiler siden {$time}
+failing-since = har feilet siden {$time}
 average-wait-time = Gjennomsnittlig ventetid
 builds-passed-failed = {$passed} bestått, {$failed} feilet
 
@@ -225,16 +225,16 @@ refreshing-ellipsis = Oppdaterer...
 job-fallback = Jobb
 time-now = nå
 time-minutes-ago = {$count ->     
-    [one] {$count} minutt siden
-   *[other] {$count} minutter siden
+    [one] {$count} minutt
+   *[other] {$count} minutter
 }
 time-hours-ago = {$count ->     
-    [one] {$count} time siden
-   *[other] {$count} timer siden
+    [one] {$count} time
+   *[other] {$count} timer
 }
 time-days-ago = {$count ->     
-    [one] {$count} dag siden
-   *[other] {$count} dager siden
+    [one] {$count} dag
+   *[other] {$count} dager
 }
 
 # Feilmeldinger

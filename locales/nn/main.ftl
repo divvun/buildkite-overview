@@ -225,16 +225,16 @@ refreshing-ellipsis = Oppdaterer...
 job-fallback = Jobb
 time-now = nå
 time-minutes-ago = {$count ->     
-    [one] {$count} minutt sidan
-   *[other] {$count} minutt sidan
+    [one] {$count} minutt
+   *[other] {$count} minutt
 }
 time-hours-ago = {$count ->     
-    [one] {$count} time sidan
-   *[other] {$count} timar sidan
+    [one] {$count} time
+   *[other] {$count} timar
 }
 time-days-ago = {$count ->     
-    [one] {$count} dag sidan
-   *[other] {$count} dagar sidan
+    [one] {$count} dag
+   *[other] {$count} dagar
 }
 
 # Feilmeldingar

@@ -11,25 +11,13 @@ export const handler = async (ctx: any) => {
 
     // Read all .ftl files for this locale
     const ftlFiles = ["main", "dashboard", "pipelines", "agents", "queues", "errors"]
-    const messages: Record<string, string> = {}
+    const ftlContent: Record<string, string> = {}
 
     for (const filename of ftlFiles) {
       try {
         const path = `./locales/${locale}/${filename}.ftl`
         const content = await Deno.readTextFile(path)
-
-        // Parse .ftl content to extract key-value pairs
-        const lines = content.split("\n")
-        for (const line of lines) {
-          const trimmed = line.trim()
-          if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
-            const [key, ...valueParts] = trimmed.split("=")
-            const value = valueParts.join("=").trim()
-            if (key && value) {
-              messages[key.trim()] = value
-            }
-          }
-        }
+        ftlContent[filename] = content
       } catch (error) {
         console.warn(`Failed to load ${locale}/${filename}.ftl:`, error)
 
@@ -38,29 +26,19 @@ export const handler = async (ctx: any) => {
           try {
             const fallbackPath = `./locales/en/${filename}.ftl`
             const fallbackContent = await Deno.readTextFile(fallbackPath)
-
-            const lines = fallbackContent.split("\n")
-            for (const line of lines) {
-              const trimmed = line.trim()
-              if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
-                const [key, ...valueParts] = trimmed.split("=")
-                const value = valueParts.join("=").trim()
-                if (key && value && !messages[key.trim()]) {
-                  messages[key.trim()] = value
-                }
-              }
-            }
+            ftlContent[filename] = fallbackContent
           } catch (fallbackError) {
             console.warn(`Failed to load fallback en/${filename}.ftl:`, fallbackError)
+            // If both fail, just skip this file
           }
         }
       }
     }
 
-    // Return the locale bundle
+    // Return the raw FTL content for client-side processing
     const response = {
       locale,
-      messages,
+      ftlContent,
       timestamp: Date.now(),
     }
 
@@ -78,7 +56,7 @@ export const handler = async (ctx: any) => {
       JSON.stringify({
         error: "Failed to load locale",
         locale: "en",
-        messages: {},
+        ftlContent: {},
         timestamp: Date.now(),
       }),
       {

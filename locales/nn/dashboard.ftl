@@ -18,7 +18,7 @@ recent-builds-description = Siste byggjeaktivitet på tvers av alle kommandokøa
 # Feilande pipelines-del
 failing-pipelines-title = Feilande kommandokøar
 failing-pipelines-description = Kommandokøar som krev merksemd
-failing-since = Har feila sidan {$time}
+failing-since = Feila sidan {$time}
 no-failing-pipelines = Ingen feilande kommandokøar! 🎉
 no-failing-pipelines-description = Alle kommandokøar er reine. Flott jobba!
 
