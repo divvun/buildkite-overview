@@ -35,20 +35,29 @@ export default function FullscreenLogs({
   const [showTimestamps, setShowTimestamps] = useState(false)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
+  const [visibleLinesPerGroup, setVisibleLinesPerGroup] = useState<Map<number, number>>(new Map())
   const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>(
     initialProcessedGroups || [],
   )
 
   useEffect(() => {
-    // Initialize collapsed state from processed groups
+    // Initialize collapsed state and visible lines from processed groups
     if (processedGroups.length > 0) {
       const initialCollapsed = new Set<number>()
+      const initialVisibleLines = new Map<number, number>()
+
       processedGroups.forEach((group) => {
         if (group.initiallyCollapsed && !group.openPrevious) {
           initialCollapsed.add(group.id)
         }
+        // For groups with > 500 lines, initially show only 500
+        if (group.lines.length > 500) {
+          initialVisibleLines.set(group.id, 500)
+        }
       })
+
       setCollapsedGroups(initialCollapsed)
+      setVisibleLinesPerGroup(initialVisibleLines)
     }
   }, [processedGroups])
 
@@ -98,6 +107,23 @@ export default function FullscreenLogs({
         newSet.add(groupId)
       }
       return newSet
+    })
+  }
+
+  const showMoreLines = (groupId: number) => {
+    setVisibleLinesPerGroup((prev) => {
+      const newMap = new Map(prev)
+      const currentVisible = newMap.get(groupId) || 500
+      newMap.set(groupId, currentVisible + 500)
+      return newMap
+    })
+  }
+
+  const showAllLines = (groupId: number) => {
+    setVisibleLinesPerGroup((prev) => {
+      const newMap = new Map(prev)
+      newMap.delete(groupId) // Remove the limit, show all lines
+      return newMap
     })
   }
 
@@ -219,6 +245,25 @@ export default function FullscreenLogs({
             border-radius: 6px;
           }
           
+          .show-more-row {
+            background: #0d1117;
+          }
+          
+          .show-more-cell {
+            padding: 12px 8px;
+            text-align: center;
+            background: #0d1117;
+            border-top: 1px solid #30363d;
+          }
+          
+          .show-more-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            --wa-space-s: 0.25rem;
+          }
+          
           /* Responsive styles for mobile and tablet */
           @media (max-width: 768px) {
             .toolbar {
@@ -286,6 +331,12 @@ export default function FullscreenLogs({
             .log-content-cell {
               padding: 1px 6px;
             }
+            
+            .show-more-buttons {
+              flex-direction: column;
+              gap: 6px;
+              --wa-space-s: 0.15rem;
+            }
           }
           
           @media (max-width: 480px) {
@@ -307,6 +358,15 @@ export default function FullscreenLogs({
             
             .log-table {
               font-size: 0.7rem;
+            }
+            
+            .show-more-cell {
+              padding: 8px 4px;
+            }
+            
+            .show-more-buttons {
+              gap: 4px;
+              --wa-space-s: 0.1rem;
             }
           }
           
@@ -379,7 +439,9 @@ export default function FullscreenLogs({
           <table class="log-table">
             <tbody>
               {processedGroups.map((group) => {
-                const isCollapsed = collapsedGroups.has(group.id)
+                // Determine if collapsed either from state or initial server state
+                const isCollapsed = collapsedGroups.has(group.id) ||
+                  (collapsedGroups.size === 0 && group.initiallyCollapsed && !group.openPrevious)
                 const groupStyle = group.type === "muted" ? "muted" : ""
 
                 const rows = []
@@ -408,27 +470,68 @@ export default function FullscreenLogs({
                   )
                 }
 
-                // Add content rows if not collapsed
-                if (!isCollapsed) {
-                  group.lines.forEach((logLine, lineIndex) => {
-                    rows.push(
-                      <tr key={`${group.id}-${lineIndex}`} class={groupStyle}>
-                        {showLineNumbers && (
-                          <td class="log-line-number">
-                            {logLine.lineNumber}
-                          </td>
-                        )}
-                        {showTimestamps && (
-                          <td class="log-timestamp">
-                            {logLine.timestamp}
-                          </td>
-                        )}
-                        <td class="log-content-cell">
-                          {segmentsToElements(logLine.contentSegments)}
+                // Determine how many lines to show for this group
+                const maxVisibleLines = visibleLinesPerGroup.get(group.id)
+                const linesToShow = maxVisibleLines ? group.lines.slice(0, maxVisibleLines) : group.lines
+                const hasMoreLines = maxVisibleLines && group.lines.length > maxVisibleLines
+                const remainingLines = hasMoreLines ? group.lines.length - maxVisibleLines : 0
+
+                // Always render visible content rows, but use CSS to hide when collapsed
+                linesToShow.forEach((logLine, lineIndex) => {
+                  rows.push(
+                    <tr
+                      key={`${group.id}-${lineIndex}`}
+                      class={groupStyle}
+                      style={{ display: isCollapsed ? "none" : "table-row" }}
+                    >
+                      {showLineNumbers && (
+                        <td class="log-line-number">
+                          {logLine.lineNumber}
                         </td>
-                      </tr>,
-                    )
-                  })
+                      )}
+                      {showTimestamps && (
+                        <td class="log-timestamp">
+                          {logLine.timestamp}
+                        </td>
+                      )}
+                      <td class="log-content-cell">
+                        {segmentsToElements(logLine.contentSegments)}
+                      </td>
+                    </tr>,
+                  )
+                })
+
+                // Add "Show More" button if there are more lines to show
+                if (hasMoreLines && !isCollapsed) {
+                  rows.push(
+                    <tr key={`show-more-${group.id}`} class="show-more-row">
+                      <td
+                        colSpan={(showLineNumbers ? 1 : 0) + (showTimestamps ? 1 : 0) + 1}
+                        class="show-more-cell"
+                      >
+                        <div class="show-more-buttons">
+                          <wa-button
+                            size="small"
+                            variant="neutral"
+                            appearance="outlined"
+                            onClick={() => showMoreLines(group.id)}
+                          >
+                            Show {Math.min(500, remainingLines)} more lines ({remainingLines} remaining)
+                          </wa-button>
+                          {remainingLines > 500 && (
+                            <wa-button
+                              size="small"
+                              variant="neutral"
+                              appearance="outlined"
+                              onClick={() => showAllLines(group.id)}
+                            >
+                              Show all {remainingLines} remaining
+                            </wa-button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>,
+                  )
                 }
 
                 return rows
