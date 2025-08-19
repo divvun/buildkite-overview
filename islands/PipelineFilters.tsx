@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks"
+import { useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface PipelineFiltersProps {

@@ -1,6 +1,13 @@
 import { FluentBundle, type FluentVariable } from "@fluent/bundle"
 import { define, State } from "~/utils.ts"
-import { createMockSession, getOptionalSession, type SessionData } from "~/utils/session.ts"
+import {
+  createMockSession,
+  createSessionCookie,
+  getOptionalSession,
+  refreshSession,
+  type SessionData,
+  shouldRefreshSession,
+} from "~/utils/session.ts"
 import type { SupportedLocale } from "~/utils/localization.ts"
 
 // Extend the State interface to include session and localization
@@ -19,7 +26,31 @@ export const sessionMiddleware = define.middleware(async (ctx) => {
     ;(ctx.state as AppState).session = createMockSession()
   } else {
     // Get session from request (optional, doesn't throw)
-    ;(ctx.state as AppState).session = getOptionalSession(ctx.req)
+    let session = getOptionalSession(ctx.req)
+
+    // Check if session needs refresh
+    if (session && shouldRefreshSession(session)) {
+      session = refreshSession(session)
+
+      // Set updated cookie for refreshed session
+      const isProduction = Deno.env.get("DENO_ENV") === "production"
+      const sessionCookie = createSessionCookie(session, isProduction)
+
+      // Get response and add the cookie
+      const response = await ctx.next()
+      if (response instanceof Response) {
+        const newResponse = new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: new Headers(response.headers),
+        })
+        newResponse.headers.append("Set-Cookie", sessionCookie)
+        ;(ctx.state as AppState).session = session
+        return newResponse
+      }
+    }
+
+    ;(ctx.state as AppState).session = session
   }
 
   // Continue to the route handler
@@ -79,8 +110,12 @@ export const requireGlobalAuth = define.middleware(async (ctx) => {
     return await ctx.next()
   }
 
-  // Skip auth check for auth routes and webhooks to avoid infinite redirects
-  if (ctx.url.pathname.startsWith("/auth/") || ctx.url.pathname.startsWith("/api/webhooks/")) {
+  // Skip auth check for auth routes, webhooks, and badge API to avoid infinite redirects
+  if (
+    ctx.url.pathname.startsWith("/auth/") ||
+    ctx.url.pathname.startsWith("/api/webhooks/") ||
+    ctx.url.pathname.startsWith("/api/badge/")
+  ) {
     return await ctx.next()
   }
 

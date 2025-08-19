@@ -96,7 +96,7 @@ export const handler = {
         },
         organizations: userOrgs,
         access_token: tokenSet.access_token,
-        expires_at: Date.now() + ((tokenSet.expires_in || 3600) * 1000),
+        expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
       }
 
       // In a real app, you'd store this in a secure session store

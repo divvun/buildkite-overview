@@ -89,6 +89,25 @@ export function createMockSession(): SessionData {
     },
     organizations: ["divvun", "giellalt"],
     access_token: "mock_token_for_development",
-    expires_at: Date.now() + (24 * 60 * 60 * 1000), // 24 hours from now
+    expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
   }
+}
+
+export function shouldRefreshSession(session: SessionData): boolean {
+  // Refresh if less than 3 days remaining
+  const threeDaysFromNow = Date.now() + (3 * 24 * 60 * 60 * 1000)
+  return session.expires_at < threeDaysFromNow
+}
+
+export function refreshSession(session: SessionData): SessionData {
+  return {
+    ...session,
+    expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
+  }
+}
+
+export function createSessionCookie(session: SessionData, isProduction: boolean = false): string {
+  const sessionCookie = btoa(JSON.stringify(session))
+  const cookieFlags = `HttpOnly; ${isProduction ? "Secure; " : ""}SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}; Path=/`
+  return `session=${sessionCookie}; ${cookieFlags}`
 }
