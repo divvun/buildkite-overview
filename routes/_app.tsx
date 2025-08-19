@@ -18,6 +18,12 @@ export default function App({ Component, state }: PageProps<unknown, AppState>) 
         <link rel="stylesheet" href="/webawesome/styles/themes/awesome.css" />
         <link rel="stylesheet" href="/styles.css" />
         <script type="module" src="/webawesome/webawesome.loader.js"></script>
+        <script type="module">
+          {`
+          import { allDefined } from '/webawesome/webawesome.js';
+          await allDefined();
+        `}
+        </script>
       </head>
       <body>
         <AutoRefresh intervalSeconds={AUTO_REFRESH_INTERVAL_SECONDS} />
