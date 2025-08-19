@@ -258,30 +258,17 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
                                   {agent.operatingSystem}
                                 </div>
                               )}
-                              <div class="wa-caption-s wa-color-text-quiet">
-                                {t("last-seen")} {formatLastSeen(agent.lastSeen, locale, t)}
-                              </div>
+                              {agent.metadata && agent.metadata.length > 0 && (
+                                <div class="wa-caption-s wa-color-text-quiet">
+                                  {agent.metadata.map((meta, index) => (
+                                    <div key={`${agent.id}-meta-${index}`} class="metadata-item">
+                                      <span class="metadata-key">{meta.key}:</span> {meta.value}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
-
-                          {agent.metadata && agent.metadata.length > 0 && (
-                            <details style="margin-top: var(--wa-space-s)">
-                              <summary class="wa-caption-s wa-color-text-quiet" style="cursor: pointer">
-                                {t("metadata-label", { count: agent.metadata.length })}
-                              </summary>
-                              <div
-                                class="wa-grid wa-gap-3xs"
-                                style="grid-template-columns: auto 1fr; margin-top: var(--wa-space-3xs)"
-                              >
-                                {agent.metadata.map((meta, index) => (
-                                  <div key={`${agent.id}-meta-${index}`} style="display: contents">
-                                    <div class="wa-caption-xs wa-color-text-quiet">{meta.key}:</div>
-                                    <div class="wa-caption-xs">{meta.value}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </details>
-                          )}
                         </div>
                       </wa-card>
                     ))}

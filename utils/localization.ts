@@ -73,7 +73,7 @@ async function createFluentBundle(locale: SupportedLocale): Promise<FluentBundle
   })
 
   // Load all .ftl files for this locale
-  const ftlFiles = ["main", "dashboard", "pipelines", "agents", "queues", "errors"]
+  const ftlFiles = ["main", "dashboard", "pipelines", "agents", "queues", "errors", "jobs", "builds"]
 
   for (const filename of ftlFiles) {
     const ftlContent = await loadFtlFile(locale, filename)

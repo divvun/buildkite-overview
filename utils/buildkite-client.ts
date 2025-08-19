@@ -378,6 +378,7 @@ export const GET_ORGANIZATION_AGENTS: TypedDocumentNode<
             clusterQueue {
               key
             }
+            metaData
             job {
               ... on JobTypeCommand {
                 id

@@ -1,11 +1,11 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
-import { useLocalization } from "~/utils/localization-context.tsx"
 import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type AgentMetrics, type BuildHistoryItem, type FailingPipeline } from "~/utils/buildkite-data.ts"
 import { formatDurationSeconds, formatFailingSince } from "~/utils/formatters.ts"
+import { useLocalization } from "~/utils/localization-context.tsx"
 import { type SessionData } from "~/utils/session.ts"
 
 interface DashboardData {
@@ -66,10 +66,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
   if (!data && isLoading) {
     return (
       <div class="wa-stack wa-gap-l">
-        <div
-          class="wa-gap-m status-cards"
-          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--wa-space-m)"
-        >
+        <div class="status-cards status-cards-loading">
           <SkeletonLoader height="80px" />
           <SkeletonLoader height="80px" />
           <SkeletonLoader height="80px" />
@@ -104,10 +101,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
       )}
 
       {/* Three Status Cards */}
-      <div
-        class="wa-gap-m status-cards"
-        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--wa-space-m)"
-      >
+      <div class="status-cards">
         <a
           href="/pipelines"
           style="text-decoration: none; color: inherit"
@@ -204,12 +198,9 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                       style="text-decoration: none; color: inherit; display: block"
                       aria-label={t("view-failing-pipeline-aria", { name: pipeline.name })}
                     >
-                      <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--wa-space-s); gap: var(--wa-space-m)">
-                        <div class="wa-stack wa-gap-3xs" style="min-width: 0; flex: 1">
-                          <span
-                            class="wa-heading-s"
-                            style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
-                          >
+                      <div class="failing-pipeline-card-content">
+                        <div class="failing-pipeline-info">
+                          <span class="failing-pipeline-name">
                             {pipeline.name}
                           </span>
                           <div class="wa-caption-s wa-color-text-quiet">
@@ -217,12 +208,13 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                           </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; gap: var(--wa-space-s)">
-                          <div style="display: flex; gap: 2px">
+                        <div class="failing-pipeline-status">
+                          <div class="build-history-bars">
                             {pipeline.last10Builds.toReversed().map((build: BuildHistoryItem, index: number) => (
                               <div
                                 key={`${pipeline.id}-build-${index}`}
-                                style={`width: 10px; height: 20px; border-radius: 2px; background-color: ${
+                                class="build-bar"
+                                style={`background-color: ${
                                   build.status === "passed"
                                     ? "var(--wa-color-success-fill-loud)"
                                     : build.status === "failed"
@@ -238,7 +230,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                           </div>
                           <wa-badge variant="danger">
                             <wa-icon slot="prefix" name="triangle-exclamation"></wa-icon>
-                            {t("failed-status")}
+                            <span class="failed-badge-text">{t("failed-status")}</span>
                           </wa-badge>
                         </div>
                       </div>
@@ -259,12 +251,6 @@ export default function DashboardContent({ session }: DashboardContentProps) {
             </div>
           )}
       </section>
-
-      {isLoading && (
-        <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--wa-color-brand-fill-loud); color: white; padding: var(--wa-space-xs) var(--wa-space-s); border-radius: var(--wa-border-radius-s); font-size: var(--wa-font-size-caption-s)">
-          {t("refreshing-ellipsis")}
-        </div>
-      )}
     </>
   )
 }

@@ -92,8 +92,8 @@ export default function Home(props: { data: HomeProps; state: AppState }) {
       t={props.state.t}
       state={props.state}
     >
-      <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
-        <header>
+      <div class="wa-stack wa-gap-l dashboard-container">
+        <header class="dashboard-header">
           <h1 class="wa-heading-l">{props.state.t("dashboard-title")}</h1>
           <p class="wa-body-m wa-color-text-quiet">
             {props.state.t("dashboard-description")}

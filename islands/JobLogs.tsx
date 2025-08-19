@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
+import { ANSI_CSS, processLogsIntoGroups, segmentsToElements } from "~/utils/log-processing.tsx"
 
 interface JobLogsProps {
   jobId: string
@@ -21,6 +22,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
   const [error, setError] = useState<string>("")
   const [expanded, setExpanded] = useState(true)
   const [showTimestamps, setShowTimestamps] = useState(false)
+  const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
   const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>([])
 
@@ -106,399 +108,6 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
     URL.revokeObjectURL(url)
   }
 
-  interface AnsiSegment {
-    text: string
-    styles: Set<string>
-  }
-
-  type AnsiState = {
-    color: string | null
-    bgColor: string | null
-    bold: boolean
-    dim: boolean
-    italic: boolean
-    underline: boolean
-    reverse: boolean
-    strikethrough: boolean
-  }
-
-  const parseAnsiToPreact = (text: string, initialState?: AnsiState): { elements: any[]; finalState: AnsiState } => {
-    if (!text) return { elements: [], finalState: initialState || createDefaultAnsiState() }
-
-    // ANSI color and style mappings
-    const colorMap: Record<number, string> = {
-      // Standard colors
-      30: "black",
-      31: "red",
-      32: "green",
-      33: "yellow",
-      34: "blue",
-      35: "magenta",
-      36: "cyan",
-      37: "white",
-      // Bright colors
-      90: "bright-black",
-      91: "bright-red",
-      92: "bright-green",
-      93: "bright-yellow",
-      94: "bright-blue",
-      95: "bright-magenta",
-      96: "bright-cyan",
-      97: "bright-white",
-      // Background colors (we'll prefix with 'bg-')
-      40: "bg-black",
-      41: "bg-red",
-      42: "bg-green",
-      43: "bg-yellow",
-      44: "bg-blue",
-      45: "bg-magenta",
-      46: "bg-cyan",
-      47: "bg-white",
-      100: "bg-bright-black",
-      101: "bg-bright-red",
-      102: "bg-bright-green",
-      103: "bg-bright-yellow",
-      104: "bg-bright-blue",
-      105: "bg-bright-magenta",
-      106: "bg-bright-cyan",
-      107: "bg-bright-white",
-    }
-
-    const styleMap: Record<number, string> = {
-      1: "bold",
-      2: "dim",
-      3: "italic",
-      4: "underline",
-      7: "reverse",
-      9: "strikethrough",
-    }
-
-    function createDefaultAnsiState(): AnsiState {
-      return {
-        color: null,
-        bgColor: null,
-        bold: false,
-        dim: false,
-        italic: false,
-        underline: false,
-        reverse: false,
-        strikethrough: false,
-      }
-    }
-
-    // Start with initial state (from previous lines)
-    let currentState = initialState ? { ...initialState } : createDefaultAnsiState()
-
-    const segments: AnsiSegment[] = []
-    let currentText = ""
-
-    // ANSI escape sequence pattern
-    const ansiPattern = /\x1b\[([0-9;]*)m/g
-    let lastIndex = 0
-    let match
-
-    while ((match = ansiPattern.exec(text)) !== null) {
-      // Add text before this escape sequence
-      if (match.index > lastIndex) {
-        currentText += text.slice(lastIndex, match.index)
-      }
-
-      // If we have accumulated text, create a segment with current state
-      if (currentText) {
-        const styles = new Set<string>()
-        if (currentState.color) styles.add(currentState.color)
-        if (currentState.bgColor) styles.add(currentState.bgColor)
-        if (currentState.bold) styles.add("bold")
-        if (currentState.dim) styles.add("dim")
-        if (currentState.italic) styles.add("italic")
-        if (currentState.underline) styles.add("underline")
-        if (currentState.reverse) styles.add("reverse")
-        if (currentState.strikethrough) styles.add("strikethrough")
-
-        segments.push({
-          text: currentText,
-          styles,
-        })
-        currentText = ""
-      }
-
-      // Parse the ANSI codes and update state
-      const codes = match[1] ? match[1].split(";").map(Number) : [0]
-
-      for (const code of codes) {
-        if (code === 0) {
-          // Reset all styles
-          currentState = createDefaultAnsiState()
-        } else if (colorMap[code]) {
-          if (code >= 40 && code <= 47 || code >= 100 && code <= 107) {
-            // Background color
-            currentState.bgColor = colorMap[code]
-          } else {
-            // Foreground color
-            currentState.color = colorMap[code]
-          }
-        } else if (styleMap[code]) {
-          switch (code) {
-            case 1:
-              currentState.bold = true
-              break
-            case 2:
-              currentState.dim = true
-              break
-            case 3:
-              currentState.italic = true
-              break
-            case 4:
-              currentState.underline = true
-              break
-            case 7:
-              currentState.reverse = true
-              break
-            case 9:
-              currentState.strikethrough = true
-              break
-          }
-        }
-      }
-
-      lastIndex = match.index + match[0].length
-    }
-
-    // Add remaining text with final state
-    if (lastIndex < text.length) {
-      currentText += text.slice(lastIndex)
-    }
-
-    if (currentText) {
-      const styles = new Set<string>()
-      if (currentState.color) styles.add(currentState.color)
-      if (currentState.bgColor) styles.add(currentState.bgColor)
-      if (currentState.bold) styles.add("bold")
-      if (currentState.dim) styles.add("dim")
-      if (currentState.italic) styles.add("italic")
-      if (currentState.underline) styles.add("underline")
-      if (currentState.reverse) styles.add("reverse")
-      if (currentState.strikethrough) styles.add("strikethrough")
-
-      segments.push({
-        text: currentText,
-        styles,
-      })
-    }
-
-    // Convert segments to Preact elements
-    const elements = segments.map((segment, index) => {
-      if (segment.styles.size === 0) {
-        return segment.text
-      }
-
-      const classNames = Array.from(segment.styles).map((style) => `ansi-${style}`).join(" ")
-      return (
-        <span key={index} className={classNames}>
-          {segment.text}
-        </span>
-      )
-    })
-
-    return { elements, finalState: currentState }
-  }
-
-  const parseLogContent = (rawLog: string) => {
-    const logicalLines: Array<{
-      timestamp: string
-      content: string
-      groupMarker?: string
-      isGroup: boolean
-      lineNumber: number
-    }> = []
-
-    let lineNumber = 1
-    let position = 0
-
-    // Process the raw log character by character, building logical lines
-    while (position < rawLog.length) {
-      const currentLine = { content: "", timestamp: "" }
-      let foundTimestamp = false
-
-      // Look for the start of a new logical line (timestamp at beginning or after newline)
-      const timestampMatch = rawLog.substring(position).match(/^\x1b_bk;t=(\d+)\x07/)
-      if (timestampMatch) {
-        currentLine.timestamp = timestampMatch[1]
-        position += timestampMatch[0].length
-        foundTimestamp = true
-      }
-
-      // Collect content until we hit a newline or end of file
-      let lineContent = ""
-      while (position < rawLog.length && rawLog[position] !== "\n") {
-        const char = rawLog[position]
-
-        // Check for timestamp in the middle/end of content
-        const midTimestampMatch = rawLog.substring(position).match(/^\x1b_bk;t=(\d+)\x07/)
-        if (midTimestampMatch) {
-          // This is a timestamp update for the current line, not a new line
-          currentLine.timestamp = midTimestampMatch[1]
-          position += midTimestampMatch[0].length
-          continue
-        }
-
-        // Check for [K (erase) sequence
-        const eraseMatch = rawLog.substring(position).match(/^\x1b\[K/)
-        if (eraseMatch) {
-          // Erase the current content and start fresh
-          lineContent = ""
-          position += eraseMatch[0].length
-          continue
-        }
-
-        // Regular character
-        lineContent += char
-        position++
-      }
-
-      // Skip the newline if we hit one
-      if (position < rawLog.length && rawLog[position] === "\n") {
-        position++
-      }
-
-      // Clean up the content
-      lineContent = lineContent.replace(/[\r]+$/, "").trim()
-
-      // Skip empty lines without timestamps
-      if (!lineContent && !foundTimestamp) {
-        continue
-      }
-
-      // Skip lines that are just whitespace
-      if (!lineContent.trim()) {
-        continue
-      }
-
-      currentLine.content = lineContent
-
-      // Debug logging to see what we're getting
-      if (lineContent.includes("~~~") || lineContent.includes("---") || lineContent.includes("+++")) {
-        console.log("Raw content with group marker:", JSON.stringify(lineContent))
-      }
-
-      // Check for group markers at start of content
-      const groupMatch = lineContent.match(/^(---|\\+\\+\\+|~~~|\\^\\^\\^ \\+\\+\\+)\s*(.*)$/)
-
-      if (groupMatch) {
-        console.log("Group detected:", groupMatch[1], "name:", groupMatch[2])
-        logicalLines.push({
-          timestamp: currentLine.timestamp,
-          groupMarker: groupMatch[1],
-          content: groupMatch[2].trim(),
-          isGroup: true,
-          lineNumber: lineNumber++,
-        })
-      } else {
-        // Regular content line
-        logicalLines.push({
-          timestamp: currentLine.timestamp,
-          content: lineContent,
-          isGroup: false,
-          lineNumber: lineNumber++,
-        })
-      }
-    }
-
-    return logicalLines
-  }
-
-  const processLogsIntoGroups = (logContent: string) => {
-    const logicalLines = parseLogContent(logContent)
-
-    const groups: Array<{
-      id: number
-      type: "collapsed" | "expanded" | "muted" | "ungrouped"
-      name: string
-      nameElements: any[]
-      lines: Array<{ timestamp: string; contentElements: any[]; lineNumber: number }>
-      initiallyCollapsed?: boolean
-      openPrevious?: boolean
-    }> = []
-
-    let currentGroup: typeof groups[0] | null = null
-    let groupIdCounter = 0
-    let ansiState: AnsiState = {
-      color: null,
-      bgColor: null,
-      bold: false,
-      dim: false,
-      italic: false,
-      underline: false,
-      reverse: false,
-      strikethrough: false,
-    }
-
-    logicalLines.forEach((line) => {
-      if (line.isGroup) {
-        if (line.groupMarker === "^^^ +++" && groups.length > 0) {
-          // Mark previous group to be opened
-          const lastGroup = groups[groups.length - 1]
-          lastGroup.openPrevious = true
-        } else {
-          // Create new group
-          const groupType = line.groupMarker === "---"
-            ? "collapsed"
-            : line.groupMarker === "+++"
-            ? "expanded"
-            : line.groupMarker === "~~~"
-            ? "muted"
-            : "expanded"
-
-          // Parse group name with ANSI
-          const { elements: nameElements, finalState } = parseAnsiToPreact(line.content, ansiState)
-          ansiState = finalState
-
-          currentGroup = {
-            id: groupIdCounter++,
-            type: groupType,
-            name: line.content,
-            nameElements,
-            lines: [],
-            initiallyCollapsed: groupType === "collapsed" || groupType === "muted",
-          }
-          groups.push(currentGroup)
-        }
-      } else {
-        const ts = new Date(parseInt(line.timestamp))
-
-        // Parse content with ANSI state
-        const { elements: contentElements, finalState } = parseAnsiToPreact(line.content, ansiState)
-        ansiState = finalState
-
-        const logLine = {
-          timestamp: ts.toLocaleString("en-US", { hour12: false }),
-          contentElements,
-          lineNumber: line.lineNumber,
-        }
-
-        if (currentGroup) {
-          currentGroup.lines.push(logLine)
-        } else {
-          // Create ungrouped section
-          if (groups.length === 0 || groups[groups.length - 1].type !== "ungrouped") {
-            currentGroup = {
-              id: groupIdCounter++,
-              type: "ungrouped",
-              name: "",
-              nameElements: [],
-              lines: [],
-              initiallyCollapsed: false,
-            }
-            groups.push(currentGroup)
-          }
-          groups[groups.length - 1].lines.push(logLine)
-        }
-      }
-    })
-
-    return groups
-  }
-
   const toggleGroup = (groupId: number) => {
     setCollapsedGroups((prev) => {
       const newSet = new Set(prev)
@@ -514,54 +123,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
   return (
     <div class="wa-stack wa-gap-xs">
       <style>
-        {`
-        /* Dark terminal theme - ANSI color classes for log display */
-        .ansi-black { color: #000000; }
-        .ansi-red { color: #ff5555; }
-        .ansi-green { color: #50fa7b; }
-        .ansi-yellow { color: #f1fa8c; }
-        .ansi-blue { color: #6272a4; }
-        .ansi-magenta { color: #ff79c6; }
-        .ansi-cyan { color: #8be9fd; }
-        .ansi-white { color: #f8f8f2; }
-        
-        .ansi-bright-black { color: #6272a4; }
-        .ansi-bright-red { color: #ff6e6e; }
-        .ansi-bright-green { color: #69ff94; }
-        .ansi-bright-yellow { color: #ffffa5; }
-        .ansi-bright-blue { color: #79c0ff; }
-        .ansi-bright-magenta { color: #d2a8ff; }
-        .ansi-bright-cyan { color: #a4ffff; }
-        .ansi-bright-white { color: #ffffff; }
-        
-        .ansi-bg-black { background-color: #000000; }
-        .ansi-bg-red { background-color: #ff5555; }
-        .ansi-bg-green { background-color: #50fa7b; }
-        .ansi-bg-yellow { background-color: #f1fa8c; }
-        .ansi-bg-blue { background-color: #6272a4; }
-        .ansi-bg-magenta { background-color: #ff79c6; }
-        .ansi-bg-cyan { background-color: #8be9fd; }
-        .ansi-bg-white { background-color: #f8f8f2; }
-        
-        .ansi-bg-bright-black { background-color: #6272a4; }
-        .ansi-bg-bright-red { background-color: #ff6e6e; }
-        .ansi-bg-bright-green { background-color: #69ff94; }
-        .ansi-bg-bright-yellow { background-color: #ffffa5; }
-        .ansi-bg-bright-blue { background-color: #79c0ff; }
-        .ansi-bg-bright-magenta { background-color: #d2a8ff; }
-        .ansi-bg-bright-cyan { background-color: #a4ffff; }
-        .ansi-bg-bright-white { background-color: #ffffff; }
-        
-        .ansi-bold { font-weight: bold; }
-        .ansi-dim { opacity: 0.7; }
-        .ansi-italic { font-style: italic; }
-        .ansi-underline { text-decoration: underline; }
-        .ansi-strikethrough { text-decoration: line-through; }
-        .ansi-reverse { 
-          filter: invert(1);
-          border-radius: 2px;
-        }
-      `}
+        {ANSI_CSS}
       </style>
       <div class="wa-flank">
         {logData?.url && (
@@ -622,6 +184,14 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                     <wa-icon slot="prefix" name="clock" />
                     {showTimestamps ? t("hide-timestamps") : t("show-timestamps")} {t("timestamps")}
                   </wa-button>
+                  <wa-button
+                    size="small"
+                    appearance="plain"
+                    onClick={() => setShowLineNumbers(!showLineNumbers)}
+                  >
+                    <wa-icon slot="prefix" name="list-ol" />
+                    {showLineNumbers ? t("hide-line-numbers") : t("show-line-numbers")}
+                  </wa-button>
                   <wa-button size="small" appearance="plain">
                     <wa-icon slot="prefix" name="copy" />
                     {t("copy")}
@@ -633,6 +203,17 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                   >
                     <wa-icon slot="prefix" name="download" />
                     {t("download")}
+                  </wa-button>
+                  <wa-button
+                    size="small"
+                    appearance="plain"
+                    onClick={() => {
+                      const fullscreenUrl = `/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`
+                      window.open(fullscreenUrl, "_blank", "width=1200,height=800")
+                    }}
+                  >
+                    <wa-icon slot="prefix" name="expand" />
+                    {t("expand")}
                   </wa-button>
                 </div>
               </div>
@@ -670,7 +251,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                         rows.push(
                           <tr key={`header-${group.id}`}>
                             <td
-                              colSpan={showTimestamps ? 3 : 2}
+                              colSpan={(showLineNumbers ? 1 : 0) + (showTimestamps ? 1 : 0) + 1}
                               style="
                                 padding: 4px 8px;
                                 background: #161b22;
@@ -688,12 +269,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                                   style="color: var(--wa-color-text-quiet)"
                                 />
                                 <span>
-                                  {group.nameElements}
-                                  {group.type === "muted" && (
-                                    <span style="color: var(--wa-color-text-quiet); margin-left: 8px; font-size: 0.8em;">
-                                      (muted)
-                                    </span>
-                                  )}
+                                  {segmentsToElements(group.nameSegments)}
                                 </span>
                               </div>
                             </td>
@@ -706,22 +282,24 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                         group.lines.forEach((logLine, lineIndex) => {
                           rows.push(
                             <tr key={`${group.id}-${lineIndex}`} style={groupStyle}>
-                              <td
-                                class="log-line-number"
-                                style="
-                                  width: 60px;
-                                  text-align: right;
-                                  color: #7d8590;
-                                  padding: 2px 10px 2px 2px;
-                                  user-select: none;
-                                  vertical-align: top;
-                                  border-right: 1px solid #30363d;
-                                  background: #161b22;
-                                  font-size: 0.8rem;
-                                "
-                              >
-                                {logLine.lineNumber}
-                              </td>
+                              {showLineNumbers && (
+                                <td
+                                  class="log-line-number"
+                                  style="
+                                    width: 60px;
+                                    text-align: right;
+                                    color: #7d8590;
+                                    padding: 2px 10px 2px 2px;
+                                    user-select: none;
+                                    vertical-align: top;
+                                    border-right: 1px solid #30363d;
+                                    background: #161b22;
+                                    font-size: 0.8rem;
+                                  "
+                                >
+                                  {logLine.lineNumber}
+                                </td>
+                              )}
                               {showTimestamps && (
                                 <td
                                   class="log-timestamp"
@@ -751,7 +329,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                                   color: #f8f8f2;
                                 "
                               >
-                                {logLine.contentElements}
+                                {segmentsToElements(logLine.contentSegments)}
                               </td>
                             </tr>,
                           )

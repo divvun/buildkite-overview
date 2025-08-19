@@ -9,7 +9,14 @@ loading-logs = Loading logs...
 no-logs-available = No logs available for this job
 copy = Copy
 download = Download
+expand = Expand
+collapse = Collapse
+view-raw = View Raw
+close = Close
 show-timestamps = Show timestamps
+hide-timestamps = Hide timestamps
+show-line-numbers = Show line numbers
+hide-line-numbers = Hide line numbers
 expand-all = Expand all
 collapse-all = Collapse all
 

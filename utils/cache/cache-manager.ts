@@ -557,13 +557,75 @@ export class CacheManager {
       ipAddress: agent.ipAddress,
       organization: orgSlug,
       queueKey: agent.clusterQueue?.key,
-      metadata: undefined,
+      metadata: agent.metaData ? this.parseMetaData(agent.metaData) : [],
       currentJob,
       createdAt: new Date(agent.createdAt),
       connectedAt: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
       disconnectedAt: agent.disconnectedAt ? new Date(agent.disconnectedAt) : undefined,
       lastSeen: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
     }
+  }
+
+  private parseMetaData(metaData: any): Array<{ key: string; value: string }> {
+    if (!metaData) {
+      return []
+    }
+
+    const metadata: Array<{ key: string; value: string }> = []
+    // Filter out internal system identifiers and redundant info that aren't useful for users
+    const filteredKeys = ["machine-id", "hostname", "queue"]
+
+    // If it's already an array (which it should be from GraphQL)
+    if (Array.isArray(metaData)) {
+      for (const entry of metaData) {
+        if (typeof entry === "string" && entry.includes("=")) {
+          const [key, ...valueParts] = entry.split("=")
+          const value = valueParts.join("=") // In case value contains '='
+          const trimmedKey = key.trim()
+          const trimmedValue = value.trim()
+
+          if (trimmedKey && trimmedValue && !filteredKeys.includes(trimmedKey)) {
+            metadata.push({ key: trimmedKey, value: trimmedValue })
+          }
+        } else if (typeof entry === "string") {
+          // Just a tag without key=value format
+          metadata.push({ key: "tag", value: entry.trim() })
+        }
+      }
+      return metadata
+    }
+
+    // Fallback: if it's a string, try to parse it
+    if (typeof metaData === "string") {
+      try {
+        const parsed = JSON.parse(metaData)
+        if (Array.isArray(parsed)) {
+          return this.parseMetaData(parsed) // Recursively call with parsed array
+        }
+      } catch {
+        // Not JSON, treat as comma-separated
+        const entries = metaData.split(",")
+        for (const entry of entries) {
+          const trimmedEntry = entry.trim()
+          if (!trimmedEntry) continue
+
+          if (trimmedEntry.includes("=")) {
+            const [key, ...valueParts] = trimmedEntry.split("=")
+            const value = valueParts.join("=")
+            const trimmedKey = key.trim()
+            const trimmedValue = value.trim()
+
+            if (trimmedKey && trimmedValue && !filteredKeys.includes(trimmedKey)) {
+              metadata.push({ key: trimmedKey, value: trimmedValue })
+            }
+          } else {
+            metadata.push({ key: "tag", value: trimmedEntry })
+          }
+        }
+      }
+    }
+
+    return metadata
   }
 
   private formatDuration(startedAt: string): string {

@@ -9,7 +9,14 @@ loading-logs = Laster logger...
 no-logs-available = Ingen logger tilgjengelig for denne jobben
 copy = Kopier
 download = Last ned
+expand = Utvid
+collapse = Skjul
+view-raw = Vis rå
+close = Lukk
 show-timestamps = Vis tidsstempler
+hide-timestamps = Skjul tidsstempler
+show-line-numbers = Vis linjenumre
+hide-line-numbers = Skjul linjenumre
 expand-all = Utvid alle
 collapse-all = Skjul alle
 

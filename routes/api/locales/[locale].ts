@@ -10,7 +10,7 @@ export const handler = async (ctx: any) => {
       : "en"
 
     // Read all .ftl files for this locale
-    const ftlFiles = ["main", "dashboard", "pipelines", "agents", "queues", "errors"]
+    const ftlFiles = ["main", "dashboard", "pipelines", "agents", "queues", "errors", "jobs", "builds"]
     const ftlContent: Record<string, string> = {}
 
     for (const filename of ftlFiles) {
