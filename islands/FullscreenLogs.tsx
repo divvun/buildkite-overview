@@ -19,6 +19,8 @@ interface FullscreenLogsProps {
   jobCommand?: string
 }
 
+const MAX_VISIBLE_LINES = 250
+
 export default function FullscreenLogs({
   jobId,
   buildNumber,
@@ -30,13 +32,13 @@ export default function FullscreenLogs({
 }: FullscreenLogsProps) {
   const { t } = useLocalization()
 
-  const [logData, setLogData] = useState<LogData | null>(initialLogData || null)
-  const [error, setError] = useState<string>(initialError || "")
+  const [logData, _setLogData] = useState<LogData | null>(initialLogData || null)
+  const [error, _setError] = useState<string>(initialError || "")
   const [showTimestamps, setShowTimestamps] = useState(false)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
   const [visibleLinesPerGroup, setVisibleLinesPerGroup] = useState<Map<number, number>>(new Map())
-  const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>(
+  const [processedGroups, _setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>(
     initialProcessedGroups || [],
   )
 
@@ -50,9 +52,9 @@ export default function FullscreenLogs({
         if (group.initiallyCollapsed && !group.openPrevious) {
           initialCollapsed.add(group.id)
         }
-        // For groups with > 500 lines, initially show only 500
-        if (group.lines.length > 500) {
-          initialVisibleLines.set(group.id, 500)
+        // For groups with > MAX_VISIBLE_LINES lines, initially show only MAX_VISIBLE_LINES
+        if (group.lines.length > MAX_VISIBLE_LINES) {
+          initialVisibleLines.set(group.id, MAX_VISIBLE_LINES)
         }
       })
 
@@ -65,7 +67,7 @@ export default function FullscreenLogs({
     // Handle ESC key to close window/tab
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        window.close()
+        globalThis.close()
       }
     }
 
@@ -89,7 +91,7 @@ export default function FullscreenLogs({
     const a = document.createElement("a")
     a.href = url
     a.download = filename
-    a.style.display = "none"
+    a.setAttribute("style", "display: none")
     document.body.appendChild(a)
     a.click()
 
@@ -113,8 +115,8 @@ export default function FullscreenLogs({
   const showMoreLines = (groupId: number) => {
     setVisibleLinesPerGroup((prev) => {
       const newMap = new Map(prev)
-      const currentVisible = newMap.get(groupId) || 500
-      newMap.set(groupId, currentVisible + 500)
+      const currentVisible = newMap.get(groupId) || MAX_VISIBLE_LINES
+      newMap.set(groupId, currentVisible + MAX_VISIBLE_LINES)
       return newMap
     })
   }
@@ -413,7 +415,7 @@ export default function FullscreenLogs({
             size="small"
             variant="neutral"
             appearance="outlined"
-            onClick={() => window.close()}
+            onClick={() => globalThis.close()}
           >
             <wa-icon name="xmark" label={t("close")}></wa-icon>
           </wa-button>
@@ -516,9 +518,9 @@ export default function FullscreenLogs({
                             appearance="outlined"
                             onClick={() => showMoreLines(group.id)}
                           >
-                            Show {Math.min(500, remainingLines)} more lines ({remainingLines} remaining)
+                            Show {Math.min(MAX_VISIBLE_LINES, remainingLines)} more lines ({remainingLines} remaining)
                           </wa-button>
-                          {remainingLines > 500 && (
+                          {remainingLines > MAX_VISIBLE_LINES && (
                             <wa-button
                               size="small"
                               variant="neutral"
