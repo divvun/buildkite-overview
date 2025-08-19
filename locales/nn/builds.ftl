@@ -19,8 +19,8 @@ commit-message = Innsjekkingsmelding
 repository = Repositorium
 
 # Navigering
-back-to-pipeline = Tilbake til kommandokø
-back-to-pipelines = Tilbake til kommandokøar
+back-to-pipeline = Attende til kommandokø
+back-to-pipelines = Attende til kommandokøar
 view-pipeline = Vis kommandokø
 view-build = Vis bygg
 

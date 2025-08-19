@@ -40,5 +40,5 @@ endpoint-label = Endepunkt:
 # Generelle handlingar
 try-again = Prøv igjen
 reload-page = Last inn sida på nytt
-go-back = Gå tilbake
+go-back = Gå attende
 contact-support = Kontakt støtte

@@ -48,7 +48,7 @@ agents-breadcrumb = Agentar
 queues-breadcrumb = Køar
 
 # Paginering
-first-page = Første side
+first-page = Fyrste side
 previous-page = Førre side
 next-page = Neste side
 last-page = Siste side
@@ -194,7 +194,7 @@ what-you-can-do = Kva du kan gjere:
 contact-admin = Kontakt administratoren din for å be om tilgang til divvun-organisasjonen
 verify-account = Sjekk at du er logga inn med rett GitHub-konto
 accept-invitation = Sørg for at du har akseptert organisasjonsinvitasjonen om ein er sendt
-return-to-dashboard = Tilbake til oversikta
+return-to-dashboard = Attende til oversikta
 sign-out = Logg ut
 
 # Standard app-tittel

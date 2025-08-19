@@ -30,7 +30,7 @@ view-build-details = Vis byggjedetaljar →
 
 # Tomme tilstandar
 no-queued-builds = Ingen køa bygg! 🎉
-no-queued-builds-description = Alle køar er tomme. Kom tilbake seinare for ny aktivitet.
+no-queued-builds-description = Alle køar er tomme. Kom attende seinare for ny aktivitet.
 all-queues-idle = Alt stille på byggjefronten! 🎉
 all-queues-idle-description = Ingen bygg er for tida planlagde eller køyrer på tvers av alle køar. Dette er bra - alle kommandokøane dine er ledige og klare for nytt arbeid!
 no-builds-pending = Ingen bygg ventar
@@ -57,7 +57,7 @@ more-builds = +{$count} til
 
 # Fleire tomme tilstandar
 no-queued-builds-title = Ingen bygg i kø! 🎉
-no-queued-builds-desc = Alle køar er tomme. Kom tilbake seinare for ny aktivitet.
+no-queued-builds-desc = Alle køar er tomme. Kom attende seinare for ny aktivitet.
 loading-queue-data-title = Lastar kødata...
 loading-queue-data-desc = Samlar informasjon om byggjekøar og tilgjengelege agentar.
 all-quiet-title = Alt stille på byggjefronten! 🎉
