@@ -194,14 +194,25 @@ export function formatTimeAgo(dateStr: string, locale: string = "en", t?: (key: 
       return rtf.format(-diffMins, "minute")
     }
   } catch (_error) {
-    // Fallback to English if Intl.RelativeTimeFormat fails
+    // Fallback to Fluent translations if available, otherwise English
+    if (t) {
+      if (diffDays > 0) {
+        return t("time-days-ago", { count: diffDays })
+      } else if (diffHours > 0) {
+        return t("time-hours-ago", { count: diffHours })
+      } else {
+        return t("time-minutes-ago", { count: diffMins })
+      }
+    }
+
+    // Final fallback to hardcoded English
     if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`
     if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`
     return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`
   }
 }
 
-export function formatFailingSince(date: Date | string, locale: string = "en"): string {
+export function formatFailingSince(date: Date | string, locale: string = "en", t?: (key: string) => string): string {
   const now = new Date()
   const dateObj = typeof date === "string" ? new Date(date) : date
   const diffMs = now.getTime() - dateObj.getTime()
@@ -217,7 +228,16 @@ export function formatFailingSince(date: Date | string, locale: string = "en"): 
       return rtf.format(-diffHours, "hour")
     }
   } catch (_error) {
-    // Fallback to English if Intl.RelativeTimeFormat fails
+    // Fallback to Fluent translations if available, otherwise English
+    if (t) {
+      if (diffDays > 0) {
+        return t("time-days-ago", { count: diffDays })
+      } else {
+        return t("time-hours-ago", { count: diffHours })
+      }
+    }
+
+    // Final fallback to hardcoded English
     if (diffHours < 24) {
       return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`
     }
@@ -261,7 +281,18 @@ export function formatLastSeen(date?: Date, locale: string = "en", t?: (key: str
       return rtf.format(-diffMins, "minute")
     }
   } catch (_error) {
-    // Fallback to English if Intl.RelativeTimeFormat fails
+    // Fallback to Fluent translations if available, otherwise English
+    if (t) {
+      if (diffDays > 0) {
+        return t("time-days-ago", { count: diffDays })
+      } else if (diffHours > 0) {
+        return t("time-hours-ago", { count: diffHours })
+      } else {
+        return t("time-minutes-ago", { count: diffMins })
+      }
+    }
+
+    // Final fallback to hardcoded English
     if (diffMins < 60) return `${diffMins} min ago`
     if (diffHours < 24) return `${diffHours}h ago`
     return `${diffDays}d ago`

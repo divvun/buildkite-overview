@@ -213,7 +213,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                             {pipeline.name}
                           </span>
                           <div class="wa-caption-s wa-color-text-quiet">
-                            {t("failing-since", { time: formatFailingSince(pipeline.failingSince, locale) })}
+                            {t("failing-since", { time: formatFailingSince(pipeline.failingSince, locale, t) })}
                           </div>
                         </div>
 

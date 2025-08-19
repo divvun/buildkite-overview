@@ -134,6 +134,8 @@ export default function BuildDetail(props: { data: BuildDetailProps; state: AppS
         title={props.state.t("build-not-found-title")}
         currentPath={`/pipelines/${pipelineSlug}`}
         session={session}
+        t={props.state.t}
+        state={props.state}
       >
         <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
           <wa-callout variant="danger">
@@ -164,6 +166,8 @@ export default function BuildDetail(props: { data: BuildDetailProps; state: AppS
       currentPath={`/pipelines/${pipelineSlug}`}
       session={session}
       breadcrumbs={breadcrumbs}
+      t={props.state.t}
+      state={props.state}
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
         <header class="wa-stack wa-gap-s">

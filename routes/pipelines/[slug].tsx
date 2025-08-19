@@ -125,6 +125,8 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
       currentPath="/pipelines"
       session={session}
       breadcrumbs={breadcrumbs}
+      t={props.state.t}
+      state={props.state}
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
         <header class="wa-stack wa-gap-s">
