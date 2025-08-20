@@ -22,28 +22,36 @@ function getJobBadgeVariant(status: string, passed?: boolean): string {
   return getBadgeVariant(status)
 }
 
-function getJobStatusIcon(status: string, passed: boolean) {
-  if (!passed) {
-    return "✗"
-  }
-
+function getJobStatusIcon(status: string, passed?: boolean): string {
   switch (status) {
     case "PASSED":
+      return "circle-check"
     case "FINISHED":
-      return "✓"
+      // For finished jobs, check if they actually passed
+      return passed === false ? "circle-xmark" : "circle-check"
     case "FAILED":
     case "CANCELED":
-    case "WAITING_FAILED":
-      return "✗"
+      return "circle-xmark"
     case "RUNNING":
-    case "SCHEDULED":
     case "CREATING":
-    case "WAITING":
-    case "BLOCKED":
     case "CANCELING":
-      return "◐"
+      return "spinner"
+    case "SCHEDULED":
+      return "calendar"
+    case "WAITING":
+      return "clock"
+    case "BLOCKED":
+      return "circle-pause"
+    case "NOT_RUN":
+    case "SKIPPED":
+    case "WAITING_FAILED":
+      return "circle"
     default:
-      return "○"
+      // For unknown statuses, check passed flag as fallback
+      if (passed === false) {
+        return "circle-xmark"
+      }
+      return "circle"
   }
 }
 
@@ -162,7 +170,7 @@ export default function BuildJobs(
 
   return (
     <div class="wa-stack wa-gap-s">
-      {jobs.toSorted((a, b) => {
+      {jobs.filter((job) => !job.retriedInJobId).toSorted((a, b) => {
         // Sort by startedAt time (most recent first)
         if (!a.startedAt && !b.startedAt) {
           return 0
@@ -184,19 +192,20 @@ export default function BuildJobs(
               onClick={() => handleJobClick(jobKey)}
             >
               <span style="width: 1rem; text-align: center;">
-                <span
+                <wa-icon
+                  name={getJobStatusIcon(job.state, job.passed)}
                   style={`font-size: 1rem; color: ${
-                    ["PASSED", "FINISHED"].includes(job.state) && job.passed
+                    ["NOT_RUN", "SKIPPED", "WAITING_FAILED"].includes(job.state)
+                      ? "var(--wa-color-neutral-fill-loud)"
+                      : ["PASSED", "FINISHED"].includes(job.state) && job.passed
                       ? "var(--wa-color-success-fill-loud)"
-                      : ["FAILED", "CANCELED", "WAITING_FAILED"].includes(job.state) || !job.passed
+                      : ["FAILED", "CANCELED"].includes(job.state) || (job.state === "FINISHED" && job.passed === false)
                       ? "var(--wa-color-danger-fill-loud)"
                       : ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED", "CANCELING"].includes(job.state)
                       ? "var(--wa-color-warning-fill-loud)"
-                      : "var(--wa-color-text-quiet)"
+                      : "var(--wa-color-neutral-fill-loud)"
                   }`}
-                >
-                  {getJobStatusIcon(job.state, job.passed ?? false)}
-                </span>
+                />
               </span>
 
               <div style="flex: 1; display: flex; justify-content: space-between; align-items: center;">

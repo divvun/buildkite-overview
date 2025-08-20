@@ -9,21 +9,8 @@ const BUILDKITE_REST_API = "https://api.buildkite.com/v2"
 export const handler: RouteHandler<unknown, AppState> = {
   async GET(ctx: Context<AppState>) {
     const jobId = ctx.params.id
-    const url = new URL(ctx.url)
-    const buildNumber = url.searchParams.get("build")
-    const pipelineSlug = url.searchParams.get("pipeline")
-
-    if (!buildNumber || !pipelineSlug) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required parameters: build number and pipeline slug",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      )
-    }
+    const buildNumber = ctx.params.build
+    const pipelineSlug = ctx.params.pipeline
 
     // Check if user has access to this pipeline
     try {

@@ -1,4 +1,10 @@
 // deno-lint-ignore-file no-control-regex
+
+// Pre-compiled regex patterns for performance
+const TIMESTAMP_REGEX = /^\x1b_bk;t=(\d+)\x07/
+const ANSI_ESCAPE_REGEX = /^\x1b\[([0-9;?]*)([A-Za-z])/
+const SPECIAL_CHARS = new Set(["\n", "\r", "\t", "\b"])
+
 export interface AnsiSegment {
   text: string
   styles: Set<string>
@@ -13,6 +19,270 @@ type AnsiState = {
   underline: boolean
   reverse: boolean
   strikethrough: boolean
+}
+
+// Line element with character and optional ANSI sequences
+type LineElement = {
+  char: string // The character at this position (empty string for padding)
+  ansi?: string // Optional ANSI sequences that apply to this position
+}
+
+interface TerminalState {
+  lines: Array<Array<LineElement>> // Array of line contents (mixed arrays of characters and ANSI objects)
+  lineTimestamps: string[] // Timestamp for when each line was last modified
+  ansiStates: AnsiState[] // ANSI color/style state for each line
+  dirtyLines: Set<number> // Track which lines need metadata updates
+  cursorRow: number // Current row (0-based)
+  cursorCol: number // Current column (0-based)
+  currentTimestamp: string // Most recent timestamp seen
+  currentAnsiState: AnsiState // Current ANSI formatting state
+  savedCursor?: { // For save/restore cursor operations
+    row: number
+    col: number
+  }
+}
+
+function createDefaultAnsiState(): AnsiState {
+  return {
+    color: null,
+    bgColor: null,
+    bold: false,
+    dim: false,
+    italic: false,
+    underline: false,
+    reverse: false,
+    strikethrough: false,
+  }
+}
+
+function initializeTerminalState(): TerminalState {
+  return {
+    lines: [],
+    lineTimestamps: [],
+    ansiStates: [],
+    dirtyLines: new Set(),
+    cursorRow: 0,
+    cursorCol: 0,
+    currentTimestamp: "",
+    currentAnsiState: createDefaultAnsiState(),
+  }
+}
+
+function ensureBufferSize(state: TerminalState, minRows: number) {
+  while (state.lines.length <= minRows) {
+    state.lines.push([]) // Array of LineElement objects
+    state.lineTimestamps.push(state.currentTimestamp)
+    state.ansiStates.push({ ...state.currentAnsiState })
+  }
+}
+
+function writeCharToBuffer(state: TerminalState, char: string) {
+  // Ensure we have enough lines
+  ensureBufferSize(state, state.cursorRow)
+
+  // Get current line - now direct O(1) access!
+  const line = state.lines[state.cursorRow]
+
+  // Pad line with empty elements if needed to reach the cursor position
+  while (line.length <= state.cursorCol) {
+    line.push({ char: "" }) // Empty element for padding
+  }
+
+  // Write character directly to cursor position - O(1) operation!
+  const existingElement = line[state.cursorCol] || { char: "" }
+  line[state.cursorCol] = {
+    char,
+    ansi: existingElement.ansi, // Preserve any existing ANSI sequences
+  }
+
+  // Mark line as dirty for batch metadata update
+  state.dirtyLines.add(state.cursorRow)
+
+  // Advance cursor
+  state.cursorCol++
+}
+
+function writeAnsiSequenceToBuffer(state: TerminalState, sequence: string) {
+  // Store ANSI sequence to be attached to the next character written
+  // or attach it to the current position if there's already a character there
+  ensureBufferSize(state, state.cursorRow)
+
+  const line = state.lines[state.cursorRow]
+
+  // Ensure cursor position exists
+  while (line.length <= state.cursorCol) {
+    line.push({ char: "" })
+  }
+
+  // Attach ANSI sequence to the current cursor position
+  const existingElement = line[state.cursorCol] || { char: "" }
+  line[state.cursorCol] = {
+    char: existingElement.char,
+    ansi: (existingElement.ansi || "") + sequence, // Concatenate ANSI sequences
+  }
+
+  // Mark line as dirty
+  state.dirtyLines.add(state.cursorRow)
+
+  // Don't advance cursor - ANSI sequences don't take up visual space
+}
+
+function moveCursor(state: TerminalState, deltaRow: number, deltaCol: number) {
+  state.cursorRow = Math.max(0, state.cursorRow + deltaRow)
+  state.cursorCol = Math.max(0, state.cursorCol + deltaCol)
+}
+
+function setCursor(state: TerminalState, row: number, col: number) {
+  state.cursorRow = Math.max(0, row)
+  state.cursorCol = Math.max(0, col)
+}
+
+function handleCursorMovement(state: TerminalState, params: number[], command: string) {
+  const count = params[0] || 1 // Default to 1 if no parameter given
+
+  switch (command) {
+    case "A": // Cursor up
+      moveCursor(state, -count, 0)
+      break
+    case "B": // Cursor down
+      moveCursor(state, count, 0)
+      break
+    case "C": // Cursor forward/right
+      moveCursor(state, 0, count)
+      break
+    case "D": // Cursor back/left
+      moveCursor(state, 0, -count)
+      break
+    case "E": // Cursor next line (beginning of line n lines down)
+      moveCursor(state, count, 0)
+      state.cursorCol = 0
+      break
+    case "F": // Cursor previous line (beginning of line n lines up)
+      moveCursor(state, -count, 0)
+      state.cursorCol = 0
+      break
+    case "G": // Cursor horizontal absolute (column n)
+      state.cursorCol = Math.max(0, count - 1) // 1-based to 0-based
+      break
+    case "H": // Cursor position (row n, column m)
+    case "f": { // Same as H
+      const row = params[0] || 1
+      const col = params[1] || 1
+      setCursor(state, row - 1, col - 1) // 1-based to 0-based
+      break
+    }
+  }
+}
+
+function handleEraseSequence(state: TerminalState, params: number[], command: string) {
+  const param = params[0] || 0 // Default to 0 if no parameter given
+
+  switch (command) {
+    case "K": {
+      // Erase in line - now with direct O(1) access
+      ensureBufferSize(state, state.cursorRow)
+      const line = state.lines[state.cursorRow]
+
+      if (param === 0) {
+        // Erase from cursor to end of line
+        line.splice(state.cursorCol)
+      } else if (param === 1) {
+        // Erase from beginning of line to cursor - replace with empty characters
+        for (let i = 0; i < state.cursorCol; i++) {
+          if (line[i]) {
+            line[i] = { char: "", ansi: line[i].ansi } // Keep ANSI, clear character
+          }
+        }
+      } else if (param === 2) {
+        // Erase entire line
+        line.length = 0
+      }
+
+      // Mark line as dirty for batch metadata update
+      state.dirtyLines.add(state.cursorRow)
+      break
+    }
+
+    case "J": {
+      if (param === 0) {
+        // Erase from cursor to end of screen
+        ensureBufferSize(state, state.cursorRow)
+        // Clear current line from cursor to end
+        handleEraseSequence(state, [0], "K")
+        // Clear all lines after current
+        state.lines.splice(state.cursorRow + 1)
+        state.lineTimestamps.splice(state.cursorRow + 1)
+        state.ansiStates.splice(state.cursorRow + 1)
+      } else if (param === 1) {
+        // Erase from beginning of screen to cursor
+        for (let i = 0; i < state.cursorRow; i++) {
+          state.lines[i].length = 0 // Clear mixed array
+          state.dirtyLines.add(i)
+        }
+        // Clear current line from beginning to cursor
+        handleEraseSequence(state, [1], "K")
+      } else if (param === 2) {
+        // Erase entire screen
+        state.lines = []
+        state.lineTimestamps = []
+        state.ansiStates = []
+        state.dirtyLines.clear()
+        state.cursorRow = 0
+        state.cursorCol = 0
+      }
+      break
+    }
+  }
+}
+
+function handleCursorSaveRestore(state: TerminalState, command: string) {
+  switch (command) {
+    case "s": // Save cursor position
+      state.savedCursor = {
+        row: state.cursorRow,
+        col: state.cursorCol,
+      }
+      break
+    case "u": // Restore cursor position
+      if (state.savedCursor) {
+        setCursor(state, state.savedCursor.row, state.savedCursor.col)
+      }
+      break
+  }
+}
+
+function handleSpecialChar(state: TerminalState, char: string) {
+  switch (char) {
+    case "\n": // Line feed
+      state.cursorRow++
+      state.cursorCol = 0
+      break
+    case "\r": // Carriage return
+      state.cursorCol = 0
+      break
+    case "\t": // Tab
+      // Move to next tab stop (every 8 columns)
+      state.cursorCol = Math.floor((state.cursorCol + 8) / 8) * 8
+      break
+    case "\b": // Backspace
+      state.cursorCol = Math.max(0, state.cursorCol - 1)
+      break
+    default:
+      // Regular printable character
+      writeCharToBuffer(state, char)
+      break
+  }
+}
+
+function batchUpdateMetadata(state: TerminalState) {
+  // Update metadata for all dirty lines in one batch
+  for (const lineIndex of state.dirtyLines) {
+    if (lineIndex < state.lineTimestamps.length) {
+      state.lineTimestamps[lineIndex] = state.currentTimestamp
+      state.ansiStates[lineIndex] = { ...state.currentAnsiState }
+    }
+  }
+  state.dirtyLines.clear()
 }
 
 export const parseAnsiToPreact = (
@@ -67,19 +337,6 @@ export const parseAnsiToPreact = (
     4: "underline",
     7: "reverse",
     9: "strikethrough",
-  }
-
-  function createDefaultAnsiState(): AnsiState {
-    return {
-      color: null,
-      bgColor: null,
-      bold: false,
-      dim: false,
-      italic: false,
-      underline: false,
-      reverse: false,
-      strikethrough: false,
-    }
   }
 
   // Start with initial state (from previous lines)
@@ -187,6 +444,157 @@ export const parseAnsiToPreact = (
 }
 
 export const parseLogContent = (rawLog: string) => {
+  const state = initializeTerminalState()
+  let position = 0
+
+  while (position < rawLog.length) {
+    // Check for Buildkite timestamp marker using substring (for correctness)
+    if (rawLog.charCodeAt(position) === 27 && rawLog.charCodeAt(position + 1) === 95) { // \x1b_
+      const timestampMatch = rawLog.substring(position).match(TIMESTAMP_REGEX)
+      if (timestampMatch) {
+        state.currentTimestamp = timestampMatch[1]
+        position += timestampMatch[0].length
+        continue
+      }
+    }
+
+    // Check for ANSI escape sequences using substring (for correctness)
+    if (rawLog.charCodeAt(position) === 27 && rawLog.charCodeAt(position + 1) === 91) { // \x1b[
+      const escapeMatch = rawLog.substring(position).match(ANSI_ESCAPE_REGEX)
+      if (escapeMatch) {
+        const paramStr = escapeMatch[1]
+        const command = escapeMatch[2]
+
+        // Parse parameters, handling both numbers and ? prefixes for terminal modes
+        let params: number[] = []
+        if (paramStr) {
+          if (paramStr.charCodeAt(0) === 63) { // '?' character
+            // Terminal mode sequence like ?25h or ?25l - just ignore these
+            position += escapeMatch[0].length
+            continue
+          } else {
+            params = paramStr.split(";").map((p) => parseInt(p) || 0)
+          }
+        }
+
+        // Handle different ANSI command types - use charCode for performance
+        const commandCode = command.charCodeAt(0)
+        if ((commandCode >= 65 && commandCode <= 72) || commandCode === 102) { // A-H, f
+          // Cursor movement sequences
+          handleCursorMovement(state, params, command)
+        } else if (commandCode === 75 || commandCode === 74) { // K, J
+          // Erase sequences
+          handleEraseSequence(state, params, command)
+        } else if (commandCode === 115 || commandCode === 117) { // s, u
+          // Save/restore cursor
+          handleCursorSaveRestore(state, command)
+        } else if (commandCode === 109) { // m
+          // Color/style sequences - update ANSI state AND preserve in buffer
+          updateAnsiState(state, params)
+          writeAnsiSequenceToBuffer(state, escapeMatch[0])
+        }
+
+        position += escapeMatch[0].length
+        continue
+      }
+    }
+
+    // Handle regular characters and special control characters
+    const char = rawLog[position]
+    if (SPECIAL_CHARS.has(char)) {
+      handleSpecialChar(state, char)
+    } else {
+      // Regular printable character
+      writeCharToBuffer(state, char)
+    }
+
+    position++
+
+    // Batch update metadata every 1000 characters for efficiency
+    if (position % 1000 === 0) {
+      batchUpdateMetadata(state)
+    }
+  }
+
+  // Final metadata update and convert to logical lines
+  batchUpdateMetadata(state)
+  return convertBufferToLogicalLines(state)
+}
+
+function updateAnsiState(state: TerminalState, codes: number[]) {
+  for (const code of codes) {
+    if (code === 0) {
+      // Reset all styles
+      state.currentAnsiState = createDefaultAnsiState()
+    } else if ((code >= 30 && code <= 37) || (code >= 90 && code <= 97)) {
+      // Foreground colors
+      const colorMap: Record<number, string> = {
+        30: "black",
+        31: "red",
+        32: "green",
+        33: "yellow",
+        34: "blue",
+        35: "magenta",
+        36: "cyan",
+        37: "white",
+        90: "bright-black",
+        91: "bright-red",
+        92: "bright-green",
+        93: "bright-yellow",
+        94: "bright-blue",
+        95: "bright-magenta",
+        96: "bright-cyan",
+        97: "bright-white",
+      }
+      state.currentAnsiState.color = colorMap[code] || null
+    } else if ((code >= 40 && code <= 47) || (code >= 100 && code <= 107)) {
+      // Background colors
+      const bgColorMap: Record<number, string> = {
+        40: "bg-black",
+        41: "bg-red",
+        42: "bg-green",
+        43: "bg-yellow",
+        44: "bg-blue",
+        45: "bg-magenta",
+        46: "bg-cyan",
+        47: "bg-white",
+        100: "bg-bright-black",
+        101: "bg-bright-red",
+        102: "bg-bright-green",
+        103: "bg-bright-yellow",
+        104: "bg-bright-blue",
+        105: "bg-bright-magenta",
+        106: "bg-bright-cyan",
+        107: "bg-bright-white",
+      }
+      state.currentAnsiState.bgColor = bgColorMap[code] || null
+    } else {
+      // Style codes
+      switch (code) {
+        case 1:
+          state.currentAnsiState.bold = true
+          break
+        case 2:
+          state.currentAnsiState.dim = true
+          break
+        case 3:
+          state.currentAnsiState.italic = true
+          break
+        case 4:
+          state.currentAnsiState.underline = true
+          break
+        case 7:
+          state.currentAnsiState.reverse = true
+          break
+        case 9:
+          state.currentAnsiState.strikethrough = true
+          break
+      }
+    }
+  }
+}
+
+function convertBufferToLogicalLines(state: TerminalState) {
   const logicalLines: Array<{
     timestamp: string
     content: string
@@ -196,82 +604,38 @@ export const parseLogContent = (rawLog: string) => {
   }> = []
 
   let lineNumber = 1
-  let position = 0
 
-  // Process the raw log character by character, building logical lines
-  while (position < rawLog.length) {
-    const currentLine = { content: "", timestamp: "" }
-    let foundTimestamp = false
+  for (let i = 0; i < state.lines.length; i++) {
+    // Convert element array to string with direct iteration - much faster!
+    const lineElements = state.lines[i]
+    let content = ""
 
-    // Look for the start of a new logical line (timestamp at beginning or after newline)
-    const timestampMatch = rawLog.substring(position).match(/^\x1b_bk;t=(\d+)\x07/)
-    if (timestampMatch) {
-      currentLine.timestamp = timestampMatch[1]
-      position += timestampMatch[0].length
-      foundTimestamp = true
-    }
-
-    // Collect content until we hit a newline or end of file
-    let lineContent = ""
-    while (position < rawLog.length && rawLog[position] !== "\n") {
-      const char = rawLog[position]
-
-      // Check for timestamp in the middle/end of content
-      const midTimestampMatch = rawLog.substring(position).match(/^\x1b_bk;t=(\d+)\x07/)
-      if (midTimestampMatch) {
-        // This is a timestamp update for the current line, not a new line
-        currentLine.timestamp = midTimestampMatch[1]
-        position += midTimestampMatch[0].length
-        continue
+    for (const element of lineElements) {
+      // Each element has both char and ansi - concatenate in correct order
+      if (element.ansi) {
+        content += element.ansi // ANSI sequences first
       }
-
-      // Check for ANSI erase sequences
-      const eraseMatch = rawLog.substring(position).match(/^\x1b\[([0-2]?)K/)
-      if (eraseMatch) {
-        const eraseType = eraseMatch[1] || "0" // Default to 0 if no parameter
-        // 0K or K: erase from cursor to end of line
-        // 1K: erase from start of line to cursor
-        // 2K: erase entire line
-        if (eraseType === "0" || eraseType === "") {
-          // Erase to end of line - in our case, clear current content
-          lineContent = ""
-        } else if (eraseType === "1") {
-          // Erase from beginning to cursor - keep current content
-          // Since we're building left-to-right, this is a no-op
-        } else if (eraseType === "2") {
-          // Erase entire line - clear all content
-          lineContent = ""
-        }
-        position += eraseMatch[0].length
-        continue
-      }
-
-      // Regular character
-      lineContent += char
-      position++
+      content += element.char // Then the character (may be empty string)
     }
 
-    // Skip the newline if we hit one
-    if (position < rawLog.length && rawLog[position] === "\n") {
-      position++
+    // Trim trailing whitespace efficiently
+    while (content.length > 0 && /\s/.test(content[content.length - 1])) {
+      content = content.slice(0, -1)
     }
 
-    // Clean up the content - remove trailing carriage returns, preserve other whitespace
-    lineContent = lineContent.replace(/[\r]+$/, "")
+    const timestamp = state.lineTimestamps[i] || ""
 
-    // Skip empty lines without timestamps
-    if (!lineContent && !foundTimestamp) {
+    // Skip completely empty lines
+    if (!content && !timestamp) {
       continue
     }
 
-    currentLine.content = lineContent
-
     // Check for group markers at start of content
-    const groupMatch = lineContent.match(/^(---|\\+\\+\\+|~~~|\\^\\^\\^ \\+\\+\\+)\s*(.*)$/)
+    const groupMatch = content.match(/^(---|\\+\\+\\+|~~~|\\^\\^\\^ \\+\\+\\+)\s*(.*)$/)
 
     if (groupMatch) {
       logicalLines.push({
-        timestamp: currentLine.timestamp,
+        timestamp,
         groupMarker: groupMatch[1],
         content: groupMatch[2],
         isGroup: true,
@@ -280,8 +644,8 @@ export const parseLogContent = (rawLog: string) => {
     } else {
       // Regular content line
       logicalLines.push({
-        timestamp: currentLine.timestamp,
-        content: lineContent,
+        timestamp,
+        content,
         isGroup: false,
         lineNumber: lineNumber++,
       })

@@ -20,7 +20,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
   const [logData, setLogData] = useState<LogData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
-  const [expanded, setExpanded] = useState(true)
+  const [expanded] = useState(true)
   const [showTimestamps, setShowTimestamps] = useState(false)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
@@ -59,12 +59,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
       setLoading(true)
       setError("")
 
-      const params = new URLSearchParams({
-        build: buildNumber.toString(),
-        pipeline: pipelineSlug,
-      })
-
-      const response = await fetch(`/api/jobs/${jobId}/logs?${params}`)
+      const response = await fetch(`/api/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`)
       const data = await response.json()
 
       if (!response.ok || data.error) {
@@ -209,7 +204,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                     appearance="plain"
                     onClick={() => {
                       const fullscreenUrl = `/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`
-                      window.open(fullscreenUrl, "_blank", "width=1200,height=800")
+                      globalThis.open(fullscreenUrl, "_blank", "width=1200,height=800")
                     }}
                   >
                     <wa-icon slot="prefix" name="expand" />

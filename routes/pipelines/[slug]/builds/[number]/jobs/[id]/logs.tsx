@@ -76,12 +76,7 @@ export const handler = {
     let jobCommand: string | undefined
 
     try {
-      const params = new URLSearchParams({
-        build: buildNumber,
-        pipeline: pipelineSlug,
-      })
-
-      const logsUrl = `${ctx.url.origin}/api/jobs/${jobId}/logs?${params}`
+      const logsUrl = `${ctx.url.origin}/api/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`
       console.log("Fetching logs from:", logsUrl)
 
       const response = await fetch(logsUrl, {
