@@ -239,3 +239,13 @@ time-days-ago = {$count ->
 
 # Feilmeldinger
 build-not-found-in-pipeline = Bygg #{$number} ikke funnet i pipeline "{$pipeline}". Tilgjengelige bygg: {$builds}
+
+# Autentisering for beskyttede ressurser
+sign-in-with-github = Logg inn med GitHub
+login-required-logs-title = Autentisering påkrevd
+login-required-logs-description = Bygglogger kan inneholde sensitiv informasjon. Vennligst logg inn med GitHub-kontoen din for å se dem.
+login-required-private-pipeline-title = Privat Pipeline
+login-required-private-pipeline-description = Denne pipelinen er privat. Vennligst logg inn for å verifisere tilgangen din.
+login-required-admin-title = Administrator-tilgang påkrevd
+login-required-admin-description = Denne siden krever administrator-privilegier.
+login-secure-note = Tilkoblingen din er sikker og kryptert.

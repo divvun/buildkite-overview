@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
 import { ANSI_CSS, processLogsIntoGroups, segmentsToElements } from "~/utils/log-processing.tsx"
+import LoginRequired from "~/components/LoginRequired.tsx"
 
 interface JobLogsProps {
   jobId: string
@@ -20,6 +21,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
   const [logData, setLogData] = useState<LogData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
+  const [needsAuth, setNeedsAuth] = useState(false)
   const [expanded] = useState(true)
   const [showTimestamps, setShowTimestamps] = useState(false)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
@@ -58,9 +60,16 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
     try {
       setLoading(true)
       setError("")
+      setNeedsAuth(false)
 
       const response = await fetch(`/api/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`)
       const data = await response.json()
+
+      if (response.status === 401) {
+        // Authentication required - show login prompt
+        setNeedsAuth(true)
+        return
+      }
 
       if (!response.ok || data.error) {
         setError(data.error || t("failed-to-fetch-logs"))
@@ -158,6 +167,15 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                   </div>
                 )}
               </wa-callout>
+            </div>
+          )}
+
+          {needsAuth && (
+            <div style="padding: var(--wa-space-s)">
+              <LoginRequired 
+                resource="logs"
+                returnUrl={typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : undefined}
+              />
             </div>
           )}
 

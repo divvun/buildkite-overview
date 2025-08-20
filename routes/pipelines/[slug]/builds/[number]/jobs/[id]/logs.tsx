@@ -3,6 +3,7 @@ import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import FullscreenLogs from "~/islands/FullscreenLogs.tsx"
 import { processLogsIntoGroups } from "~/utils/log-processing.tsx"
+import LoginRequired from "~/components/LoginRequired.tsx"
 
 interface LogData {
   url?: string
@@ -19,6 +20,7 @@ interface FullscreenLogsPageProps {
   processedGroups?: ReturnType<typeof processLogsIntoGroups>
   error?: string
   jobCommand?: string
+  needsAuth?: boolean
 }
 
 export const handler = {
@@ -29,7 +31,20 @@ export const handler = {
 
     console.log("Handler params:", { pipelineSlug, buildNumber, jobId })
 
-    // First, verify that user has access to this pipeline
+    // Require real GitHub authentication for all log access (not mock dev user)
+    const hasRealAuth = ctx.state.session && ctx.state.session.user.login !== "dev-user"
+    
+    if (!hasRealAuth) {
+      // For fullscreen, show the login required component
+      return page({
+        jobId,
+        buildNumber,
+        pipelineSlug,
+        needsAuth: true,
+      } satisfies FullscreenLogsPageProps)
+    }
+
+    // Verify that user has access to this pipeline
     try {
       const allPipelines = await fetchAllPipelines()
       const pipeline = allPipelines.find((p) => p.slug === pipelineSlug)
@@ -149,7 +164,43 @@ export const handler = {
 }
 
 export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageProps }) {
-  const { jobId, buildNumber, pipelineSlug, logData, processedGroups, error, jobCommand } = data
+  const { jobId, buildNumber, pipelineSlug, logData, processedGroups, error, jobCommand, needsAuth } = data
+
+  if (needsAuth) {
+    // Construct the return URL from the current request
+    const returnUrl = `/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`
+    
+    return (
+      <html>
+        <head>
+          <title>Authentication Required</title>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>
+            {`
+              * { box-sizing: border-box; }
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: system-ui, -apple-system, sans-serif;
+                background: var(--wa-color-neutral-fill-subtle, #f8f9fa);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+            `}
+          </style>
+        </head>
+        <body>
+          <LoginRequired 
+            resource="logs"
+            returnUrl={returnUrl}
+          />
+        </body>
+      </html>
+    )
+  }
 
   return (
     <html>

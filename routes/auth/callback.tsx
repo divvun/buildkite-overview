@@ -43,6 +43,11 @@ export const handler = {
         .find((c) => c.startsWith("oauth_code_verifier="))
         ?.split("=")[1]
 
+      const returnUrl = cookieHeader
+        ?.split("; ")
+        .find((c) => c.startsWith("return_url="))
+        ?.split("=")[1]
+
       // Validate state parameter
       if (!storedState || storedState !== state) {
         console.error("OAuth state mismatch")
@@ -104,7 +109,10 @@ export const handler = {
       const sessionCookie = btoa(JSON.stringify(sessionData))
 
       const headers = new Headers()
-      headers.set("Location", "/")
+      
+      // Redirect to return URL if provided, otherwise home
+      const redirectUrl = returnUrl ? decodeURIComponent(returnUrl) : "/"
+      headers.set("Location", redirectUrl)
 
       // Set session cookie (expires in 7 days)
       const isProduction = Deno.env.get("DENO_ENV") === "production"
@@ -113,6 +121,7 @@ export const handler = {
       headers.append("Set-Cookie", `session=${sessionCookie}; ${cookieFlags}; Max-Age=${7 * 24 * 60 * 60}; Path=/`)
       headers.append("Set-Cookie", `oauth_state=; ${cookieFlags}; Max-Age=0; Path=/`)
       headers.append("Set-Cookie", `oauth_code_verifier=; ${cookieFlags}; Max-Age=0; Path=/`)
+      headers.append("Set-Cookie", `return_url=; ${cookieFlags}; Max-Age=0; Path=/`)
 
       return new Response(null, {
         status: 302,

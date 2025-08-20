@@ -243,3 +243,13 @@ time-days-ago = {$count ->
 
 # Error messages
 build-not-found-in-pipeline = Build #{$number} not found in pipeline "{$pipeline}". Available builds: {$builds}
+
+# Authentication for protected resources
+sign-in-with-github = Sign in with GitHub
+login-required-logs-title = Authentication Required
+login-required-logs-description = Build logs may contain sensitive information. Please sign in with your GitHub account to view them.
+login-required-private-pipeline-title = Private Pipeline
+login-required-private-pipeline-description = This pipeline is private. Please sign in to verify your access.
+login-required-admin-title = Admin Access Required
+login-required-admin-description = This page requires administrator privileges.
+login-secure-note = Your connection is secure and encrypted.

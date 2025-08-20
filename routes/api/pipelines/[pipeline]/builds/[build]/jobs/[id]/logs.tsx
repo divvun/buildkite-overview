@@ -12,6 +12,26 @@ export const handler: RouteHandler<unknown, AppState> = {
     const buildNumber = ctx.params.build
     const pipelineSlug = ctx.params.pipeline
 
+    // Require real GitHub authentication for all log access (not mock dev user)
+    const hasRealAuth = ctx.state.session && ctx.state.session.user.login !== "dev-user"
+    
+    if (!hasRealAuth) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Authentication required",
+          requireAuth: true,
+          message: "Please sign in with GitHub to view build logs"
+        }),
+        {
+          status: 401,
+          headers: { 
+            "Content-Type": "application/json",
+            "X-Auth-Required": "github"
+          },
+        },
+      )
+    }
+
     // Check if user has access to this pipeline
     try {
       const allPipelines = await fetchAllPipelines()

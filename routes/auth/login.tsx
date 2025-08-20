@@ -9,38 +9,62 @@ export const config = {
 
 interface LoginProps {
   error?: string
+  returnUrl?: string
+  message?: string
 }
 
 export const handler = {
   GET(ctx: Context<AppState>) {
     const url = new URL(ctx.req.url)
     const error = url.searchParams.get("error")
+    const returnUrl = url.searchParams.get("return")
+    const reason = url.searchParams.get("reason")
 
-    // If already authenticated with a valid session, redirect to home
+    // If already authenticated with a valid session, redirect to return URL or home
     const session = getOptionalSession(ctx.req)
-    if (session) {
+    if (session && session.user.login !== "dev-user") {
       return new Response(null, {
         status: 302,
-        headers: { "Location": "/" },
+        headers: { "Location": returnUrl || "/" },
       })
     }
 
-    return page({ error: error || undefined })
+    // Create appropriate message based on context
+    let message: string | undefined
+    if (reason === "logs_require_auth") {
+      message = "Please sign in with GitHub to view build logs"
+    } else if (returnUrl?.includes('/logs')) {
+      message = "Sign in to view build logs"
+    }
+
+    return page({ 
+      error: error || undefined,
+      returnUrl: returnUrl || undefined,
+      message
+    })
   },
 
   async POST(ctx: Context<AppState>) {
     try {
+      // Extract return URL from form data
+      const formData = await ctx.req.formData()
+      const returnUrl = formData.get("returnUrl")?.toString()
+
       const { url, state, codeVerifier } = await generateAuthUrl()
 
       const headers = new Headers()
       headers.set("Location", url)
 
-      // Store OAuth state and code verifier in cookies (expires in 10 minutes)
+      // Store OAuth state, code verifier, and return URL in cookies (expires in 10 minutes)
       const isProduction = Deno.env.get("DENO_ENV") === "production"
       const cookieFlags = `HttpOnly; ${isProduction ? "Secure; " : ""}SameSite=Lax; Max-Age=600; Path=/`
 
       headers.append("Set-Cookie", `oauth_state=${state}; ${cookieFlags}`)
       headers.append("Set-Cookie", `oauth_code_verifier=${codeVerifier}; ${cookieFlags}`)
+      
+      if (returnUrl) {
+        headers.append("Set-Cookie", `return_url=${encodeURIComponent(returnUrl)}; ${cookieFlags}`)
+      }
 
       return new Response(null, {
         status: 302,
@@ -59,7 +83,7 @@ export const handler = {
 }
 
 export default function Login(props: { data: LoginProps; state: AppState }) {
-  const { error } = props.data
+  const { error, returnUrl, message } = props.data
   let errorMessage = ""
   switch (error) {
     case "oauth_error":
@@ -100,7 +124,7 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
                 </wa-icon>
                 <h1 class="wa-heading-l">{props.state.t("divvun-buildkite")}</h1>
                 <p class="wa-body-m wa-color-text-quiet wa-text-center">
-                  {props.state.t("login-description")}
+                  {message || props.state.t("login-description")}
                 </p>
               </div>
 
@@ -113,6 +137,7 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
 
               <div class="wa-stack wa-gap-s wa-align-items-center">
                 <form method="POST" style="width: 100%">
+                  {returnUrl && <input type="hidden" name="returnUrl" value={returnUrl} />}
                   <wa-button type="submit" variant="brand" style={"width: 100%; justify-content: center" as any}>
                     <wa-icon
                       slot="prefix"
