@@ -40,6 +40,10 @@ job-step = Steg
 job-timeout = Tidsavbrot
 job-retry = Prøv igjen
 job-artifacts = Artefaktar
+duration = Varigheit
+started = Starta
+finished = Ferdig
+exit-status = Avslutningsstatus
 
 # Feiltilstandar
 failed-to-fetch-logs = Kunne ikkje henta loggar

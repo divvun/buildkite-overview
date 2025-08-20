@@ -40,6 +40,10 @@ job-step = Step
 job-timeout = Timeout
 job-retry = Retry
 job-artifacts = Artifacts
+duration = Duration
+started = Started
+finished = Finished
+exit-status = Exit Status
 
 # Error states
 failed-to-fetch-logs = Failed to fetch logs

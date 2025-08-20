@@ -173,7 +173,11 @@ export function formatDurationSeconds(seconds: number, locale: string = "en"): s
   }
 }
 
-export function formatTimeAgo(dateStr: string, locale: string = "en", t?: (key: string) => string): string {
+export function formatTimeAgo(
+  dateStr: string,
+  locale: string = "en",
+  t?: (key: string, values?: Record<string, any>) => string,
+): string {
   const date = new Date(dateStr)
 
   // Check if the date is valid
@@ -219,7 +223,11 @@ export function formatTimeAgo(dateStr: string, locale: string = "en", t?: (key: 
   }
 }
 
-export function formatFailingSince(date: Date | string, locale: string = "en", t?: (key: string) => string): string {
+export function formatFailingSince(
+  date: Date | string,
+  locale: string = "en",
+  t?: (key: string, values?: Record<string, any>) => string,
+): string {
   const now = new Date()
   const dateObj = typeof date === "string" ? new Date(date) : date
 
@@ -259,7 +267,11 @@ export function formatFailingSince(date: Date | string, locale: string = "en", t
   }
 }
 
-export function formatLastSeen(date?: Date, locale: string = "en", t?: (key: string) => string): string {
+export function formatLastSeen(
+  date?: Date,
+  locale: string = "en",
+  t?: (key: string, values?: Record<string, any>) => string,
+): string {
   if (!date) return t?.("time-never") || "Never"
 
   // Ensure we have a valid Date object

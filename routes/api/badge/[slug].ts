@@ -98,11 +98,11 @@ function isAuthorizedForPrivateBadge(request: Request): boolean {
 
 export const handler = async (ctx: Context<AppState>): Promise<Response> => {
   const req = ctx.req
-  try {
-    const slug = ctx.params.slug as string
-    const url = new URL(req.url)
-    const customLabel = url.searchParams.get("label")
+  const slug = ctx.params.slug as string
+  const url = new URL(req.url)
+  const customLabel = url.searchParams.get("label")
 
+  try {
     if (!slug) {
       return new Response("Pipeline slug is required", { status: 400 })
     }

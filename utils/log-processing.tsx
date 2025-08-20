@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-control-regex
 export interface AnsiSegment {
   text: string
   styles: Set<string>
@@ -224,11 +225,23 @@ export const parseLogContent = (rawLog: string) => {
         continue
       }
 
-      // Check for [K (erase) sequence
-      const eraseMatch = rawLog.substring(position).match(/^\x1b\[K/)
+      // Check for ANSI erase sequences
+      const eraseMatch = rawLog.substring(position).match(/^\x1b\[([0-2]?)K/)
       if (eraseMatch) {
-        // Erase the current content and start fresh
-        lineContent = ""
+        const eraseType = eraseMatch[1] || "0" // Default to 0 if no parameter
+        // 0K or K: erase from cursor to end of line
+        // 1K: erase from start of line to cursor
+        // 2K: erase entire line
+        if (eraseType === "0" || eraseType === "") {
+          // Erase to end of line - in our case, clear current content
+          lineContent = ""
+        } else if (eraseType === "1") {
+          // Erase from beginning to cursor - keep current content
+          // Since we're building left-to-right, this is a no-op
+        } else if (eraseType === "2") {
+          // Erase entire line - clear all content
+          lineContent = ""
+        }
         position += eraseMatch[0].length
         continue
       }
@@ -243,16 +256,11 @@ export const parseLogContent = (rawLog: string) => {
       position++
     }
 
-    // Clean up the content
-    lineContent = lineContent.replace(/[\r]+$/, "").trim()
+    // Clean up the content - remove trailing carriage returns, preserve other whitespace
+    lineContent = lineContent.replace(/[\r]+$/, "")
 
     // Skip empty lines without timestamps
     if (!lineContent && !foundTimestamp) {
-      continue
-    }
-
-    // Skip lines that are just whitespace
-    if (!lineContent.trim()) {
       continue
     }
 
@@ -265,7 +273,7 @@ export const parseLogContent = (rawLog: string) => {
       logicalLines.push({
         timestamp: currentLine.timestamp,
         groupMarker: groupMatch[1],
-        content: groupMatch[2].trim(),
+        content: groupMatch[2],
         isGroup: true,
         lineNumber: lineNumber++,
       })
@@ -388,19 +396,6 @@ export function segmentsToElements(segments: AnsiSegment[]) {
       </span>
     )
   })
-}
-
-function createDefaultAnsiState(): AnsiState {
-  return {
-    color: null,
-    bgColor: null,
-    bold: false,
-    dim: false,
-    italic: false,
-    underline: false,
-    reverse: false,
-    strikethrough: false,
-  }
 }
 
 export const ANSI_CSS = `
