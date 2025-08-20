@@ -3,7 +3,7 @@
 // Pre-compiled regex patterns for performance
 const TIMESTAMP_REGEX = /^\x1b_bk;t=(\d+)\x07/
 const ANSI_ESCAPE_REGEX = /^\x1b\[([0-9;?]*)([A-Za-z])/
-const SPECIAL_CHARS = new Set(["\n", "\r", "\t", "\b"])
+// Removed Set - using direct char comparisons for better performance
 
 export interface AnsiSegment {
   text: string
@@ -21,10 +21,10 @@ type AnsiState = {
   strikethrough: boolean
 }
 
-// Line element with character and optional ANSI sequences
+// Line element with character and optional ANSI sequences (stored raw for lazy processing)
 type LineElement = {
   char: string // The character at this position (empty string for padding)
-  ansi?: string // Optional ANSI sequences that apply to this position
+  ansiRaw?: string // Optional raw ANSI sequences - not parsed until needed for display
 }
 
 interface TerminalState {
@@ -92,7 +92,7 @@ function writeCharToBuffer(state: TerminalState, char: string) {
   const existingElement = line[state.cursorCol] || { char: "" }
   line[state.cursorCol] = {
     char,
-    ansi: existingElement.ansi, // Preserve any existing ANSI sequences
+    ansiRaw: existingElement.ansiRaw, // Preserve any existing raw ANSI sequences
   }
 
   // Mark line as dirty for batch metadata update
@@ -114,11 +114,11 @@ function writeAnsiSequenceToBuffer(state: TerminalState, sequence: string) {
     line.push({ char: "" })
   }
 
-  // Attach ANSI sequence to the current cursor position
+  // Attach raw ANSI sequence to the current cursor position (lazy processing)
   const existingElement = line[state.cursorCol] || { char: "" }
   line[state.cursorCol] = {
     char: existingElement.char,
-    ansi: (existingElement.ansi || "") + sequence, // Concatenate ANSI sequences
+    ansiRaw: (existingElement.ansiRaw || "") + sequence, // Concatenate raw ANSI sequences
   }
 
   // Mark line as dirty
@@ -190,7 +190,7 @@ function handleEraseSequence(state: TerminalState, params: number[], command: st
         // Erase from beginning of line to cursor - replace with empty characters
         for (let i = 0; i < state.cursorCol; i++) {
           if (line[i]) {
-            line[i] = { char: "", ansi: line[i].ansi } // Keep ANSI, clear character
+            line[i] = { char: "", ansiRaw: line[i].ansiRaw } // Keep raw ANSI, clear character
           }
         }
       } else if (param === 2) {
@@ -501,7 +501,9 @@ export const parseLogContent = (rawLog: string) => {
 
     // Handle regular characters and special control characters
     const char = rawLog[position]
-    if (SPECIAL_CHARS.has(char)) {
+
+    // Direct character comparisons (simpler than charCode or Set.has())
+    if (char === "\n" || char === "\r" || char === "\t" || char === "\b") {
       handleSpecialChar(state, char)
     } else {
       // Regular printable character
@@ -611,9 +613,9 @@ function convertBufferToLogicalLines(state: TerminalState) {
     let content = ""
 
     for (const element of lineElements) {
-      // Each element has both char and ansi - concatenate in correct order
-      if (element.ansi) {
-        content += element.ansi // ANSI sequences first
+      // Each element has both char and raw ANSI - concatenate in correct order
+      if (element.ansiRaw) {
+        content += element.ansiRaw // Raw ANSI sequences first (lazy processing - not parsed yet)
       }
       content += element.char // Then the character (may be empty string)
     }

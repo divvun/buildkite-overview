@@ -100,7 +100,7 @@ status-blocked = Blocked
 
 # Time formatting
 time-ago = {$time} ago
-duration = {$duration}
+duration-value = {$duration}
 seconds = {$count ->
     [one] {$count} second
    *[other] {$count} seconds

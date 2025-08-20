@@ -100,7 +100,7 @@ status-blocked = Blokkert
 
 # Tidsformatering
 time-ago = for {$time} sidan
-duration = {$duration}
+duration-value = {$duration}
 seconds = {$count ->
     [one] {$count} sekund
    *[other] {$count} sekund
