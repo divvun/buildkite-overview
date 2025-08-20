@@ -99,7 +99,7 @@ status-skipped = Hoppa over
 status-blocked = Blokkert
 
 # Tidsformatering
-time-ago = {$time} sidan
+time-ago = for {$time} sidan
 duration = {$duration}
 seconds = {$count ->
     [one] {$count} sekund
@@ -167,7 +167,7 @@ connection-disconnected = fråkopla
 connection-lost = tapt
 
 # Dashboard-strengar
-failing-since = har feila sidan {$time}
+failing-since = feila for {$time} sidan
 average-wait-time = Gjennomsnittleg ventetid
 builds-passed-failed = {$passed} fullførde, {$failed} mislukkast
 
@@ -193,7 +193,7 @@ unauthorized-description = Du må vera medlem av divvun-organisasjonen for å f�
 what-you-can-do = Kva du kan gjera:
 contact-admin = Kontakt administratoren din for å be om tilgang til divvun-organisasjonen
 verify-account = Sjekk at du er logga inn med rett GitHub-konto
-accept-invitation = Sørg for at du har akseptert organisasjonsinvitasjonen om ein er sendt
+accept-invitation = Syt for at du har akseptert organisasjonsinvitasjonen om ein er sendt
 return-to-dashboard = Attende til oversikta
 sign-out = Logg ut
 
@@ -220,7 +220,7 @@ profile-picture-alt = {$user} profilbilete
 # Lasting og tomme tilstandar
 loading-ellipsis = Lastar...
 no-recent-builds = Ingen nye bygg funne
-failed-status = MISLUKKAST
+failed-status = FEILA
 refreshing-ellipsis = Oppdaterer...
 job-fallback = Jobb
 time-now = nå
