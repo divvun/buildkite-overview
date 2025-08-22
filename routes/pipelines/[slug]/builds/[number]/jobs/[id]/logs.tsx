@@ -175,7 +175,7 @@ export const handler = {
   },
 }
 
-export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageProps }) {
+export default function FullscreenLogsPage(props: { data: FullscreenLogsPageProps; state: AppState }) {
   const {
     jobId,
     buildNumber,
@@ -187,14 +187,14 @@ export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageP
     error,
     jobCommand,
     needsAuth,
-  } = data
+  } = props.data
 
   if (needsAuth) {
     // Construct the return URL from the current request
     const returnUrl = `/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`
 
     return (
-      <html lang={ctx.state?.locale || "en"} class="wa-cloak wa-theme-awesome">
+      <html lang={props.state?.locale || "en"} class="wa-cloak wa-theme-awesome">
         <head>
           <title>Authentication Required</title>
           <meta charset="utf-8" />
