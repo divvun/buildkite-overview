@@ -145,7 +145,7 @@ export const handler = {
   },
 }
 
-export default function BuildDetail(props: { data: BuildDetailProps; state: AppState }) {
+export default function BuildDetailPage(props: { data: BuildDetailProps; state: AppState }) {
   const { session, build, jobs = [], pipelineSlug, error } = props.data
 
   if (error || !build) {
