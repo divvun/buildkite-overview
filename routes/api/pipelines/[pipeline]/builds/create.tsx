@@ -72,11 +72,15 @@ export const handler: RouteHandler<unknown, AppState> = {
       const client = getBuildkiteClient()
       const fullPipelineSlug = `divvun/${pipelineSlug}`
 
-      // Find the pipeline by its slug to get the ID
+      // Find the pipeline by its slug to get the ID and default branch
       const pipelineQuery = gql`
-        query GetPipelineId($slug: ID!) {
+        query GetPipelineDetails($slug: ID!) {
           pipeline(slug: $slug) {
             id
+            defaultBranch
+            repository {
+              defaultBranch
+            }
           }
         }
       `
@@ -93,10 +97,17 @@ export const handler: RouteHandler<unknown, AppState> = {
         )
       }
 
+      // Determine the branch to use (pipeline default, repository default, or fallback to "main")
+      const pipelineDetails = pipelineData.data.pipeline
+      const defaultBranch = pipelineDetails.defaultBranch ||
+        pipelineDetails.repository?.defaultBranch ||
+        "main"
+
       const result = await client.mutation(CREATE_BUILD_MUTATION, {
         input: {
-          pipelineID: pipelineData.data.pipeline.id,
-          // Using API defaults - no branch, commit, or message specified
+          pipelineID: pipelineDetails.id,
+          branch: defaultBranch,
+          commit: "HEAD", // Use latest commit on the branch
         },
       }).toPromise()
 
