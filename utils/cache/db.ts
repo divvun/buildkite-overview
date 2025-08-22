@@ -20,16 +20,32 @@ interface IsPrivateResult {
 export class CacheDB {
   private db: Database
 
-  constructor(path = `./cache-v${CACHE_SCHEMA_VERSION}.db`) {
-    this.cleanupOldCacheFiles()
-    this.db = new Database(path)
+  constructor(path?: string) {
+    const dataDir = Deno.env.get("DATA_DIR") || "."
+    const dbPath = path || `${dataDir}/cache-v${CACHE_SCHEMA_VERSION}.db`
+
+    // Ensure directory exists
+    const dir = dbPath.substring(0, dbPath.lastIndexOf("/"))
+    if (dir && dir !== ".") {
+      try {
+        Deno.mkdirSync(dir, { recursive: true })
+      } catch (err) {
+        if (!(err instanceof Deno.errors.AlreadyExists)) {
+          throw err
+        }
+      }
+    }
+
+    this.cleanupOldCacheFiles(dataDir)
+    this.db = new Database(dbPath)
     this.initialize()
   }
 
-  private cleanupOldCacheFiles() {
+  private cleanupOldCacheFiles(dataDir = ".") {
     try {
-      // Find all cache-v*.db* files using glob
-      for (const file of expandGlobSync("cache-v*.db*")) {
+      // Find all cache-v*.db* files using glob in the data directory
+      const globPattern = `${dataDir}/cache-v*.db*`
+      for (const file of expandGlobSync(globPattern)) {
         const match = file.name.match(/^cache-v(\d+)\.db/)
         if (match) {
           const fileVersion = parseInt(match[1])

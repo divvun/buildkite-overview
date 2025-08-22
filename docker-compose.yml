@@ -1,0 +1,73 @@
+version: "3.8"
+
+services:
+  # nginx with ModSecurity (Web Application Firewall)
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.modsecurity
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    volumes:
+      # Mount logs for monitoring
+      - ./logs/nginx:/var/log/nginx
+      - ./logs/modsecurity:/var/log/modsecurity
+    environment:
+      - NGINX_HOST=localhost
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - buildkite-net
+
+  # Buildkite Overview Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GIT_REVISION: ${GIT_REVISION:-unknown}
+    expose:
+      - "8000"
+    environment:
+      # Copy environment variables to the app container
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - BASE_URL=${BASE_URL:-http://localhost}
+      - BUILDKITE_API_KEY=${BUILDKITE_API_KEY}
+      - BUILDKITE_WEBHOOK_TOKEN=${BUILDKITE_WEBHOOK_TOKEN}
+      - BYPASS_ORG_CHECK=${BYPASS_ORG_CHECK:-false}
+      - REQUIRE_AUTH=${REQUIRE_AUTH:-false}
+      - DENO_ENV=${DENO_ENV:-development}
+      - DATA_DIR=/app/data
+    volumes:
+      # Mount database and logs
+      - ./data:/app/data
+      - ./logs/app:/app/logs
+      # Mount .env file
+      - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - buildkite-net
+
+networks:
+  buildkite-net:
+    driver: bridge
+
+volumes:
+  nginx-logs:
+  modsecurity-logs:
+  app-data:
+  app-logs:
