@@ -107,9 +107,11 @@ export default function Layout(
                         </a>
                       </wa-dropdown-item>
                       <wa-divider></wa-divider>
-                      <wa-dropdown-item onClick={() => window.location.href = "/auth/logout"}>
+                      <wa-dropdown-item>
                         <wa-icon slot="icon" name="arrow-right-from-bracket"></wa-icon>
-                        {translate("logout")}
+                        <a href="/auth/logout" style="text-decoration: none; color: inherit">
+                          {translate("logout")}
+                        </a>
                       </wa-dropdown-item>
                     </wa-dropdown>
                   </div>
@@ -203,9 +205,11 @@ export default function Layout(
                   </a>
                 </wa-dropdown-item>
                 <wa-divider></wa-divider>
-                <wa-dropdown-item onClick={() => window.location.href = "/auth/logout"}>
+                <wa-dropdown-item>
                   <wa-icon slot="icon" name="arrow-right-from-bracket"></wa-icon>
-                  {translate("logout")}
+                  <a href="/auth/logout" style="text-decoration: none; color: inherit">
+                    {translate("logout")}
+                  </a>
                 </wa-dropdown-item>
               </wa-dropdown>
             )

@@ -233,6 +233,7 @@ export default function FullscreenLogsPage(props: { data: FullscreenLogsPageProp
           <LoginRequired
             resource="logs"
             returnUrl={returnUrl}
+            t={props.state.t}
           />
         </body>
       </html>

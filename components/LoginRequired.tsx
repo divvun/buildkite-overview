@@ -3,10 +3,12 @@ import { useLocalization } from "~/utils/localization-context.tsx"
 interface LoginRequiredProps {
   resource: "logs" | "private-pipeline" | "admin"
   returnUrl?: string
+  t?: (id: string, args?: Record<string, unknown>) => string
 }
 
-export default function LoginRequired({ resource, returnUrl }: LoginRequiredProps) {
-  const { t } = useLocalization()
+export default function LoginRequired({ resource, returnUrl, t: serverT }: LoginRequiredProps) {
+  const { t: clientT } = useLocalization()
+  const t = serverT || clientT
 
   // Build login URL with return parameter
   const loginUrl = returnUrl ? `/auth/login?return=${encodeURIComponent(returnUrl)}` : "/auth/login"
