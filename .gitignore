@@ -16,4 +16,4 @@ static/webawesome/
 cache-v*.db
 cache-v*.db-shm
 cache-v*.db-wal
-
+*.gql
