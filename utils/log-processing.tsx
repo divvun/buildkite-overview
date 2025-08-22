@@ -636,13 +636,37 @@ function convertBufferToLogicalLines(state: TerminalState) {
     const groupMatch = content.match(/^(---|\+\+\+|~~~|\^\^\^ \+\+\+)\s*(.*)$/)
 
     if (groupMatch) {
-      logicalLines.push({
-        timestamp,
-        groupMarker: groupMatch[1],
-        content: groupMatch[2],
-        isGroup: true,
-        lineNumber: lineNumber++,
-      })
+      const marker = groupMatch[1]
+      const markerContent = groupMatch[2]
+
+      // Handle xcprettify edge case: if line starts with --- and ends with --, treat as regular content
+      if (marker === "---" && content.match(/--+$/)) {
+        // Treat as regular content line
+        logicalLines.push({
+          timestamp,
+          content,
+          isGroup: false,
+          lineNumber: lineNumber++,
+        })
+      } else if (marker === "^^^ +++") {
+        // Special case: don't increment line number for ^^^ +++ markers
+        logicalLines.push({
+          timestamp,
+          groupMarker: marker,
+          content: markerContent,
+          isGroup: true,
+          lineNumber: lineNumber, // Don't increment - this line won't be displayed
+        })
+      } else {
+        // Regular group markers (---, +++, ~~~)
+        logicalLines.push({
+          timestamp,
+          groupMarker: marker,
+          content: markerContent,
+          isGroup: true,
+          lineNumber: lineNumber++,
+        })
+      }
     } else {
       // Regular content line
       logicalLines.push({
