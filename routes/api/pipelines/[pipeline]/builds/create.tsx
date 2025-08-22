@@ -70,42 +70,68 @@ export const handler: RouteHandler<unknown, AppState> = {
 
       // Create the build using GraphQL mutation
       const client = getBuildkiteClient()
-      const fullPipelineSlug = `divvun/${pipelineSlug}`
 
-      // Find the pipeline by its slug to get the ID and default branch
-      const pipelineQuery = gql`
-        query GetPipelineDetails($slug: ID!) {
-          pipeline(slug: $slug) {
-            id
-            defaultBranch
-            repository {
+      // Use the pipeline ID from AppPipeline to avoid extra query
+      const pipelineGraphQLId = pipeline.id
+
+      // If we need the default branch, query for it separately
+      let defaultBranch = "main" // fallback
+
+      if (pipelineGraphQLId) {
+        // Query for pipeline's default branch
+        const pipelineQuery = gql`
+          query GetPipelineDefaultBranch($slug: ID!) {
+            pipeline(slug: $slug) {
               defaultBranch
             }
           }
+        `
+
+        const fullPipelineSlug = `divvun/${pipelineSlug}`
+        console.log(`Querying pipeline details for: ${fullPipelineSlug}`)
+
+        const pipelineData = await client.query(pipelineQuery, { slug: fullPipelineSlug }).toPromise()
+
+        // Check for GraphQL errors first
+        if (pipelineData.error) {
+          console.error("GraphQL query error:", pipelineData.error)
+          return new Response(
+            JSON.stringify({
+              error: "Failed to query pipeline details",
+              details: pipelineData.error.message || String(pipelineData.error),
+            }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            },
+          )
         }
-      `
 
-      const pipelineData = await client.query(pipelineQuery, { slug: fullPipelineSlug }).toPromise()
+        // Check if pipeline exists
+        if (!pipelineData.data?.pipeline) {
+          console.error(`Pipeline not found in Buildkite: ${fullPipelineSlug}`)
+          return new Response(
+            JSON.stringify({
+              error: "Pipeline not found in Buildkite",
+              details: `Pipeline '${pipelineSlug}' does not exist or you don't have access to it`,
+            }),
+            {
+              status: 404,
+              headers: { "Content-Type": "application/json" },
+            },
+          )
+        }
 
-      if (!pipelineData.data?.pipeline?.id) {
-        return new Response(
-          JSON.stringify({ error: "Pipeline not found in Buildkite" }),
-          {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          },
-        )
+        // Use the pipeline's default branch if available
+        defaultBranch = pipelineData.data.pipeline.defaultBranch || "main"
+        console.log(`Using branch: ${defaultBranch} for pipeline: ${pipelineSlug}`)
       }
 
-      // Determine the branch to use (pipeline default, repository default, or fallback to "main")
-      const pipelineDetails = pipelineData.data.pipeline
-      const defaultBranch = pipelineDetails.defaultBranch ||
-        pipelineDetails.repository?.defaultBranch ||
-        "main"
+      console.log(`Creating build for pipeline ID: ${pipelineGraphQLId}, branch: ${defaultBranch}`)
 
       const result = await client.mutation(CREATE_BUILD_MUTATION, {
         input: {
-          pipelineID: pipelineDetails.id,
+          pipelineID: pipelineGraphQLId,
           branch: defaultBranch,
           commit: "HEAD", // Use latest commit on the branch
         },
@@ -113,13 +139,30 @@ export const handler: RouteHandler<unknown, AppState> = {
 
       if (result.error) {
         console.error("GraphQL mutation error:", result.error)
+
+        // Parse the error message to provide better feedback
+        const errorMessage = result.error.message || String(result.error)
+        let userFriendlyError = "Failed to create build"
+        let statusCode = 500
+
+        if (errorMessage.includes("commit") && errorMessage.includes("required")) {
+          userFriendlyError = "Unable to create build: commit not found"
+          statusCode = 400
+        } else if (errorMessage.includes("branch") && errorMessage.includes("required")) {
+          userFriendlyError = "Unable to create build: branch not found"
+          statusCode = 400
+        } else if (errorMessage.includes("permission") || errorMessage.includes("access")) {
+          userFriendlyError = "Permission denied: you don't have access to create builds on this pipeline"
+          statusCode = 403
+        }
+
         return new Response(
           JSON.stringify({
-            error: "Failed to create build",
-            details: result.error.message,
+            error: userFriendlyError,
+            details: errorMessage,
           }),
           {
-            status: 500,
+            status: statusCode,
             headers: { "Content-Type": "application/json" },
           },
         )
