@@ -95,15 +95,17 @@ RUN mkdir -p /var/log/modsecurity /var/cache/modsecurity /tmp/modsecurity
 
 # Download OWASP Core Rule Set
 RUN cd /opt && \
-    echo "Testing URL with curl -I:" && \
-    curl -I -L --fail https://github.com/coreruleset/coreruleset/archive/v${CRS_VERSION}.tar.gz && \
-    echo "Now downloading:" && \
     curl -L --fail -o crs.tar.gz https://github.com/coreruleset/coreruleset/archive/v${CRS_VERSION}.tar.gz && \
     tar -xzf crs.tar.gz && \
     mv coreruleset-${CRS_VERSION} owasp-modsecurity-crs && \
     rm crs.tar.gz && \
     cd owasp-modsecurity-crs && \
     cp crs-setup.conf.example crs-setup.conf
+
+# Download GeoLite2 Country database
+RUN mkdir -p /usr/share/GeoIP && \
+    curl -L -o /usr/share/GeoIP/GeoLite2-Country.mmdb \
+    https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb
 
 # Copy nginx and ModSecurity configurations
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
