@@ -12,8 +12,9 @@ export const handler: RouteHandler<unknown, AppState> = {
     const buildNumber = ctx.params.build
     const pipelineSlug = ctx.params.pipeline
 
-    // Require real GitHub authentication for all log access (not mock dev user)
-    const hasRealAuth = ctx.state.session && ctx.state.session.user.login !== "dev-user"
+    // Require real GitHub authentication for all log access (allow dev-user in development mode)
+    const isDevMode = Deno.env.get("BYPASS_ORG_CHECK") === "true"
+    const hasRealAuth = ctx.state.session && (ctx.state.session.user.login !== "dev-user" || isDevMode)
 
     if (!hasRealAuth) {
       return new Response(

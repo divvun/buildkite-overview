@@ -26,16 +26,20 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
   const [showTimestamps, setShowTimestamps] = useState(false)
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
-  const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>([])
+  const [processedGroups, setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>["groups"]>([])
+  const [focusGroupId, setFocusGroupId] = useState<number | null>(null)
+  const [focusLineNumber, setFocusLineNumber] = useState<number | null>(null)
 
   useEffect(() => {
     if (logData?.content) {
-      const groups = processLogsIntoGroups(logData.content)
-      setProcessedGroups(groups)
+      const result = processLogsIntoGroups(logData.content)
+      setProcessedGroups(result.groups)
+      setFocusGroupId(result.focusGroupId)
+      setFocusLineNumber(result.focusLineNumber)
 
       // Initialize collapsed state
       const initialCollapsed = new Set<number>()
-      groups.forEach((group) => {
+      result.groups.forEach((group) => {
         if (group.initiallyCollapsed && !group.openPrevious) {
           initialCollapsed.add(group.id)
         }
@@ -43,6 +47,21 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
       setCollapsedGroups(initialCollapsed)
     }
   }, [logData?.content])
+
+  // Auto-scroll to focused warning line after render
+  useEffect(() => {
+    if (focusLineNumber !== null && processedGroups.length > 0) {
+      setTimeout(() => {
+        const warningElement = document.querySelector(`[data-warning-line="${focusLineNumber}"]`)
+        if (warningElement) {
+          warningElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          })
+        }
+      }, 100) // Small delay to ensure rendering is complete
+    }
+  }, [focusLineNumber, processedGroups])
 
   useEffect(() => {
     // Auto-fetch logs when component mounts
@@ -264,7 +283,10 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                       // Add group header row if group has a name
                       if (group.name) {
                         rows.push(
-                          <tr key={`header-${group.id}`}>
+                          <tr
+                            key={`header-${group.id}`}
+                            data-group-id={group.id}
+                          >
                             <td
                               colSpan={(showLineNumbers ? 1 : 0) + (showTimestamps ? 1 : 0) + 1}
                               style="
@@ -296,21 +318,27 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
                       if (!isCollapsed) {
                         group.lines.forEach((logLine, lineIndex) => {
                           rows.push(
-                            <tr key={`${group.id}-${lineIndex}`} style={groupStyle}>
+                            <tr
+                              key={`${group.id}-${lineIndex}`}
+                              style={groupStyle}
+                              {...(logLine.hasWarningMarker ? { "data-warning-line": logLine.lineNumber } : {})}
+                            >
                               {showLineNumbers && (
                                 <td
                                   class="log-line-number"
-                                  style="
+                                  style={`
                                     width: 60px;
                                     text-align: right;
-                                    color: #7d8590;
+                                    color: ${
+                                    logLine.hasWarningMarker ? "var(--wa-color-warning-fill-loud)" : "#7d8590"
+                                  };
                                     padding: 2px 10px 2px 2px;
                                     user-select: none;
                                     vertical-align: top;
                                     border-right: 1px solid #30363d;
                                     background: #161b22;
                                     font-size: 0.8rem;
-                                  "
+                                  `}
                                 >
                                   {logLine.lineNumber}
                                 </td>

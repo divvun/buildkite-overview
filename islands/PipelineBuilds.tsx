@@ -1,14 +1,22 @@
 import { useEffect, useState } from "preact/hooks"
-import { useLocalization } from "~/utils/localization-context.tsx"
 import { type BuildkiteBuild } from "~/utils/buildkite-client.ts"
-import { formatDuration, formatTimeAgo, getBadgeVariant, getStatusIcon, isRunningStatus } from "~/utils/formatters.ts"
+import {
+  formatDuration,
+  formatTimeAgo,
+  getBadgeVariant,
+  getGitHubBranchUrl,
+  getStatusIcon,
+  isRunningStatus,
+} from "~/utils/formatters.ts"
+import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface PipelineBuildsProps {
   pipelineSlug: string
   initialBuilds?: BuildkiteBuild[]
+  repositoryName?: string
 }
 
-export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: PipelineBuildsProps) {
+export default function PipelineBuilds({ pipelineSlug, initialBuilds = [], repositoryName }: PipelineBuildsProps) {
   const { t, locale } = useLocalization()
   const [builds, setBuilds] = useState<BuildkiteBuild[]>(initialBuilds)
   const [loading, setLoading] = useState(false) // Don't load if we have initial builds
@@ -124,8 +132,21 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
                 </div>
                 <div class="wa-cluster wa-gap-s">
                   <div class="wa-caption-xs wa-color-text-quiet">
-                    <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs)" />
-                    {build.branch || "unknown"}
+                    <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle" />
+                    {repositoryName && build.branch
+                      ? (
+                        <a
+                          href={getGitHubBranchUrl(repositoryName, build.branch)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="github-link"
+                        >
+                          {build.branch}
+                        </a>
+                      )
+                      : (
+                        build.branch || "unknown"
+                      )}
                   </div>
                 </div>
               </div>

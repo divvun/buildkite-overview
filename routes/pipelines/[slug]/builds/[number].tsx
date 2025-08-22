@@ -18,6 +18,7 @@ interface BuildDetailProps {
   build?: BuildkiteBuild
   jobs?: BuildkiteJob[]
   pipelineSlug?: string
+  repositoryName?: string
   error?: string
 }
 
@@ -129,6 +130,7 @@ export const handler = {
           build,
           jobs,
           pipelineSlug,
+          repositoryName: pipeline.repo,
         } satisfies BuildDetailProps,
       )
     } catch (error) {
@@ -146,7 +148,7 @@ export const handler = {
 }
 
 export default function BuildDetailPage(props: { data: BuildDetailProps; state: AppState }) {
-  const { session, build, jobs = [], pipelineSlug, error } = props.data
+  const { session, build, jobs = [], pipelineSlug, repositoryName, error } = props.data
 
   if (error || !build) {
     return (
@@ -194,6 +196,7 @@ export default function BuildDetailPage(props: { data: BuildDetailProps; state: 
         buildNumber={build.number}
         initialBuild={build}
         initialJobs={jobs}
+        repositoryName={repositoryName}
       />
     </Layout>
   )

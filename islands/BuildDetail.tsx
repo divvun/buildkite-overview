@@ -1,26 +1,29 @@
 import { useEffect, useState } from "preact/hooks"
-import { useLocalization } from "~/utils/localization-context.tsx"
 import BuildJobs from "~/islands/BuildJobs.tsx"
 import { type BuildkiteBuild, type BuildkiteJob } from "~/utils/buildkite-client.ts"
 import {
   formatDuration,
   formatTimeAgo,
   getBadgeVariant,
+  getGitHubBranchUrl,
+  getGitHubCommitUrl,
   getStatusIcon,
   getTranslatedStatus,
   isBuildFinished,
   isRunningStatus,
 } from "~/utils/formatters.ts"
+import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface BuildDetailProps {
   pipelineSlug: string
   buildNumber: number
   initialBuild: BuildkiteBuild
   initialJobs: BuildkiteJob[]
+  repositoryName?: string
 }
 
 export default function BuildDetail(
-  { pipelineSlug, buildNumber, initialBuild, initialJobs }: BuildDetailProps,
+  { pipelineSlug, buildNumber, initialBuild, initialJobs, repositoryName }: BuildDetailProps,
 ) {
   const { t, locale } = useLocalization()
   const [build, setBuild] = useState<BuildkiteBuild>(initialBuild)
@@ -102,7 +105,7 @@ export default function BuildDetail(
             {loading && (
               <wa-icon
                 name="spinner"
-                style="font-size: 1rem; color: var(--wa-color-brand-fill-loud)"
+                style="font-size: 1rem; color: var(--wa-color-warning-fill-loud)"
               />
             )}
             {isRunningStatus(build.state)
@@ -142,14 +145,42 @@ export default function BuildDetail(
               <div class="wa-cluster wa-gap-l">
                 {build.branch && (
                   <div class="wa-caption-s wa-color-text-quiet">
-                    <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                    {build.branch}
+                    <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
+                    </wa-icon>
+                    {repositoryName
+                      ? (
+                        <a
+                          href={getGitHubBranchUrl(repositoryName, build.branch)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="github-link"
+                        >
+                          {build.branch}
+                        </a>
+                      )
+                      : (
+                        build.branch
+                      )}
                   </div>
                 )}
                 {build.commit && (
                   <div class="wa-caption-s wa-color-text-quiet">
-                    <wa-icon name="code-commit" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                    {build.commit.substring(0, 8)}
+                    <wa-icon name="code-commit" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
+                    </wa-icon>
+                    {repositoryName
+                      ? (
+                        <a
+                          href={getGitHubCommitUrl(repositoryName, build.commit)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="github-link"
+                        >
+                          {build.commit.substring(0, 8)}
+                        </a>
+                      )
+                      : (
+                        build.commit.substring(0, 8)
+                      )}
                   </div>
                 )}
               </div>

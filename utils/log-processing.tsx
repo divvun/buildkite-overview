@@ -633,7 +633,7 @@ function convertBufferToLogicalLines(state: TerminalState) {
     }
 
     // Check for group markers at start of content
-    const groupMatch = content.match(/^(---|\\+\\+\\+|~~~|\\^\\^\\^ \\+\\+\\+)\s*(.*)$/)
+    const groupMatch = content.match(/^(---|\+\+\+|~~~|\^\^\^ \+\+\+)\s*(.*)$/)
 
     if (groupMatch) {
       logicalLines.push({
@@ -665,13 +665,16 @@ export const processLogsIntoGroups = (logContent: string) => {
     type: "collapsed" | "expanded" | "muted" | "ungrouped"
     name: string
     nameSegments: AnsiSegment[]
-    lines: Array<{ timestamp: string; contentSegments: AnsiSegment[]; lineNumber: number }>
+    lines: Array<{ timestamp: string; contentSegments: AnsiSegment[]; lineNumber: number; hasWarningMarker?: boolean }>
     initiallyCollapsed?: boolean
     openPrevious?: boolean
   }> = []
 
   let currentGroup: typeof groups[0] | null = null
   let groupIdCounter = 0
+  let focusGroupId: number | null = null // Track the group to focus/scroll to
+  let focusLineNumber: number | null = null // Track the specific line number with warning marker
+  let nextLineHasWarningMarker = false // Flag for marking the next line
   let ansiState: AnsiState = {
     color: null,
     bgColor: null,
@@ -686,9 +689,13 @@ export const processLogsIntoGroups = (logContent: string) => {
   logicalLines.forEach((line) => {
     if (line.isGroup) {
       if (line.groupMarker === "^^^ +++" && groups.length > 0) {
-        // Mark previous group to be opened
+        // Mark previous group to be opened and focused
         const lastGroup = groups[groups.length - 1]
         lastGroup.openPrevious = true
+        focusGroupId = lastGroup.id // Track this for scrolling
+        nextLineHasWarningMarker = true // Mark the next line with warning color
+        // Skip this line - don't add it to the output
+        return
       } else {
         // Create new group
         const groupType = line.groupMarker === "---"
@@ -724,6 +731,13 @@ export const processLogsIntoGroups = (logContent: string) => {
         timestamp: ts.toLocaleString("en-US", { hour12: false }),
         contentSegments,
         lineNumber: line.lineNumber,
+        hasWarningMarker: nextLineHasWarningMarker,
+      }
+
+      // Reset the warning marker flag after using it
+      if (nextLineHasWarningMarker) {
+        focusLineNumber = line.lineNumber // Track which line has the warning
+        nextLineHasWarningMarker = false
       }
 
       if (currentGroup) {
@@ -746,7 +760,7 @@ export const processLogsIntoGroups = (logContent: string) => {
     }
   })
 
-  return groups
+  return { groups, focusGroupId, focusLineNumber }
 }
 
 export function segmentsToElements(segments: AnsiSegment[]) {

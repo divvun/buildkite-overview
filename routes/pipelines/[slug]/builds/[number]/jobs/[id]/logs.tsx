@@ -17,7 +17,9 @@ interface FullscreenLogsPageProps {
   buildNumber: string
   pipelineSlug: string
   logData?: LogData
-  processedGroups?: ReturnType<typeof processLogsIntoGroups>
+  processedGroups?: ReturnType<typeof processLogsIntoGroups>["groups"]
+  focusGroupId?: number | null
+  focusLineNumber?: number | null
   error?: string
   jobCommand?: string
   needsAuth?: boolean
@@ -31,8 +33,9 @@ export const handler = {
 
     console.log("Handler params:", { pipelineSlug, buildNumber, jobId })
 
-    // Require real GitHub authentication for all log access (not mock dev user)
-    const hasRealAuth = ctx.state.session && ctx.state.session.user.login !== "dev-user"
+    // Require real GitHub authentication for all log access (allow dev-user in development mode)
+    const isDevMode = Deno.env.get("BYPASS_ORG_CHECK") === "true"
+    const hasRealAuth = ctx.state.session && (ctx.state.session.user.login !== "dev-user" || isDevMode)
 
     if (!hasRealAuth) {
       // For fullscreen, show the login required component
@@ -88,7 +91,9 @@ export const handler = {
 
     // Fetch logs server-side
     let logData: LogData | undefined
-    let processedGroups: ReturnType<typeof processLogsIntoGroups> | undefined
+    let processedGroups: ReturnType<typeof processLogsIntoGroups>["groups"] | undefined
+    let focusGroupId: number | null = null
+    let focusLineNumber: number | null = null
     let error: string | undefined
     let jobCommand: string | undefined
 
@@ -109,8 +114,11 @@ export const handler = {
         // Process logs on server side for better performance
         if (logData?.content) {
           console.log("Processing logs into groups on server side...")
-          processedGroups = processLogsIntoGroups(logData.content)
-          console.log(`Processed ${processedGroups.length} log groups`)
+          const result = processLogsIntoGroups(logData.content)
+          processedGroups = result.groups
+          focusGroupId = result.focusGroupId
+          focusLineNumber = result.focusLineNumber
+          console.log(`Processed ${processedGroups.length} log groups, focus line: ${focusLineNumber}`)
         }
       } else {
         const errorData = await response.json()
@@ -158,6 +166,8 @@ export const handler = {
         pipelineSlug,
         logData,
         processedGroups,
+        focusGroupId,
+        focusLineNumber,
         error,
         jobCommand,
       } satisfies FullscreenLogsPageProps,
@@ -166,7 +176,18 @@ export const handler = {
 }
 
 export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageProps }) {
-  const { jobId, buildNumber, pipelineSlug, logData, processedGroups, error, jobCommand, needsAuth } = data
+  const {
+    jobId,
+    buildNumber,
+    pipelineSlug,
+    logData,
+    processedGroups,
+    focusGroupId,
+    focusLineNumber,
+    error,
+    jobCommand,
+    needsAuth,
+  } = data
 
   if (needsAuth) {
     // Construct the return URL from the current request
@@ -177,7 +198,7 @@ export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageP
         <head>
           <title>Authentication Required</title>
           <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
           <style>
             {`
               * { box-sizing: border-box; }
@@ -209,7 +230,7 @@ export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageP
       <head>
         <title>{jobCommand || "Job Logs"} - {pipelineSlug}#{buildNumber}</title>
         <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <style>
           {`
             * {
@@ -234,6 +255,8 @@ export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageP
           pipelineSlug={pipelineSlug}
           initialLogData={logData}
           initialProcessedGroups={processedGroups}
+          initialFocusGroupId={focusGroupId}
+          initialFocusLineNumber={focusLineNumber}
           initialError={error}
           jobCommand={jobCommand}
         />

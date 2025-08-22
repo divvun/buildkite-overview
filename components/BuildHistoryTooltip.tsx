@@ -2,10 +2,17 @@
 import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
 import { GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
-import { formatTimeAgo, getBadgeVariant, getStatusIcon, isRunningStatus } from "~/utils/formatters.ts"
+import {
+  formatTimeAgo,
+  getBadgeVariant,
+  getGitHubBranchUrl,
+  getStatusIcon,
+  isRunningStatus,
+} from "~/utils/formatters.ts"
 
 interface BuildHistoryTooltipProps {
   pipelineSlug: string
+  repositoryName?: string
   children: preact.ComponentChildren
 }
 
@@ -17,7 +24,7 @@ interface BuildInfo {
   branch?: string
 }
 
-export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHistoryTooltipProps) {
+export default function BuildHistoryTooltip({ pipelineSlug, repositoryName, children }: BuildHistoryTooltipProps) {
   const { t, locale } = useLocalization()
   const [builds, setBuilds] = useState<BuildInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -135,8 +142,24 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
                         <div class="wa-cluster wa-gap-s">
                           {build.branch && (
                             <div class="wa-caption-xs wa-color-text-quiet">
-                              <wa-icon name="code-branch" style="margin-right: 2px; font-size: 0.7rem" />
-                              {build.branch}
+                              <wa-icon
+                                name="code-branch"
+                                style="margin-right: 2px; font-size: 0.7rem; vertical-align: middle"
+                              />
+                              {repositoryName
+                                ? (
+                                  <a
+                                    href={getGitHubBranchUrl(repositoryName, build.branch)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="github-link"
+                                  >
+                                    {build.branch}
+                                  </a>
+                                )
+                                : (
+                                  build.branch
+                                )}
                             </div>
                           )}
                           <div class="wa-caption-xs wa-color-text-quiet">

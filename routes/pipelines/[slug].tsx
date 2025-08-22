@@ -177,8 +177,22 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
 
               <div class="wa-cluster wa-gap-s">
                 <div class="wa-caption-m wa-color-text-quiet">
-                  <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                  {pipeline.repo || props.state.t("no-repository")}
+                  <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
+                  </wa-icon>
+                  {pipeline.repo
+                    ? (
+                      <a
+                        href={`https://github.com/${pipeline.repo}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="github-link"
+                      >
+                        {pipeline.repo}
+                      </a>
+                    )
+                    : (
+                      props.state.t("no-repository")
+                    )}
                 </div>
                 <div class="wa-caption-m wa-color-text-quiet">
                   {props.state.t("last-build-label")}: {pipeline.lastBuild}
@@ -250,7 +264,7 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
 
         <section>
           <h2 class="wa-heading-m">{props.state.t("recent-builds-title")}</h2>
-          <PipelineBuilds pipelineSlug={pipeline.slug} initialBuilds={builds} />
+          <PipelineBuilds pipelineSlug={pipeline.slug} initialBuilds={builds} repositoryName={pipeline.repo} />
         </section>
       </div>
     </Layout>

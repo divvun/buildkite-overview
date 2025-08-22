@@ -14,7 +14,9 @@ interface FullscreenLogsProps {
   buildNumber: string
   pipelineSlug: string
   initialLogData?: LogData
-  initialProcessedGroups?: ReturnType<typeof processLogsIntoGroups>
+  initialProcessedGroups?: ReturnType<typeof processLogsIntoGroups>["groups"]
+  initialFocusGroupId?: number | null
+  initialFocusLineNumber?: number | null
   initialError?: string
   jobCommand?: string
 }
@@ -27,6 +29,8 @@ export default function FullscreenLogs({
   pipelineSlug,
   initialLogData,
   initialProcessedGroups,
+  initialFocusGroupId,
+  initialFocusLineNumber,
   initialError,
   jobCommand,
 }: FullscreenLogsProps) {
@@ -38,30 +42,90 @@ export default function FullscreenLogs({
   const [showLineNumbers, setShowLineNumbers] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set())
   const [visibleLinesPerGroup, setVisibleLinesPerGroup] = useState<Map<number, number>>(new Map())
-  const [processedGroups, _setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>>(
+  const [visibleLinesOffset, setVisibleLinesOffset] = useState<Map<number, number>>(new Map())
+  const [processedGroups, _setProcessedGroups] = useState<ReturnType<typeof processLogsIntoGroups>["groups"]>(
     initialProcessedGroups || [],
   )
+  const [focusGroupId] = useState<number | null>(initialFocusGroupId || null)
+  const [focusLineNumber] = useState<number | null>(initialFocusLineNumber || null)
+
+  // Auto-scroll to focused warning line after render (fallback to group if no specific line)
+  useEffect(() => {
+    if (processedGroups.length > 0) {
+      setTimeout(() => {
+        let targetElement = null
+
+        // First try to scroll to specific warning line
+        if (focusLineNumber !== null) {
+          targetElement = document.querySelector(`[data-warning-line="${focusLineNumber}"]`)
+        }
+
+        // Fallback to group header if no specific line found
+        if (!targetElement && focusGroupId !== null) {
+          targetElement = document.querySelector(`[data-group-id="${focusGroupId}"]`)
+        }
+
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          })
+        }
+      }, 100) // Small delay to ensure rendering is complete
+    }
+  }, [focusLineNumber, focusGroupId, processedGroups])
 
   useEffect(() => {
     // Initialize collapsed state and visible lines from processed groups
     if (processedGroups.length > 0) {
       const initialCollapsed = new Set<number>()
       const initialVisibleLines = new Map<number, number>()
+      const initialVisibleOffsets = new Map<number, number>()
 
       processedGroups.forEach((group) => {
         if (group.initiallyCollapsed && !group.openPrevious) {
           initialCollapsed.add(group.id)
         }
-        // For groups with > MAX_VISIBLE_LINES lines, initially show only MAX_VISIBLE_LINES
+
+        // For groups with > MAX_VISIBLE_LINES lines, check if we need to adjust window for warning line
         if (group.lines.length > MAX_VISIBLE_LINES) {
-          initialVisibleLines.set(group.id, MAX_VISIBLE_LINES)
+          // Check if this group contains the warning line
+          const warningLineIndex = group.lines.findIndex((line) => line.hasWarningMarker)
+
+          if (warningLineIndex !== -1) {
+            // Warning line found in this group - calculate smart window
+            const contextBefore = 100 // Show 100 lines before the warning
+
+            // Calculate start index for the window
+            const startIndex = Math.max(0, warningLineIndex - contextBefore)
+            const endIndex = Math.min(group.lines.length, startIndex + MAX_VISIBLE_LINES)
+
+            // Adjust start if we hit the end boundary
+            const adjustedStart = Math.max(0, endIndex - MAX_VISIBLE_LINES)
+            const actualCount = Math.min(MAX_VISIBLE_LINES, group.lines.length - adjustedStart)
+
+            // Set custom visible range for this group
+            initialVisibleLines.set(group.id, actualCount)
+            initialVisibleOffsets.set(group.id, adjustedStart)
+
+            console.log(
+              `Group ${group.id} has warning line at index ${warningLineIndex}, showing lines ${adjustedStart}-${
+                adjustedStart + actualCount - 1
+              }`,
+            )
+          } else {
+            // No warning line, use standard window
+            initialVisibleLines.set(group.id, MAX_VISIBLE_LINES)
+            initialVisibleOffsets.set(group.id, 0)
+          }
         }
       })
 
       setCollapsedGroups(initialCollapsed)
       setVisibleLinesPerGroup(initialVisibleLines)
+      setVisibleLinesOffset(initialVisibleOffsets)
     }
-  }, [processedGroups])
+  }, [processedGroups, focusLineNumber])
 
   useEffect(() => {
     // Handle ESC key to close window/tab
@@ -121,10 +185,42 @@ export default function FullscreenLogs({
     })
   }
 
+  const showPreviousLines = (groupId: number) => {
+    const currentOffset = visibleLinesOffset.get(groupId) || 0
+    const newOffset = Math.max(0, currentOffset - MAX_VISIBLE_LINES)
+
+    setVisibleLinesOffset((prev) => {
+      const newMap = new Map(prev)
+      newMap.set(groupId, newOffset)
+      return newMap
+    })
+
+    // Ensure we show at least MAX_VISIBLE_LINES
+    setVisibleLinesPerGroup((prev) => {
+      const newMap = new Map(prev)
+      newMap.set(groupId, MAX_VISIBLE_LINES)
+      return newMap
+    })
+  }
+
+  const showNextLines = (groupId: number) => {
+    setVisibleLinesPerGroup((prev) => {
+      const newMap = new Map(prev)
+      const currentVisible = newMap.get(groupId) || MAX_VISIBLE_LINES
+      newMap.set(groupId, currentVisible + MAX_VISIBLE_LINES)
+      return newMap
+    })
+  }
+
   const showAllLines = (groupId: number) => {
     setVisibleLinesPerGroup((prev) => {
       const newMap = new Map(prev)
       newMap.delete(groupId) // Remove the limit, show all lines
+      return newMap
+    })
+    setVisibleLinesOffset((prev) => {
+      const newMap = new Map(prev)
+      newMap.delete(groupId) // Remove the offset, show from beginning
       return newMap
     })
   }
@@ -134,9 +230,16 @@ export default function FullscreenLogs({
       <style>
         {`
           .fullscreen-container {
-            height: 100vh;
+            /* Use calc to account for safe area insets */
+            height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+            height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); /* Dynamic viewport height for mobile browsers that support it */
             display: flex;
             flex-direction: column;
+            /* Add safe area padding to prevent content from being cut off */
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
           }
           
           .toolbar {
@@ -372,6 +475,29 @@ export default function FullscreenLogs({
             }
           }
           
+          /* Fix button contrast for better readability on dark background */
+          wa-button[variant="neutral"][appearance="outlined"] {
+            --wa-color-neutral-border: #6e7681 !important;
+            --wa-color-neutral-text: #f0f6fc !important;
+            color: #f0f6fc !important;
+          }
+          
+          wa-button[variant="neutral"][appearance="outlined"]:hover {
+            --wa-color-neutral-border: #f0f6fc !important;
+            --wa-color-neutral-text: #24292f !important;
+            color: #24292f !important;
+            background-color: #f0f6fc !important;
+          }
+          
+          /* Ensure icons in buttons also have proper contrast */
+          wa-button[variant="neutral"][appearance="outlined"] wa-icon {
+            color: #f0f6fc !important;
+          }
+          
+          wa-button[variant="neutral"][appearance="outlined"]:hover wa-icon {
+            color: #24292f !important;
+          }
+          
           ${ANSI_CSS}
         `}
       </style>
@@ -451,7 +577,10 @@ export default function FullscreenLogs({
                 // Add group header row if group has a name
                 if (group.name) {
                   rows.push(
-                    <tr key={`header-${group.id}`}>
+                    <tr
+                      key={`header-${group.id}`}
+                      data-group-id={group.id}
+                    >
                       <td
                         colSpan={(showLineNumbers ? 1 : 0) + (showTimestamps ? 1 : 0) + 1}
                         class={`group-header ${groupStyle}`}
@@ -472,11 +601,36 @@ export default function FullscreenLogs({
                   )
                 }
 
-                // Determine how many lines to show for this group
+                // Determine how many lines to show for this group and from which offset
                 const maxVisibleLines = visibleLinesPerGroup.get(group.id)
-                const linesToShow = maxVisibleLines ? group.lines.slice(0, maxVisibleLines) : group.lines
-                const hasMoreLines = maxVisibleLines && group.lines.length > maxVisibleLines
-                const remainingLines = hasMoreLines ? group.lines.length - maxVisibleLines : 0
+                const offset = visibleLinesOffset.get(group.id) || 0
+                const linesToShow = maxVisibleLines ? group.lines.slice(offset, offset + maxVisibleLines) : group.lines
+                const hasMoreLines = maxVisibleLines && (offset + maxVisibleLines < group.lines.length)
+                const remainingLines = hasMoreLines ? group.lines.length - (offset + maxVisibleLines) : 0
+                const hiddenLinesAtStart = offset
+
+                // Add "Show Previous" button at the TOP if there are hidden lines at the start
+                if (hiddenLinesAtStart > 0 && !isCollapsed) {
+                  rows.push(
+                    <tr key={`show-previous-${group.id}`} class="show-more-row">
+                      <td
+                        colSpan={(showLineNumbers ? 1 : 0) + (showTimestamps ? 1 : 0) + 1}
+                        class="show-more-cell"
+                      >
+                        <div class="show-more-buttons">
+                          <wa-button
+                            size="small"
+                            variant="neutral"
+                            appearance="outlined"
+                            onClick={() => showPreviousLines(group.id)}
+                          >
+                            ↑ Show previous {Math.min(MAX_VISIBLE_LINES, hiddenLinesAtStart)} lines
+                          </wa-button>
+                        </div>
+                      </td>
+                    </tr>,
+                  )
+                }
 
                 // Always render visible content rows, but use CSS to hide when collapsed
                 linesToShow.forEach((logLine, lineIndex) => {
@@ -485,9 +639,15 @@ export default function FullscreenLogs({
                       key={`${group.id}-${lineIndex}`}
                       class={groupStyle}
                       style={{ display: isCollapsed ? "none" : "table-row" }}
+                      {...(logLine.hasWarningMarker ? { "data-warning-line": logLine.lineNumber } : {})}
                     >
                       {showLineNumbers && (
-                        <td class="log-line-number">
+                        <td
+                          class="log-line-number"
+                          style={`color: ${
+                            logLine.hasWarningMarker ? "var(--wa-color-warning-fill-loud)" : "#7d8590"
+                          };`}
+                        >
                           {logLine.lineNumber}
                         </td>
                       )}
@@ -503,7 +663,7 @@ export default function FullscreenLogs({
                   )
                 })
 
-                // Add "Show More" button if there are more lines to show
+                // Add "Show More" button at the BOTTOM if there are more lines to show
                 if (hasMoreLines && !isCollapsed) {
                   rows.push(
                     <tr key={`show-more-${group.id}`} class="show-more-row">
@@ -516,20 +676,18 @@ export default function FullscreenLogs({
                             size="small"
                             variant="neutral"
                             appearance="outlined"
-                            onClick={() => showMoreLines(group.id)}
+                            onClick={() => showNextLines(group.id)}
                           >
-                            Show {Math.min(MAX_VISIBLE_LINES, remainingLines)} more lines ({remainingLines} remaining)
+                            Show next {Math.min(MAX_VISIBLE_LINES, remainingLines)} lines ↓
                           </wa-button>
-                          {remainingLines > MAX_VISIBLE_LINES && (
-                            <wa-button
-                              size="small"
-                              variant="neutral"
-                              appearance="outlined"
-                              onClick={() => showAllLines(group.id)}
-                            >
-                              Show all {remainingLines} remaining
-                            </wa-button>
-                          )}
+                          <wa-button
+                            size="small"
+                            variant="neutral"
+                            appearance="outlined"
+                            onClick={() => showAllLines(group.id)}
+                          >
+                            Show all {group.lines.length} lines
+                          </wa-button>
                         </div>
                       </td>
                     </tr>,

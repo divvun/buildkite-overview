@@ -202,20 +202,25 @@ export default function BuildJobs(
               onClick={() => handleJobClick(jobKey)}
             >
               <span style="width: 1rem; text-align: center;">
-                <wa-icon
-                  name={getJobStatusIcon(job.state, job.passed)}
-                  style={`font-size: 1rem; color: ${
-                    ["NOT_RUN", "SKIPPED", "WAITING_FAILED"].includes(job.state)
-                      ? "var(--wa-color-neutral-fill-loud)"
-                      : ["PASSED", "FINISHED"].includes(job.state) && job.passed
-                      ? "var(--wa-color-success-fill-loud)"
-                      : ["FAILED", "CANCELED"].includes(job.state) || (job.state === "FINISHED" && job.passed === false)
-                      ? "var(--wa-color-danger-fill-loud)"
-                      : ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED", "CANCELING"].includes(job.state)
-                      ? "var(--wa-color-warning-fill-loud)"
-                      : "var(--wa-color-neutral-fill-loud)"
-                  }`}
-                />
+                {job.state === "RUNNING"
+                  ? <wa-spinner style="color: var(--wa-color-warning-fill-loud); font-size: 1rem" />
+                  : (
+                    <wa-icon
+                      name={getJobStatusIcon(job.state, job.passed)}
+                      style={`font-size: 1rem; color: ${
+                        ["NOT_RUN", "SKIPPED", "WAITING_FAILED"].includes(job.state)
+                          ? "var(--wa-color-neutral-fill-loud)"
+                          : ["PASSED", "FINISHED"].includes(job.state) && job.passed
+                          ? "var(--wa-color-success-fill-loud)"
+                          : ["FAILED", "CANCELED"].includes(job.state) ||
+                              (job.state === "FINISHED" && job.passed === false)
+                          ? "var(--wa-color-danger-fill-loud)"
+                          : ["RUNNING", "SCHEDULED", "CREATING", "WAITING", "BLOCKED", "CANCELING"].includes(job.state)
+                          ? "var(--wa-color-warning-fill-loud)"
+                          : "var(--wa-color-neutral-fill-loud)"
+                      }`}
+                    />
+                  )}
               </span>
 
               <div style="flex: 1; display: flex; justify-content: space-between; align-items: center;">

@@ -98,6 +98,24 @@ export function isRunningStatus(status: string): boolean {
   return normalizeStatus(status) === "running"
 }
 
+/**
+ * GitHub URL helper functions
+ */
+export function getGitHubRepoUrl(repo: string): string {
+  if (!repo || repo === "unknown") return "#"
+  return `https://github.com/${repo}`
+}
+
+export function getGitHubBranchUrl(repo: string, branch: string): string {
+  if (!repo || repo === "unknown" || !branch) return "#"
+  return `https://github.com/${repo}/tree/${encodeURIComponent(branch)}`
+}
+
+export function getGitHubCommitUrl(repo: string, commit: string): string {
+  if (!repo || repo === "unknown" || !commit) return "#"
+  return `https://github.com/${repo}/commit/${commit}`
+}
+
 export function getHealthBorderStyle(status: string): string {
   const normalizedStatus = normalizeStatus(status)
   switch (normalizedStatus) {
