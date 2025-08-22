@@ -109,7 +109,7 @@ export const handler = {
       const sessionCookie = btoa(JSON.stringify(sessionData))
 
       const headers = new Headers()
-      
+
       // Redirect to return URL if provided, otherwise home
       const redirectUrl = returnUrl ? decodeURIComponent(returnUrl) : "/"
       headers.set("Location", redirectUrl)

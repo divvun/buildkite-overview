@@ -33,14 +33,14 @@ export const handler = {
     let message: string | undefined
     if (reason === "logs_require_auth") {
       message = "Please sign in with GitHub to view build logs"
-    } else if (returnUrl?.includes('/logs')) {
+    } else if (returnUrl?.includes("/logs")) {
       message = "Sign in to view build logs"
     }
 
-    return page({ 
+    return page({
       error: error || undefined,
       returnUrl: returnUrl || undefined,
-      message
+      message,
     })
   },
 
@@ -61,7 +61,7 @@ export const handler = {
 
       headers.append("Set-Cookie", `oauth_state=${state}; ${cookieFlags}`)
       headers.append("Set-Cookie", `oauth_code_verifier=${codeVerifier}; ${cookieFlags}`)
-      
+
       if (returnUrl) {
         headers.append("Set-Cookie", `return_url=${encodeURIComponent(returnUrl)}; ${cookieFlags}`)
       }

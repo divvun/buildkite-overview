@@ -1,6 +1,7 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import PipelineBuilds from "~/islands/PipelineBuilds.tsx"
+import NewBuildButton from "~/islands/NewBuildButton.tsx"
 import { type BuildkiteBuild, GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
@@ -142,17 +143,7 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
         <header class="wa-stack wa-gap-s">
           <div class="wa-flank">
-            <div class="wa-cluster wa-gap-s">
-              <wa-button
-                variant="brand"
-                appearance="outlined"
-                disabled
-                title={props.state.t("feature-coming-soon")}
-              >
-                <wa-icon slot="prefix" name="play"></wa-icon>
-                {props.state.t("new-build")}
-              </wa-button>
-            </div>
+            <NewBuildButton pipelineSlug={pipeline.slug} />
           </div>
 
           <div class="wa-flank">

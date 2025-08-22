@@ -172,9 +172,11 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
 
           {needsAuth && (
             <div style="padding: var(--wa-space-s)">
-              <LoginRequired 
+              <LoginRequired
                 resource="logs"
-                returnUrl={typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : undefined}
+                returnUrl={typeof window !== "undefined"
+                  ? `${window.location.pathname}${window.location.search}`
+                  : undefined}
               />
             </div>
           )}

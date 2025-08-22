@@ -106,3 +106,8 @@ success-rate = Success Rate
 visibility = Visibility
 repository-access = Repository access
 last-build-label = Last build
+
+# New build creation
+creating-build = Creating Build...
+failed-to-create-build = Failed to create build
+error-creating-build = Error creating build

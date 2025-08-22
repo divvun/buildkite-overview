@@ -14,19 +14,19 @@ export const handler: RouteHandler<unknown, AppState> = {
 
     // Require real GitHub authentication for all log access (not mock dev user)
     const hasRealAuth = ctx.state.session && ctx.state.session.user.login !== "dev-user"
-    
+
     if (!hasRealAuth) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "Authentication required",
           requireAuth: true,
-          message: "Please sign in with GitHub to view build logs"
+          message: "Please sign in with GitHub to view build logs",
         }),
         {
           status: 401,
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            "X-Auth-Required": "github"
+            "X-Auth-Required": "github",
           },
         },
       )

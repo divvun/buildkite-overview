@@ -106,3 +106,8 @@ success-rate = Suksessrate
 visibility = Synlighet
 repository-access = Repository-tilgang
 last-build-label = Siste bygg
+
+# New build creation
+creating-build = Oppretter bygg...
+failed-to-create-build = Klarte ikke å opprette bygg
+error-creating-build = Feil ved opprettelse av bygg

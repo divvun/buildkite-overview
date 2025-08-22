@@ -33,15 +33,17 @@ export const handler = {
 
     // Require real GitHub authentication for all log access (not mock dev user)
     const hasRealAuth = ctx.state.session && ctx.state.session.user.login !== "dev-user"
-    
+
     if (!hasRealAuth) {
       // For fullscreen, show the login required component
-      return page({
-        jobId,
-        buildNumber,
-        pipelineSlug,
-        needsAuth: true,
-      } satisfies FullscreenLogsPageProps)
+      return page(
+        {
+          jobId,
+          buildNumber,
+          pipelineSlug,
+          needsAuth: true,
+        } satisfies FullscreenLogsPageProps,
+      )
     }
 
     // Verify that user has access to this pipeline
@@ -169,7 +171,7 @@ export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageP
   if (needsAuth) {
     // Construct the return URL from the current request
     const returnUrl = `/pipelines/${pipelineSlug}/builds/${buildNumber}/jobs/${jobId}/logs`
-    
+
     return (
       <html>
         <head>
@@ -193,7 +195,7 @@ export default function FullscreenLogsPage({ data }: { data: FullscreenLogsPageP
           </style>
         </head>
         <body>
-          <LoginRequired 
+          <LoginRequired
             resource="logs"
             returnUrl={returnUrl}
           />

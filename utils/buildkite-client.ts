@@ -1,7 +1,7 @@
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core"
 import { createClient, fetchExchange } from "@urql/preact"
 import { gql } from "graphql-tag"
-import { $, query } from "./gql/buildkite.ts"
+import { $, mutation, query } from "./gql/buildkite.ts"
 
 function bkKey() {
   return typeof Deno !== "undefined" ? Deno.env.get("BUILDKITE_API_KEY") : ""
@@ -581,3 +581,24 @@ export async function fetchRunningBuildsRest(): Promise<BuildkiteBuildRest[]> {
 
   return allBuilds
 }
+
+// Mutation for creating a new build
+export const CREATE_BUILD_MUTATION = mutation((m) => [
+  m.buildCreate(
+    { input: $("input") },
+    (payload) => [
+      payload.build((build) => [
+        build.id,
+        build.number,
+        build.url,
+        build.state,
+        build.createdAt,
+        build.pipeline((p) => [
+          p.id,
+          p.name,
+          p.slug,
+        ]),
+      ]),
+    ],
+  ),
+])
