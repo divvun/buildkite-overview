@@ -29,6 +29,21 @@ export const BUILD_STATUS_MAP: Record<string, string> = {
   "unknown": "unknown",
 }
 
+/**
+ * Checks if a build is in a finished/terminal state and should not be refreshed
+ */
+export function isBuildFinished(state: string): boolean {
+  const finishedStates = [
+    "PASSED",
+    "FAILED",
+    "CANCELED",
+    "WAITING_FAILED",
+    "NOT_RUN",
+    "SKIPPED",
+  ]
+  return finishedStates.includes(state)
+}
+
 export function normalizeStatus(status: string): string {
   return BUILD_STATUS_MAP[status] || "unknown"
 }
@@ -62,7 +77,7 @@ export function getStatusIcon(status: string): string {
     case "failed":
       return "circle-xmark"
     case "running":
-      return "spinner"
+      return "spinner" // Note: Use isRunningStatus() to render wa-spinner instead
     case "blocked":
       return "circle-pause" // Paused/blocked state
     case "waiting":
@@ -74,6 +89,13 @@ export function getStatusIcon(status: string): string {
     default:
       return "circle"
   }
+}
+
+/**
+ * Helper function to check if status should use animated spinner
+ */
+export function isRunningStatus(status: string): boolean {
+  return normalizeStatus(status) === "running"
 }
 
 export function getHealthBorderStyle(status: string): string {

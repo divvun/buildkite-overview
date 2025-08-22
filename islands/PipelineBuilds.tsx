@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
 import { type BuildkiteBuild } from "~/utils/buildkite-client.ts"
-import { formatDuration, formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
+import { formatDuration, formatTimeAgo, getBadgeVariant, getStatusIcon, isRunningStatus } from "~/utils/formatters.ts"
 
 interface PipelineBuildsProps {
   pipelineSlug: string
@@ -109,10 +109,14 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [] }: Pip
             >
               <div class="wa-stack wa-gap-3xs">
                 <div class="wa-flank wa-gap-xs" style="margin-bottom: 0.5rem">
-                  <wa-icon
-                    name={getStatusIcon(build.state)}
-                    style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud)`}
-                  />
+                  {isRunningStatus(build.state)
+                    ? <wa-spinner style="color: var(--wa-color-warning-fill-loud)" />
+                    : (
+                      <wa-icon
+                        name={getStatusIcon(build.state)}
+                        style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud)`}
+                      />
+                    )}
                   <span class="wa-heading-s">#{build.number}</span>
                 </div>
                 <div class="wa-caption-s wa-color-text-quiet">

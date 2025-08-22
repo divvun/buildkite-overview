@@ -2,7 +2,7 @@
 import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
 import { GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
-import { formatTimeAgo, getBadgeVariant, getStatusIcon } from "~/utils/formatters.ts"
+import { formatTimeAgo, getBadgeVariant, getStatusIcon, isRunningStatus } from "~/utils/formatters.ts"
 
 interface BuildHistoryTooltipProps {
   pipelineSlug: string
@@ -108,10 +108,16 @@ export default function BuildHistoryTooltip({ pipelineSlug, children }: BuildHis
                       style="padding: var(--wa-space-2xs); border-radius: var(--wa-border-radius-xs); background: var(--wa-color-surface-subtle)"
                     >
                       <div class="wa-cluster wa-gap-xs wa-align-items-center">
-                        <wa-icon
-                          name={getStatusIcon(build.state)}
-                          style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud); font-size: 0.8rem`}
-                        />
+                        {isRunningStatus(build.state)
+                          ? <wa-spinner style="color: var(--wa-color-warning-fill-loud); font-size: 0.8rem" />
+                          : (
+                            <wa-icon
+                              name={getStatusIcon(build.state)}
+                              style={`color: var(--wa-color-${
+                                getBadgeVariant(build.state)
+                              }-fill-loud); font-size: 0.8rem`}
+                            />
+                          )}
                         <span class="wa-caption-xs wa-color-text-loud">#{build.number}</span>
                         <wa-badge variant={getBadgeVariant(build.state)}>
                           {build.state}

@@ -4,7 +4,13 @@ import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
 import { type AppPipeline } from "~/utils/buildkite-data.ts"
-import { getBadgeVariant, getHealthBorderStyle, getStatusIcon, getTranslatedStatus } from "~/utils/formatters.ts"
+import {
+  getBadgeVariant,
+  getHealthBorderStyle,
+  getStatusIcon,
+  getTranslatedStatus,
+  isRunningStatus,
+} from "~/utils/formatters.ts"
 import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface PipelinesData {
@@ -179,11 +185,18 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
                       <div class="wa-flank">
                         <div class="wa-stack wa-gap-3xs">
                           <div class="wa-flank wa-gap-xs">
-                            <wa-icon
-                              name={getStatusIcon(pipeline.status)}
-                              style={`color: var(--wa-color-${getBadgeVariant(pipeline.status)}-fill-loud)`}
-                            >
-                            </wa-icon>
+                            {isRunningStatus(pipeline.status)
+                              ? (
+                                <wa-spinner style="color: var(--wa-color-warning-fill-loud)">
+                                </wa-spinner>
+                              )
+                              : (
+                                <wa-icon
+                                  name={getStatusIcon(pipeline.status)}
+                                  style={`color: var(--wa-color-${getBadgeVariant(pipeline.status)}-fill-loud)`}
+                                >
+                                </wa-icon>
+                              )}
                             <span class="wa-heading-s">{pipeline.name}</span>
                           </div>
                           <div class="wa-caption-s wa-color-text-quiet">{pipeline.repo || t("no-repository")}</div>

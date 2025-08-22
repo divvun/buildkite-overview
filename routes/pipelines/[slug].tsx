@@ -5,7 +5,13 @@ import NewBuildButton from "~/islands/NewBuildButton.tsx"
 import { type BuildkiteBuild, GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
 import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
-import { formatTimeAgo, getBadgeVariant, getStatusIcon, getTranslatedStatus } from "~/utils/formatters.ts"
+import {
+  formatTimeAgo,
+  getBadgeVariant,
+  getStatusIcon,
+  getTranslatedStatus,
+  isRunningStatus,
+} from "~/utils/formatters.ts"
 import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
 import { type SessionData } from "~/utils/session.ts"
@@ -149,13 +155,20 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
           <div class="wa-flank">
             <div class="wa-stack wa-gap-xs">
               <div class="wa-flank wa-gap-s">
-                <wa-icon
-                  name={getStatusIcon(pipeline.status)}
-                  style={`color: var(--wa-color-${
-                    getBadgeVariant(pipeline.status)
-                  }-fill-loud); font-size: 1.5rem` as any}
-                >
-                </wa-icon>
+                {isRunningStatus(pipeline.status)
+                  ? (
+                    <wa-spinner style="color: var(--wa-color-warning-fill-loud); font-size: 1.5rem">
+                    </wa-spinner>
+                  )
+                  : (
+                    <wa-icon
+                      name={getStatusIcon(pipeline.status)}
+                      style={`color: var(--wa-color-${
+                        getBadgeVariant(pipeline.status)
+                      }-fill-loud); font-size: 1.5rem` as any}
+                    >
+                    </wa-icon>
+                  )}
                 <h1 class="wa-heading-l">{pipeline.name}</h1>
                 <wa-badge variant={getBadgeVariant(pipeline.status)}>
                   {getTranslatedStatus(pipeline.status, props.state.t)}

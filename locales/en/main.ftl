@@ -24,6 +24,7 @@ auto-refresh-off = Auto-refresh OFF
 auto-refresh-background = Auto-refresh ON (background mode: every {$interval}s)
 enable-auto-refresh = Enable auto-refresh
 disable-auto-refresh = Disable auto-refresh
+refresh-error = Refresh error
 
 # Navigation and UI labels
 buildkite-logo = Buildkite logo

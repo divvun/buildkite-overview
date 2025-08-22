@@ -1,6 +1,6 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
-import BuildJobs from "~/islands/BuildJobs.tsx"
+import BuildDetail from "~/islands/BuildDetail.tsx"
 import {
   type BuildkiteBuild,
   type BuildkiteJob,
@@ -9,13 +9,6 @@ import {
   getBuildkiteClient,
 } from "~/utils/buildkite-client.ts"
 import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import {
-  formatDuration,
-  formatTimeAgo,
-  getBadgeVariant,
-  getStatusIcon,
-  getTranslatedStatus,
-} from "~/utils/formatters.ts"
 import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
 import { type SessionData } from "~/utils/session.ts"
@@ -196,93 +189,12 @@ export default function BuildDetail(props: { data: BuildDetailProps; state: AppS
       t={props.state.t}
       state={props.state}
     >
-      <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
-        <header class="wa-stack wa-gap-s">
-          {
-            /* <div class="wa-flank">
-            <wa-button variant="neutral" appearance="outlined">
-              <wa-icon slot="prefix" name="arrow-left"></wa-icon>
-              <a href={`/pipelines/${pipelineSlug}`} style="text-decoration: none; color: inherit">
-                Back to {build.pipeline.name}
-              </a>
-            </wa-button>
-            <div class="wa-cluster wa-gap-s">
-              <wa-button variant="brand" appearance="outlined">
-                <wa-icon slot="prefix" name="arrow-rotate-right"></wa-icon>
-                Rebuild
-              </wa-button>
-              {build.url && (
-                <wa-button variant="brand">
-                  <wa-icon slot="prefix" name="arrow-up-right-from-square"></wa-icon>
-                  <a href={build.url} target="_blank" style="text-decoration: none; color: inherit">
-                    View in Buildkite
-                  </a>
-                </wa-button>
-              )}
-            </div>
-          </div> */
-          }
-
-          <div class="wa-stack wa-gap-s">
-            <div class="wa-flank wa-gap-s">
-              <wa-icon
-                name={getStatusIcon(build.state)}
-                style={`color: var(--wa-color-${getBadgeVariant(build.state)}-fill-loud); font-size: 1.5rem` as any}
-              >
-              </wa-icon>
-              <h1 class="wa-heading-l">{props.state.t("build-number", { number: build.number })}</h1>
-              <wa-badge variant={getBadgeVariant(build.state)}>
-                {getTranslatedStatus(build.state, props.state.t)}
-              </wa-badge>
-            </div>
-
-            <div class="wa-cluster wa-gap-l">
-              <div class="wa-caption-m wa-color-text-quiet">
-                {props.state.t("duration-label")}:{" "}
-                {formatDuration(build.startedAt, build.finishedAt, props.state.locale)}
-              </div>
-              <div class="wa-caption-m wa-color-text-quiet">
-                {props.state.t("started-label-colon")}: {build.startedAt
-                  ? formatTimeAgo(build.startedAt, props.state.locale, props.state.t)
-                  : props.state.t("not-started")}
-              </div>
-            </div>
-          </div>
-
-          {build.message && (
-            <>
-              <wa-divider></wa-divider>
-              <div class="wa-stack wa-gap-xs">
-                <div class="wa-body-m">{build.message}</div>
-                <div class="wa-cluster wa-gap-l">
-                  {build.branch && (
-                    <div class="wa-caption-s wa-color-text-quiet">
-                      <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                      {build.branch}
-                    </div>
-                  )}
-                  {build.commit && (
-                    <div class="wa-caption-s wa-color-text-quiet">
-                      <wa-icon name="code-commit" style="margin-right: var(--wa-space-3xs)"></wa-icon>
-                      {build.commit.substring(0, 8)}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </header>
-        <wa-divider></wa-divider>
-        <section>
-          <h2 class="wa-heading-m">{props.state.t("jobs-heading")}</h2>
-          <BuildJobs
-            buildId={build.id}
-            buildNumber={build.number}
-            pipelineSlug={pipelineSlug}
-            initialJobs={jobs}
-          />
-        </section>
-      </div>
+      <BuildDetail
+        pipelineSlug={pipelineSlug!}
+        buildNumber={build.number}
+        initialBuild={build}
+        initialJobs={jobs}
+      />
     </Layout>
   )
 }

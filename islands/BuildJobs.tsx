@@ -13,6 +13,7 @@ interface BuildJobsProps {
   buildNumber?: number | null
   pipelineSlug?: string | null
   initialJobs?: BuildkiteJob[]
+  refreshTrigger?: string // Added to trigger updates from parent
 }
 
 function getJobBadgeVariant(status: string, passed?: boolean): string {
@@ -81,7 +82,8 @@ function formatJobTiming(job: BuildkiteJob, t: any, locale: string): string {
 }
 
 export default function BuildJobs(
-  { buildId, buildNumber: initialBuildNumber, pipelineSlug: initialPipelineSlug, initialJobs = [] }: BuildJobsProps,
+  { buildId, buildNumber: initialBuildNumber, pipelineSlug: initialPipelineSlug, initialJobs = [], refreshTrigger }:
+    BuildJobsProps,
 ) {
   const { t, locale } = useLocalization()
   const [jobs, setJobs] = useState<BuildkiteJob[]>(initialJobs)
@@ -98,6 +100,14 @@ export default function BuildJobs(
       fetchJobs()
     }
   }, [buildId])
+
+  // Update jobs when refreshTrigger changes (triggered by parent component)
+  useEffect(() => {
+    if (refreshTrigger && initialJobs.length > 0) {
+      // Jobs were updated by the parent, use the new initialJobs
+      setJobs(initialJobs)
+    }
+  }, [refreshTrigger, initialJobs])
 
   const fetchJobs = async () => {
     try {

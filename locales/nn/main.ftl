@@ -24,6 +24,7 @@ auto-refresh-off = Automatisk oppdatering AV
 auto-refresh-background = Automatisk oppdatering PÅ (bakgrunnsmodus: kvart {$interval}. sekund)
 enable-auto-refresh = Aktiver automatisk oppdatering
 disable-auto-refresh = Deaktiver automatisk oppdatering
+refresh-error = Oppdateringsfeil
 
 # Navigasjon og UI-etikettar
 buildkite-logo = Buildkite-logo
