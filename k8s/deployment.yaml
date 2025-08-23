@@ -40,16 +40,6 @@ spec:
             configMapKeyRef:
               name: buildkite-overview-config
               key: DATA_DIR
-        - name: BYPASS_ORG_CHECK
-          valueFrom:
-            configMapKeyRef:
-              name: buildkite-overview-config
-              key: BYPASS_ORG_CHECK
-        - name: REQUIRE_AUTH
-          valueFrom:
-            configMapKeyRef:
-              name: buildkite-overview-config
-              key: REQUIRE_AUTH
         - name: GITHUB_CLIENT_ID
           valueFrom:
             secretKeyRef:
