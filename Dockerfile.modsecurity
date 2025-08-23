@@ -120,13 +120,16 @@ RUN mkdir -p /etc/modsecurity && \
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/log/modsecurity /var/cache/modsecurity /tmp/modsecurity && \
-    chmod 775 /var/log/modsecurity /var/cache/modsecurity /tmp/modsecurity
+    chmod 2775 /var/log/modsecurity /var/cache/modsecurity /tmp/modsecurity
+
+# Copy and setup entrypoint script
+COPY entrypoint-modsecurity.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost/health || exit 1
-
-USER www-data
 
 EXPOSE 80
 
