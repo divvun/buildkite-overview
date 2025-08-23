@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: buildkite-overview
+  labels:
+    app: buildkite-overview
+  annotations:
+    # Uncomment and modify based on your ingress controller
+    # nginx.ingress.kubernetes.io/rate-limit: "100"
+    # nginx.ingress.kubernetes.io/rate-limit-burst: "200"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  # Uncomment for TLS
+  # tls:
+  # - hosts:
+  #   - builds.giellalt.org
+  #   secretName: buildkite-overview-tls
+  rules:
+  - host: builds.giellalt.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: buildkite-overview
+            port:
+              number: 80
