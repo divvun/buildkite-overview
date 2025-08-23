@@ -70,6 +70,11 @@ spec:
             secretKeyRef:
               name: buildkite-overview-secrets
               key: BUILDKITE_WEBHOOK_TOKEN
+        - name: GITHUB_APP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: buildkite-overview-secrets
+              key: GITHUB_APP_TOKEN
         volumeMounts:
         - name: data
           mountPath: /app/data
@@ -98,6 +103,8 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
+      imagePullSecrets:
+      - name: ghcr-secret
       volumes:
       - name: data
         persistentVolumeClaim:
