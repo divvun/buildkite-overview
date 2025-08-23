@@ -244,9 +244,9 @@ build-not-found-in-pipeline = Bygg #{$number} ikkje funne i kommandokø "{$pipel
 # Autentisering for beskytta ressursar
 sign-in-with-github = Logg inn med GitHub
 login-required-logs-title = Autentisering påkravd
-login-required-logs-description = Byggloggar kan innehalde sensitiv informasjon. Vennlegast logg inn med GitHub-kontoen din for å sjå dei.
+login-required-logs-description = Byggjeloggar kan innehalde sensitiv informasjon. Ver greid og logg inn med GitHub-kontoen din for å sjå dei.
 login-required-private-pipeline-title = Privat kommandokø
-login-required-private-pipeline-description = Denne kommandokøa er privat. Vennlegast logg inn for å verifisere tilgangen din.
+login-required-private-pipeline-description = Denne kommandokøen er privat. Ver greid og logg inn for å sjå kommandokøen.
 login-required-admin-title = Administrator-tilgang påkravd
 login-required-admin-description = Denne sida krev administrator-privilegium.
 login-secure-note = Tilkoplinga di er sikker og kryptert.

@@ -36,5 +36,5 @@ dashboard-load-failed = Kunne ikkje lasta oversiktsdata
 dashboard-load-error = Kunne ikkje lasta oversiktsdata. Dette kan koma av: 1) Manglande BUILDKITE_API_KEY-miljøvariabel, 2) Ugyldig API-nøkkel, eller 3) Nettverkstilkoplingsproblem. Kontroller konfigurasjonen din og prøv igjen.
 
 # Ingen feilande pipelines-meldingar
-no-failing-pipelines-title = Ingen feilande kommandokøar! 🎉
-no-failing-pipelines-desc = Alle kommandokøane er for augneblinken friske.
+no-failing-pipelines-title = Ingen kommandokøar med feil! 🎉
+no-failing-pipelines-desc = Alle kommandokøane er for augneblinken feilfrie og utan problem.

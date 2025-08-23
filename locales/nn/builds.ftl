@@ -61,4 +61,4 @@ status-CREATING = Opprettar
 status-CANCELING = Avbryt
 status-SKIPPED = Hoppa over
 status-NOT_RUN = Ikkje køyrt
-status-WAITING_FAILED = Venting mislukka
+status-WAITING_FAILED = Ventinga feila
