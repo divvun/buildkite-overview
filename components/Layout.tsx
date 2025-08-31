@@ -1,6 +1,7 @@
 import type { ComponentChildren } from "preact"
 import LanguageSelector from "~/islands/LanguageSelector.tsx"
 import type { SessionData } from "~/utils/session.ts"
+import { getUserRole, userHasPermission } from "~/utils/session.ts"
 
 interface BreadcrumbItem {
   label: string
@@ -30,6 +31,10 @@ export default function Layout(
 ) {
   // Use provided t function or create a fallback that returns the key
   const translate = t || ((id: string) => id)
+
+  // Get user role for UI decisions
+  const userRole = getUserRole(session ?? null)
+  const canManageAgents = userHasPermission(session ?? null, "canManageAgents")
   const content = (
     <wa-page mobile-breakpoint="768">
       <nav slot="navigation" aria-label={translate("primary-navigation")}>
@@ -48,7 +53,7 @@ export default function Layout(
               <wa-icon slot="prefix" name="layer-group"></wa-icon>
               {translate("nav-pipelines")}
             </a>
-            {session && (
+            {session && canManageAgents && (
               <>
                 <a
                   href="/agents"
@@ -106,6 +111,17 @@ export default function Layout(
                           <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
                         </a>
                       </wa-dropdown-item>
+                      <wa-dropdown-item>
+                        <wa-icon slot="icon" name="shield-halved"></wa-icon>
+                        <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
+                          Role:{" "}
+                          <wa-badge
+                            variant={userRole === "admin" ? "success" : userRole === "member" ? "brand" : "neutral"}
+                          >
+                            {userRole}
+                          </wa-badge>
+                        </span>
+                      </wa-dropdown-item>
                       <wa-divider></wa-divider>
                       <wa-dropdown-item>
                         <wa-icon slot="icon" name="arrow-right-from-bracket"></wa-icon>
@@ -154,7 +170,7 @@ export default function Layout(
           >
             {translate("nav-pipelines")}
           </a>
-          {session && (
+          {session && canManageAgents && (
             <>
               <a
                 href="/agents"
@@ -203,6 +219,15 @@ export default function Layout(
                     {translate("view-github-profile")}
                     <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
                   </a>
+                </wa-dropdown-item>
+                <wa-dropdown-item>
+                  <wa-icon slot="icon" name="shield-halved"></wa-icon>
+                  <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
+                    Role:{" "}
+                    <wa-badge variant={userRole === "admin" ? "success" : userRole === "member" ? "brand" : "neutral"}>
+                      {userRole}
+                    </wa-badge>
+                  </span>
                 </wa-dropdown-item>
                 <wa-divider></wa-divider>
                 <wa-dropdown-item>

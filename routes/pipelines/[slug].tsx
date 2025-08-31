@@ -14,7 +14,7 @@ import {
 } from "~/utils/formatters.ts"
 import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { withRetry } from "~/utils/retry-helper.ts"
-import { type SessionData } from "~/utils/session.ts"
+import { type SessionData, userHasPermission } from "~/utils/session.ts"
 
 interface PipelineDetailProps {
   session?: SessionData | null
@@ -106,6 +106,9 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
   // Get the most recent build for display
   const latestBuild = builds.length > 0 ? builds[0] : null
 
+  // Check if user can create builds
+  const canCreateBuilds = userHasPermission(session ?? null, "canCreateBuilds")
+
   if (error || !pipeline) {
     return (
       <Layout
@@ -148,9 +151,11 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
     >
       <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
         <header class="wa-stack wa-gap-s">
-          <div class="wa-flank">
-            <NewBuildButton pipelineSlug={pipeline.slug} />
-          </div>
+          {canCreateBuilds && (
+            <div class="wa-flank">
+              <NewBuildButton pipelineSlug={pipeline.slug} />
+            </div>
+          )}
 
           <div class="wa-flank">
             <div class="wa-stack wa-gap-xs">

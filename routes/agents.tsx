@@ -4,7 +4,7 @@ import Layout from "~/components/Layout.tsx"
 import AgentsContent from "~/islands/AgentsContent.tsx"
 import { type AppAgent, fetchAllAgents } from "~/utils/buildkite-data.ts"
 import { type AppState } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
+import { requireMember, type SessionData } from "~/utils/session.ts"
 
 interface AgentsProps {
   session: SessionData
@@ -16,8 +16,8 @@ interface AgentsProps {
 export const handler = {
   async GET(ctx: Context<AppState>) {
     try {
-      // Require authentication and divvun organization membership
-      const session = requireDivvunOrgAccess(ctx.req)
+      // Require authentication and member role (can view queues and agents)
+      const session = await requireMember(ctx.req)
       const url = new URL(ctx.req.url)
       const rawOrgFilter = url.searchParams.get("org")
 

@@ -18,6 +18,7 @@
   "exclude": ["**/_fresh/*", "**/static/webawesome/*", "utils/gql/buildkite.ts"],
   "imports": {
     "@std/fs": "jsr:@std/fs@^1.0.19",
+    "@std/toml": "jsr:@std/toml@^1.0.1",
     "badge-maker": "npm:badge-maker@^5.0.2",
     "~/": "./",
     "openid-client": "jsr:@panva/openid-client@^6.6.2",

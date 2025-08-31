@@ -5,10 +5,15 @@ import {
   createMockSession,
   createSessionCookie,
   getOptionalSession,
+  getUserRole,
   refreshSession,
   type SessionData,
   shouldRefreshSession,
+  userHasPermission,
+  userHasRole,
 } from "~/utils/session.ts"
+import { type UserPermissions, UserRole } from "~/utils/rbac.ts"
+import { shouldBypassOrgCheck, shouldRequireAuth } from "~/utils/config.ts"
 
 // Extend the State interface to include session and localization
 export interface AppState extends State {
@@ -20,21 +25,25 @@ export interface AppState extends State {
 }
 
 export const sessionMiddleware = define.middleware(async (ctx) => {
-  // Check if BYPASS_ORG_CHECK is enabled
-  if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
-    console.log("⚠️  Using mock session for development (BYPASS_ORG_CHECK=true)")
+  // Check if bypass is enabled
+  if (shouldBypassOrgCheck()) {
+    console.log("⚠️  Using mock session for development (bypass enabled)")
     ;(ctx.state as AppState).session = createMockSession()
   } else {
     // Get session from request (optional, doesn't throw)
-    let session = getOptionalSession(ctx.req)
+    let session = await getOptionalSession(ctx.req)
 
     // Check if session needs refresh
     if (session && shouldRefreshSession(session)) {
-      session = refreshSession(session)
+      // Note: refreshSession now requires sessionId, but we'll handle this differently
+      // For now, just update the expires_at time locally
+      session = {
+        ...session,
+        expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
+      }
 
       // Set updated cookie for refreshed session
-      const isProduction = Deno.env.get("DENO_ENV") === "production"
-      const sessionCookie = createSessionCookie(session, isProduction)
+      const sessionCookie = await createSessionCookie(session)
 
       // Get response and add the cookie
       const response = await ctx.next()
@@ -102,10 +111,8 @@ export const localizationMiddleware = define.middleware(async (ctx) => {
 })
 
 export const requireGlobalAuth = define.middleware(async (ctx) => {
-  // Check if global auth is required via environment variable
-  const requireAuth = Deno.env.get("REQUIRE_AUTH") === "true"
-
-  if (!requireAuth) {
+  // Check if global auth is required via config
+  if (!shouldRequireAuth()) {
     // Global auth not required, continue normally
     return await ctx.next()
   }
@@ -119,13 +126,10 @@ export const requireGlobalAuth = define.middleware(async (ctx) => {
     return await ctx.next()
   }
 
-  // If BYPASS_ORG_CHECK is enabled, mock session should already be in context
-  if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
-    return await ctx.next()
-  }
+  // If bypass is enabled, mock session should already be in context from sessionMiddleware
 
   // Check if user has a valid session
-  const session = getOptionalSession(ctx.req)
+  const session = await getOptionalSession(ctx.req)
   if (!session) {
     // No valid session, redirect to login
     return new Response(null, {
@@ -187,3 +191,69 @@ export function filterPipelinesForUser<T extends { repo?: string; visibility?: s
 ): T[] {
   return pipelines.filter((pipeline) => canAccessPipeline(pipeline, session))
 }
+
+// RBAC Middleware Functions
+export function createRoleMiddleware(requiredRole: UserRole) {
+  return define.middleware(async (ctx) => {
+    const session = (ctx.state as AppState).session ?? null
+
+    if (!userHasRole(session, requiredRole)) {
+      // Redirect to login with insufficient permissions error
+      const loginUrl = new URL("/auth/login", ctx.req.url)
+      loginUrl.searchParams.set("error", "insufficient_permissions")
+      loginUrl.searchParams.set("required_role", requiredRole)
+
+      return new Response(null, {
+        status: 302,
+        headers: { "Location": loginUrl.toString() },
+      })
+    }
+
+    return await ctx.next()
+  })
+}
+
+export function createPermissionMiddleware(requiredPermission: keyof UserPermissions) {
+  return define.middleware(async (ctx) => {
+    const session = (ctx.state as AppState).session ?? null
+
+    if (!userHasPermission(session, requiredPermission)) {
+      // For API routes, return 403 JSON response
+      if (ctx.req.url.includes("/api/")) {
+        return new Response(
+          JSON.stringify({
+            error: "Insufficient permissions",
+            required: requiredPermission,
+            userRole: getUserRole(session),
+          }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          },
+        )
+      }
+
+      // For page routes, redirect to login
+      const loginUrl = new URL("/auth/login", ctx.req.url)
+      loginUrl.searchParams.set("error", "insufficient_permissions")
+      loginUrl.searchParams.set("required_permission", requiredPermission)
+
+      return new Response(null, {
+        status: 302,
+        headers: { "Location": loginUrl.toString() },
+      })
+    }
+
+    return await ctx.next()
+  })
+}
+
+// Pre-built middleware for common roles
+export const requireMemberRole = createRoleMiddleware(UserRole.MEMBER)
+export const requireAdminRole = createRoleMiddleware(UserRole.ADMIN)
+
+// Pre-built middleware for common permissions
+export const requirePrivatePipelineAccess = createPermissionMiddleware("canViewPrivatePipelines")
+export const requireCreateBuilds = createPermissionMiddleware("canCreateBuilds")
+export const requireManageAgents = createPermissionMiddleware("canManageAgents")
+export const requireAdminFeatures = createPermissionMiddleware("canAccessAdminFeatures")

@@ -2,6 +2,7 @@ import { Context, page } from "fresh"
 import { generateAuthUrl } from "~/utils/auth.ts"
 import { type AppState } from "~/utils/middleware.ts"
 import { getOptionalSession } from "~/utils/session.ts"
+import { getGithubCredentials, isProduction } from "~/utils/config.ts"
 
 export const config = {
   skipInheritedLayouts: true,
@@ -14,14 +15,14 @@ interface LoginProps {
 }
 
 export const handler = {
-  GET(ctx: Context<AppState>) {
+  async GET(ctx: Context<AppState>) {
     const url = new URL(ctx.req.url)
     const error = url.searchParams.get("error")
     const returnUrl = url.searchParams.get("return")
     const reason = url.searchParams.get("reason")
 
     // If already authenticated with a valid session, redirect to return URL or home
-    const session = getOptionalSession(ctx.req)
+    const session = await getOptionalSession(ctx.req)
     if (session && session.user.login !== "dev-user") {
       return new Response(null, {
         status: 302,
@@ -56,8 +57,7 @@ export const handler = {
       headers.set("Location", url)
 
       // Store OAuth state, code verifier, and return URL in cookies (expires in 10 minutes)
-      const isProduction = Deno.env.get("DENO_ENV") === "production"
-      const cookieFlags = `HttpOnly; ${isProduction ? "Secure; " : ""}SameSite=Lax; Max-Age=600; Path=/`
+      const cookieFlags = `HttpOnly; ${isProduction() ? "Secure; " : ""}SameSite=Lax; Max-Age=600; Path=/`
 
       headers.append("Set-Cookie", `oauth_state=${state}; ${cookieFlags}`)
       headers.append("Set-Cookie", `oauth_code_verifier=${codeVerifier}; ${cookieFlags}`)
@@ -158,9 +158,7 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
                     <p class="wa-caption-xs wa-color-text-quiet wa-text-center">
                       You can also{" "}
                       <a
-                        href={`https://github.com/settings/connections/applications/${
-                          Deno.env.get("GITHUB_CLIENT_ID")
-                        }`}
+                        href={`https://github.com/settings/connections/applications/${getGithubCredentials().clientId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         style="color: var(--wa-color-brand-fill-loud)"

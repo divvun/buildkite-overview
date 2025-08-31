@@ -6,7 +6,7 @@ metadata:
     app: buildkite-overview
     component: web
 spec:
-  replicas: 1  # SQLite doesn't support concurrent writes - keep at 1
+  replicas: 1 # SQLite doesn't support concurrent writes - keep at 1
   selector:
     matchLabels:
       app: buildkite-overview
@@ -18,87 +18,87 @@ spec:
         component: web
     spec:
       containers:
-      - name: app
-        image: ghcr.io/divvun/buildkite-overview:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8000
-          name: http
-        env:
-        - name: DENO_ENV
-          valueFrom:
-            configMapKeyRef:
-              name: buildkite-overview-config
-              key: DENO_ENV
-        - name: BASE_URL
-          valueFrom:
-            configMapKeyRef:
-              name: buildkite-overview-config
-              key: BASE_URL
-        - name: DATA_DIR
-          valueFrom:
-            configMapKeyRef:
-              name: buildkite-overview-config
-              key: DATA_DIR
-        - name: GITHUB_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: buildkite-overview-secrets
-              key: GITHUB_CLIENT_ID
-        - name: GITHUB_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: buildkite-overview-secrets
-              key: GITHUB_CLIENT_SECRET
-        - name: BUILDKITE_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: buildkite-overview-secrets
-              key: BUILDKITE_API_KEY
-        - name: BUILDKITE_WEBHOOK_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: buildkite-overview-secrets
-              key: BUILDKITE_WEBHOOK_TOKEN
-        - name: GITHUB_APP_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: buildkite-overview-secrets
-              key: GITHUB_APP_TOKEN
-        volumeMounts:
-        - name: data
-          mountPath: /app/data
-        - name: logs
-          mountPath: /app/logs
-        resources:
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
+        - name: app
+          image: ghcr.io/divvun/buildkite-overview:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: DENO_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: buildkite-overview-config
+                  key: DENO_ENV
+            - name: BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: buildkite-overview-config
+                  key: BASE_URL
+            - name: DATA_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: buildkite-overview-config
+                  key: DATA_DIR
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: buildkite-overview-secrets
+                  key: GITHUB_CLIENT_ID
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: buildkite-overview-secrets
+                  key: GITHUB_CLIENT_SECRET
+            - name: BUILDKITE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: buildkite-overview-secrets
+                  key: BUILDKITE_API_KEY
+            - name: BUILDKITE_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: buildkite-overview-secrets
+                  key: BUILDKITE_WEBHOOK_TOKEN
+            - name: GITHUB_APP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: buildkite-overview-secrets
+                  key: GITHUB_APP_TOKEN
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: logs
+              mountPath: /app/logs
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
       imagePullSecrets:
-      - name: ghcr-secret
+        - name: ghcr-secret
       volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: buildkite-overview-data
-      - name: logs
-        emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: buildkite-overview-data
+        - name: logs
+          emptyDir: {}
       restartPolicy: Always

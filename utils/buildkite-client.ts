@@ -3,8 +3,10 @@ import { createClient, fetchExchange } from "@urql/preact"
 import { gql } from "graphql-tag"
 import { $, mutation, query } from "./gql/buildkite.ts"
 
+import { getBuildkiteApiKey } from "~/utils/config.ts"
+
 function bkKey() {
-  return typeof Deno !== "undefined" ? Deno.env.get("BUILDKITE_API_KEY") : ""
+  return typeof Deno !== "undefined" ? getBuildkiteApiKey() : ""
 }
 
 // Only access Deno on the server side

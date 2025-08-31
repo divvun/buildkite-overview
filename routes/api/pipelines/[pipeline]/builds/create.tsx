@@ -3,14 +3,16 @@ import { gql } from "graphql-tag"
 import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { CREATE_BUILD_MUTATION, getBuildkiteClient } from "~/utils/buildkite-client.ts"
 import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { hasOrgAccess } from "~/utils/session.ts"
+import { userHasPermission } from "~/utils/session.ts"
 
 export const handler: RouteHandler<unknown, AppState> = {
   async POST(ctx: Context<AppState>) {
     const pipelineSlug = ctx.params.pipeline
 
-    // Require real GitHub authentication for build creation (not mock dev user)
-    if (!ctx.state.session || ctx.state.session.user.login === "dev-user") {
+    // Check if user has permission to create builds
+    const session = ctx.state.session
+
+    if (!session) {
       return new Response(
         JSON.stringify({
           error: "Authentication required",
@@ -27,13 +29,12 @@ export const handler: RouteHandler<unknown, AppState> = {
       )
     }
 
-    // Now TypeScript knows session is not null due to the guard clause above
-    const session = ctx.state.session
-    if (!hasOrgAccess(session, "divvun") && !hasOrgAccess(session, "giellalt")) {
+    // Check if user has permission to create builds (requires MEMBER role)
+    if (!userHasPermission(session, "canCreateBuilds")) {
       return new Response(
         JSON.stringify({
           error: "Insufficient permissions",
-          message: "You must be a member of the divvun or giellalt organization to create builds",
+          message: "You need member-level access to create builds",
         }),
         {
           status: 403,

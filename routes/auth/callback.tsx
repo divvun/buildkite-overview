@@ -1,6 +1,16 @@
 import { Context } from "fresh"
 import { State } from "~/utils.ts"
-import { exchangeCodeForTokens, getUserInfo, getUserOrganizations, hasRequiredOrgAccess } from "~/utils/auth.ts"
+import {
+  exchangeCodeForTokens,
+  getUserInfo,
+  getUserOrganizations,
+  getUserTeamMemberships,
+  hasRequiredOrgAccess,
+} from "~/utils/auth.ts"
+import { determineUserRole } from "~/utils/rbac.ts"
+import { createSessionCookie } from "~/utils/session.ts"
+import { storeAccessToken } from "~/utils/token-store.ts"
+import { getConfig } from "~/utils/config.ts"
 
 export const handler = {
   async GET(ctx: Context<State>) {
@@ -80,17 +90,21 @@ export const handler = {
       const user = await getUserInfo(tokenSet.access_token)
       const userOrgs = await getUserOrganizations(tokenSet.access_token)
 
-      // Check if user has access to required organizations
+      // Get team memberships for role determination
+      const teamMemberships = await getUserTeamMemberships(tokenSet.access_token, user, userOrgs)
+
+      // Determine user role based on org and team membership
+      const userRole = determineUserRole(userOrgs, teamMemberships)
+
+      // Check if user has access to required organizations (guests are allowed but with limited access)
       if (!hasRequiredOrgAccess(userOrgs)) {
-        return new Response(null, {
-          status: 302,
-          headers: {
-            "Location": "/auth/login?error=insufficient_access",
-          },
-        })
+        console.log(`User ${user.login} does not have required org access, assigning GUEST role`)
       }
 
-      // Create session data
+      // Store access token securely (not in session/cookies)
+      await storeAccessToken(user.id, tokenSet.access_token)
+
+      // Create session data WITHOUT access token
       const sessionData = {
         user: {
           id: user.id,
@@ -100,13 +114,13 @@ export const handler = {
           avatar_url: user.avatar_url,
         },
         organizations: userOrgs,
-        access_token: tokenSet.access_token,
+        teamMemberships,
+        role: userRole,
         expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
       }
 
-      // In a real app, you'd store this in a secure session store
-      // For now, we'll use a signed cookie
-      const sessionCookie = btoa(JSON.stringify(sessionData))
+      // Create secure session cookie (stores only session ID)
+      const sessionCookie = await createSessionCookie(sessionData)
 
       const headers = new Headers()
 
@@ -114,11 +128,11 @@ export const handler = {
       const redirectUrl = returnUrl ? decodeURIComponent(returnUrl) : "/"
       headers.set("Location", redirectUrl)
 
-      // Set session cookie (expires in 7 days)
-      const isProduction = Deno.env.get("DENO_ENV") === "production"
-      const cookieFlags = `HttpOnly; ${isProduction ? "Secure; " : ""}SameSite=Lax`
+      // Set session cookie and clear OAuth state cookies
+      const config = getConfig()
+      const cookieFlags = `HttpOnly; ${config.app.isProduction ? "Secure; " : ""}SameSite=Lax`
 
-      headers.append("Set-Cookie", `session=${sessionCookie}; ${cookieFlags}; Max-Age=${7 * 24 * 60 * 60}; Path=/`)
+      headers.append("Set-Cookie", sessionCookie)
       headers.append("Set-Cookie", `oauth_state=; ${cookieFlags}; Max-Age=0; Path=/`)
       headers.append("Set-Cookie", `oauth_code_verifier=; ${cookieFlags}; Max-Age=0; Path=/`)
       headers.append("Set-Cookie", `return_url=; ${cookieFlags}; Max-Age=0; Path=/`)

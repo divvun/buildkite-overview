@@ -4,6 +4,7 @@ import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
 import FullscreenLogs from "~/islands/FullscreenLogs.tsx"
 import { processLogsIntoGroups } from "~/utils/log-processing.tsx"
 import LoginRequired from "~/components/LoginRequired.tsx"
+import { userHasPermission } from "~/utils/session.ts"
 
 interface LogData {
   url?: string
@@ -33,11 +34,8 @@ export const handler = {
 
     console.log("Handler params:", { pipelineSlug, buildNumber, jobId })
 
-    // Require real GitHub authentication for all log access (allow dev-user in development mode)
-    const isDevMode = Deno.env.get("BYPASS_ORG_CHECK") === "true"
-    const hasRealAuth = ctx.state.session && (ctx.state.session.user.login !== "dev-user" || isDevMode)
-
-    if (!hasRealAuth) {
+    // Check if user has permission to view pipeline logs
+    if (!ctx.state.session || !userHasPermission(ctx.state.session, "canViewPrivatePipelines")) {
       // For fullscreen, show the login required component
       return page(
         {

@@ -2,7 +2,7 @@ import { Database } from "@db/sqlite"
 import { expandGlobSync } from "@std/fs"
 
 // Cache schema version - increment this to force a fresh database
-const CACHE_SCHEMA_VERSION = 1
+const CACHE_SCHEMA_VERSION = 2
 
 // Type definitions for database query results
 interface CountResult {

@@ -1,45 +1,24 @@
 import { App, staticFiles } from "fresh"
-import "jsr:@std/dotenv/load"
 import { define } from "./utils.ts"
 import { getBackgroundPoller } from "./utils/background-poller.ts"
 import { getCacheManager } from "./utils/cache/cache-manager.ts"
 import { type AppState, localizationMiddleware, requireGlobalAuth, sessionMiddleware } from "./utils/middleware.ts"
+import { getConfig, shouldBypassOrgCheck, shouldRequireAuth } from "./utils/config.ts"
+import { startSessionCleanup } from "./utils/session-store.ts"
+import { startTokenCleanup } from "./utils/token-store.ts"
+import { securityHeaders } from "./utils/security-headers.ts"
+import { csrfContext, csrfProtection } from "./utils/csrf.ts"
 
-// Validate required environment variables
-const requiredEnvVars = [
-  "GITHUB_CLIENT_ID",
-  "GITHUB_CLIENT_SECRET",
-  "BASE_URL",
-  "BUILDKITE_API_KEY",
-  "BUILDKITE_WEBHOOK_TOKEN",
-  "GITHUB_APP_TOKEN",
-] as const
+// Initialize configuration (validates environment variables)
+const config = getConfig()
+console.log("✅ Configuration initialized and validated")
 
-// Optional environment variables for development
-const _optionalEnvVars = [
-  "BYPASS_ORG_CHECK", // Set to "true" to bypass GitHub organization requirement
-  "REQUIRE_AUTH", // Set to "true" to require authentication for all routes
-] as const
-
-const missingVars = requiredEnvVars.filter((varName) => !Deno.env.get(varName))
-
-if (missingVars.length > 0) {
-  console.error("❌ Missing required environment variables:")
-  missingVars.forEach((varName) => {
-    console.error(`   ${varName}`)
-  })
-  console.error("\nPlease create a .env file with the required variables.")
-  Deno.exit(1)
-}
-
-console.log("✅ All required environment variables are present")
-
-// Log optional environment variable status
-if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
+// Log configuration status
+if (shouldBypassOrgCheck()) {
   console.log("⚠️  Development mode: GitHub organization check is bypassed")
 }
 
-if (Deno.env.get("REQUIRE_AUTH") === "true") {
+if (shouldRequireAuth()) {
   console.log("🔒 Global authentication is enabled - all routes require login")
 }
 
@@ -50,18 +29,28 @@ getCacheManager() // Initialize the singleton
 // Cache cleanup is handled internally by the cache manager
 console.log("✅ Cache system initialized")
 
+// Start security-related cleanup services
+console.log("🛡️  Starting security services...")
+startSessionCleanup()
+startTokenCleanup()
+console.log("✅ Security services started")
+
 // Initialize and start background polling service
 const backgroundPoller = getBackgroundPoller()
 backgroundPoller.start()
 
 export const app = new App<AppState>()
 
+// Apply middleware in order - security headers first
 app.use(staticFiles())
+app.use(securityHeaders)
 app.use(sessionMiddleware)
+app.use(csrfContext) // Add CSRF token to context
+app.use(csrfProtection) // Protect state-changing requests
 app.use(localizationMiddleware)
 
 // Apply global auth middleware only if REQUIRE_AUTH is enabled
-if (Deno.env.get("REQUIRE_AUTH") === "true") {
+if (shouldRequireAuth()) {
   app.use(requireGlobalAuth)
 }
 

@@ -1,0 +1,50 @@
+# Example TOML Configuration for Buildkite Overview
+# Set this entire file content as the CONFIG_TOML environment variable
+
+[github]
+# GitHub OAuth Application credentials
+client_id = "your_github_oauth_client_id"
+client_secret = "your_github_oauth_client_secret"
+# GitHub App token with repository access
+app_token = "your_github_app_token"
+
+[buildkite]
+# Buildkite API key for GraphQL access
+api_key = "your_buildkite_api_key"
+# Token for authenticating incoming Buildkite webhooks
+webhook_token = "your_buildkite_webhook_token"
+
+[app]
+# Base URL of your application
+base_url = "https://buildkite.example.com"
+# Session secret for encrypting session cookies (optional - auto-generated if not provided)
+session_secret = "your_32_plus_character_session_secret"
+# Production mode (affects cookie security)
+is_production = true
+# Require authentication for all routes
+require_auth = true
+# Bypass GitHub organization checks (for development only)
+bypass_org_check = false
+
+# Kubernetes Secret Example:
+#
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: buildkite-config
+# data:
+#   CONFIG_TOML: |
+#     [github]
+#     client_id = "abc123"
+#     client_secret = "secret456"
+#     app_token = "token789"
+#     
+#     [buildkite]
+#     api_key = "bk_123"
+#     webhook_token = "webhook_secret"
+#     
+#     [app]
+#     base_url = "https://buildkite.example.com"
+#     is_production = true
+#     require_auth = true
+#     bypass_org_check = false

@@ -1,6 +1,7 @@
 import { Context, RouteHandler } from "fresh"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 import { type AppState } from "~/utils/middleware.ts"
+import { getBuildkiteWebhookToken } from "~/utils/config.ts"
 
 interface BuildkiteWebhookEvent {
   event: string
@@ -57,8 +58,8 @@ interface BuildkiteWebhookEvent {
 export const handler: RouteHandler<unknown, AppState> = {
   async POST(ctx: Context<AppState>) {
     try {
-      // Get the webhook token from environment
-      const expectedToken = Deno.env.get("BUILDKITE_WEBHOOK_TOKEN")
+      // Get the webhook token from config
+      const expectedToken = getBuildkiteWebhookToken()
       if (!expectedToken) {
         console.warn("⚠️ BUILDKITE_WEBHOOK_TOKEN not configured, webhook authentication disabled")
       }

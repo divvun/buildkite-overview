@@ -2,8 +2,8 @@ import { Context, RouteHandler } from "fresh"
 import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
-
-const BUILDKITE_API_KEY = Deno.env.get("BUILDKITE_API_KEY")
+import { userHasPermission } from "~/utils/session.ts"
+import { getBuildkiteApiKey } from "~/utils/config.ts"
 const BUILDKITE_REST_API = "https://api.buildkite.com/v2"
 
 export const handler: RouteHandler<unknown, AppState> = {
@@ -12,11 +12,8 @@ export const handler: RouteHandler<unknown, AppState> = {
     const buildNumber = ctx.params.build
     const pipelineSlug = ctx.params.pipeline
 
-    // Require real GitHub authentication for all log access (allow dev-user in development mode)
-    const isDevMode = Deno.env.get("BYPASS_ORG_CHECK") === "true"
-    const hasRealAuth = ctx.state.session && (ctx.state.session.user.login !== "dev-user" || isDevMode)
-
-    if (!hasRealAuth) {
+    // Check if user has permission to view pipeline logs
+    if (!ctx.state.session || !userHasPermission(ctx.state.session, "canViewPrivatePipelines")) {
       return new Response(
         JSON.stringify({
           error: "Authentication required",
@@ -130,7 +127,8 @@ export const handler: RouteHandler<unknown, AppState> = {
       isJobFinished = ["passed", "failed", "canceled"].includes(cachedJob.state?.toLowerCase())
     }
 
-    if (!BUILDKITE_API_KEY) {
+    const buildkiteApiKey = getBuildkiteApiKey()
+    if (!buildkiteApiKey) {
       return new Response(
         JSON.stringify({
           error: "Buildkite API key not configured",
@@ -151,7 +149,7 @@ export const handler: RouteHandler<unknown, AppState> = {
 
       const response = await fetch(logUrl, {
         headers: {
-          "Authorization": `Bearer ${BUILDKITE_API_KEY}`,
+          "Authorization": `Bearer ${buildkiteApiKey}`,
           "Accept": "text/plain",
         },
       })

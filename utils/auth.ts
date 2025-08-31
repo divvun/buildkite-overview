@@ -8,11 +8,18 @@ import {
   randomState,
   type ServerMetadata,
 } from "openid-client"
+import { BUILD_ADMIN_TEAMS, REQUIRED_ORGS } from "~/utils/rbac.ts"
 
-// Environment variables for GitHub OAuth
-const GITHUB_CLIENT_ID = Deno.env.get("GITHUB_CLIENT_ID") || ""
-const GITHUB_CLIENT_SECRET = Deno.env.get("GITHUB_CLIENT_SECRET") || ""
-const BASE_URL = Deno.env.get("BASE_URL") || "http://localhost:8000"
+import { getBaseUrl, getGithubCredentials, shouldBypassOrgCheck } from "~/utils/config.ts"
+
+// Get OAuth configuration from secure config module
+function getOAuthCredentials() {
+  return getGithubCredentials()
+}
+
+function getAppBaseUrl(): string {
+  return getBaseUrl()
+}
 
 // GitHub OAuth server metadata
 const GITHUB_SERVER_METADATA: ServerMetadata = {
@@ -22,25 +29,32 @@ const GITHUB_SERVER_METADATA: ServerMetadata = {
   userinfo_endpoint: "https://api.github.com/user",
 }
 
-// GitHub OAuth client metadata
-const GITHUB_CLIENT_METADATA: ClientMetadata = {
-  client_id: GITHUB_CLIENT_ID,
-  client_secret: GITHUB_CLIENT_SECRET,
-  redirect_uris: [`${BASE_URL}/auth/callback`],
-  response_types: ["code"],
+// GitHub OAuth client metadata - created dynamically
+function getGitHubClientMetadata(): ClientMetadata {
+  const credentials = getOAuthCredentials()
+  const baseUrl = getAppBaseUrl()
+
+  return {
+    client_id: credentials.clientId,
+    client_secret: credentials.clientSecret,
+    redirect_uris: [`${baseUrl}/auth/callback`],
+    response_types: ["code"],
+  }
 }
 
 let config: Configuration | null = null
 
 export function getOAuthConfig(): Configuration {
   if (!config) {
-    if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    const credentials = getOAuthCredentials()
+
+    if (!credentials.clientId || !credentials.clientSecret) {
       throw new Error(
-        "GitHub OAuth credentials not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables.",
+        "GitHub OAuth credentials not configured. Check your environment variables.",
       )
     }
 
-    config = new Configuration(GITHUB_SERVER_METADATA, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET)
+    config = new Configuration(GITHUB_SERVER_METADATA, credentials.clientId, credentials.clientSecret)
   }
   return config
 }
@@ -49,10 +63,12 @@ export async function generateAuthUrl(): Promise<{ url: string; state: string; c
   const codeVerifier = randomPKCECodeVerifier()
   const codeChallenge = await calculatePKCECodeChallenge(codeVerifier)
   const state = randomState()
+  const credentials = getOAuthCredentials()
+  const baseUrl = getAppBaseUrl()
 
   const authUrl = new URL("https://github.com/login/oauth/authorize")
-  authUrl.searchParams.set("client_id", GITHUB_CLIENT_ID)
-  authUrl.searchParams.set("redirect_uri", `${BASE_URL}/auth/callback`)
+  authUrl.searchParams.set("client_id", credentials.clientId)
+  authUrl.searchParams.set("redirect_uri", `${baseUrl}/auth/callback`)
   authUrl.searchParams.set("scope", "read:user read:org repo")
   authUrl.searchParams.set("state", state)
   authUrl.searchParams.set("code_challenge", codeChallenge)
@@ -77,9 +93,10 @@ export interface GitHubUser {
 
 export async function exchangeCodeForTokens(code: string, codeVerifier: string, state: string, storedState: string) {
   const config = getOAuthConfig()
+  const baseUrl = getAppBaseUrl()
 
   // Create a mock callback URL with the authorization code
-  const callbackUrl = new URL(`${BASE_URL}/auth/callback`)
+  const callbackUrl = new URL(`${baseUrl}/auth/callback`)
   callbackUrl.searchParams.set("code", code)
   callbackUrl.searchParams.set("state", state)
 
@@ -126,21 +143,72 @@ export async function getUserOrganizations(accessToken: string): Promise<string[
   return orgs.map((org: any) => org.login)
 }
 
-export function hasRequiredOrgAccess(userOrgs: string[]): boolean {
-  const requiredOrgs = ["divvun", "giellalt"]
+export async function getUserTeamMemberships(
+  accessToken: string,
+  user: GitHubUser,
+  organizations: string[],
+): Promise<string[]> {
+  const teamMemberships: string[] = []
+  const relevantOrgs = organizations.filter((org) => REQUIRED_ORGS.includes(org as any))
 
-  // Allow bypass for development if BYPASS_ORG_CHECK is set
-  if (Deno.env.get("BYPASS_ORG_CHECK") === "true") {
-    console.log("⚠️  Organization check bypassed for development")
-    return true
+  for (const org of relevantOrgs) {
+    try {
+      // First, get user's teams in the organization
+      const response = await fetch(`https://api.github.com/orgs/${org}/teams`, {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Accept": "application/vnd.github.v3+json",
+          "User-Agent": "Divvun-Buildkite-Overview",
+        },
+      })
+
+      if (!response.ok) {
+        console.warn(`Failed to fetch teams for org ${org}: ${response.status}`)
+        continue
+      }
+
+      const teams = await response.json()
+
+      for (const team of teams) {
+        try {
+          // Check if user is a member of this team
+          const membershipResponse = await fetch(
+            `https://api.github.com/teams/${team.id}/memberships/${user.login}`,
+            {
+              headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Divvun-Buildkite-Overview",
+              },
+            },
+          )
+
+          if (membershipResponse.status === 200) {
+            const membership = await membershipResponse.json()
+            if (membership.state === "active") {
+              teamMemberships.push(`${org}/${team.name}`)
+            }
+          }
+        } catch (error) {
+          console.warn(`Error checking membership for team ${team.name}:`, error)
+        }
+      }
+    } catch (error) {
+      console.warn(`Error fetching teams for org ${org}:`, error)
+    }
   }
 
-  const hasAccess = requiredOrgs.some((org) => userOrgs.includes(org))
+  console.log(`Team memberships found: [${teamMemberships.join(", ")}]`)
+  return teamMemberships
+}
+
+export function hasRequiredOrgAccess(userOrgs: string[]): boolean {
+  const hasAccess = REQUIRED_ORGS.some((org) => userOrgs.includes(org))
 
   // Log for debugging
   console.log(
     `Organization check: User orgs: [${userOrgs.join(", ")}], Required: [${
-      requiredOrgs.join(", ")
+      REQUIRED_ORGS.join(", ")
     }], Access: ${hasAccess}`,
   )
 

@@ -16,7 +16,7 @@ export const handler = {
   async GET(ctx: Context<AppState>) {
     try {
       // Require authentication and divvun organization membership
-      const session = requireDivvunOrgAccess(ctx.req)
+      const session = await requireDivvunOrgAccess(ctx.req)
 
       try {
         console.log("Fetching queue status data...")
