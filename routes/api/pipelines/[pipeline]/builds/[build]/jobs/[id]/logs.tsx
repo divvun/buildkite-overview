@@ -12,8 +12,8 @@ export const handler: RouteHandler<unknown, AppState> = {
     const buildNumber = ctx.params.build
     const pipelineSlug = ctx.params.pipeline
 
-    // Check if user has permission to view pipeline logs
-    if (!ctx.state.session || !userHasPermission(ctx.state.session, "canViewPrivatePipelines")) {
+    // Check if user is authenticated (job logs require GitHub login)
+    if (!ctx.state.session) {
       return new Response(
         JSON.stringify({
           error: "Authentication required",

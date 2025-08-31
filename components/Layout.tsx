@@ -116,7 +116,13 @@ export default function Layout(
                         <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
                           Role:{" "}
                           <wa-badge
-                            variant={userRole === "admin" ? "success" : userRole === "member" ? "brand" : "neutral"}
+                            variant={userRole === "admin"
+                              ? "success"
+                              : userRole === "member"
+                              ? "brand"
+                              : userRole === "authenticated"
+                              ? "warning"
+                              : "neutral"}
                           >
                             {userRole}
                           </wa-badge>
@@ -224,7 +230,15 @@ export default function Layout(
                   <wa-icon slot="icon" name="shield-halved"></wa-icon>
                   <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
                     Role:{" "}
-                    <wa-badge variant={userRole === "admin" ? "success" : userRole === "member" ? "brand" : "neutral"}>
+                    <wa-badge
+                      variant={userRole === "admin"
+                        ? "success"
+                        : userRole === "member"
+                        ? "brand"
+                        : userRole === "authenticated"
+                        ? "warning"
+                        : "neutral"}
+                    >
                       {userRole}
                     </wa-badge>
                   </span>

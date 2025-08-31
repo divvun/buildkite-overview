@@ -1,7 +1,8 @@
 export enum UserRole {
-  GUEST = "guest",
-  MEMBER = "member",
-  ADMIN = "admin",
+  UNAUTHENTICATED = "unauthenticated", // No GitHub login
+  AUTHENTICATED = "authenticated", // GitHub login, not in orgs
+  MEMBER = "member", // GitHub login + in orgs
+  ADMIN = "admin", // Member + Build Admins team
 }
 
 // Configuration constants
@@ -19,10 +20,20 @@ export interface UserPermissions {
 
 export function getRolePermissions(role: UserRole): UserPermissions {
   switch (role) {
-    case UserRole.GUEST:
+    case UserRole.UNAUTHENTICATED:
       return {
         canViewPublicPipelines: true,
         canViewPrivatePipelines: false,
+        canCreateBuilds: false,
+        canManageAgents: false,
+        canViewQueues: false,
+        canAccessAdminFeatures: false,
+      }
+
+    case UserRole.AUTHENTICATED:
+      return {
+        canViewPublicPipelines: true,
+        canViewPrivatePipelines: false, // Can't see private pipeline list, but can see public pipeline logs
         canCreateBuilds: false,
         canManageAgents: false,
         canViewQueues: false,
@@ -50,7 +61,7 @@ export function getRolePermissions(role: UserRole): UserPermissions {
       }
 
     default:
-      return getRolePermissions(UserRole.GUEST)
+      return getRolePermissions(UserRole.UNAUTHENTICATED)
   }
 }
 
@@ -61,9 +72,10 @@ export function hasPermission(role: UserRole, permission: keyof UserPermissions)
 
 export function isRoleAtLeast(userRole: UserRole, requiredRole: UserRole): boolean {
   const roleHierarchy = {
-    [UserRole.GUEST]: 0,
-    [UserRole.MEMBER]: 1,
-    [UserRole.ADMIN]: 2,
+    [UserRole.UNAUTHENTICATED]: 0,
+    [UserRole.AUTHENTICATED]: 1,
+    [UserRole.MEMBER]: 2,
+    [UserRole.ADMIN]: 3,
   }
 
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole]
@@ -74,7 +86,8 @@ export function determineUserRole(organizations: string[], teamMemberships: stri
   const isMember = REQUIRED_ORGS.some((org) => organizations.includes(org))
 
   if (!isMember) {
-    return UserRole.GUEST
+    // User is authenticated (has GitHub login) but not in required orgs
+    return UserRole.AUTHENTICATED
   }
 
   // Check if user is in any of the Build Admin teams

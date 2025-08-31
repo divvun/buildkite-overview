@@ -1,7 +1,7 @@
 import { Context } from "fresh"
 import { type AppAgent, fetchAllAgents } from "~/utils/buildkite-data.ts"
 import { type AppState } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess } from "~/utils/session.ts"
+import { userHasPermission } from "~/utils/session.ts"
 
 interface AgentsResponse {
   agents: AppAgent[]
@@ -11,10 +11,20 @@ interface AgentsResponse {
 
 export const handler = {
   async GET(ctx: Context<AppState>): Promise<Response> {
-    try {
-      // Require authentication and divvun organization membership
-      requireDivvunOrgAccess(ctx.req)
+    // Check if user has permission to manage agents
+    if (!userHasPermission(ctx.state.session ?? null, "canManageAgents")) {
+      const errorResponse: AgentsResponse = {
+        agents: [],
+        error: "Insufficient permissions to view agents",
+      }
 
+      return new Response(JSON.stringify(errorResponse), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+
+    try {
       const url = new URL(ctx.req.url)
       const rawOrgFilter = url.searchParams.get("org")
 
@@ -58,20 +68,15 @@ export const handler = {
         })
       }
     } catch (error) {
-      console.error("API Error with authentication:", error)
-
-      // Handle authentication errors (thrown as Response objects)
-      if (error instanceof Response) {
-        return error // Return the redirect response
-      }
+      console.error("API Error fetching agents:", error)
 
       const errorResponse: AgentsResponse = {
         agents: [],
-        error: "Authentication required",
+        error: "Failed to fetch agents data",
       }
 
       return new Response(JSON.stringify(errorResponse), {
-        status: 401,
+        status: 500,
         headers: { "Content-Type": "application/json" },
       })
     }

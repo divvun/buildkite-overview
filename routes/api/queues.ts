@@ -1,7 +1,7 @@
 import { Context } from "fresh"
 import { fetchQueueStatus, type QueueStatus } from "~/utils/buildkite-data.ts"
 import { type AppState } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess } from "~/utils/session.ts"
+import { userHasPermission } from "~/utils/session.ts"
 
 interface QueuesResponse {
   queueStatus: QueueStatus[]
@@ -10,10 +10,20 @@ interface QueuesResponse {
 
 export const handler = {
   async GET(ctx: Context<AppState>): Promise<Response> {
-    try {
-      // Require authentication and divvun organization membership
-      requireDivvunOrgAccess(ctx.req)
+    // Check if user has permission to manage agents (includes queue management)
+    if (!userHasPermission(ctx.state.session ?? null, "canManageAgents")) {
+      const errorResponse: QueuesResponse = {
+        queueStatus: [],
+        error: "Insufficient permissions to view queues",
+      }
 
+      return new Response(JSON.stringify(errorResponse), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+
+    try {
       try {
         console.log("API: Fetching queue status data...")
 
@@ -44,20 +54,15 @@ export const handler = {
         })
       }
     } catch (error) {
-      console.error("API Error with authentication:", error)
-
-      // Handle authentication errors (thrown as Response objects)
-      if (error instanceof Response) {
-        return error // Return the redirect response
-      }
+      console.error("API Error fetching queue status:", error)
 
       const errorResponse: QueuesResponse = {
         queueStatus: [],
-        error: "Authentication required",
+        error: "Failed to fetch queue status data",
       }
 
       return new Response(JSON.stringify(errorResponse), {
-        status: 401,
+        status: 500,
         headers: { "Content-Type": "application/json" },
       })
     }

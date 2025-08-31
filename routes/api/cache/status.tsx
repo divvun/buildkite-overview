@@ -1,15 +1,23 @@
 import { Context, RouteHandler } from "fresh"
 import { type AppState } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess } from "~/utils/session.ts"
+import { userHasPermission } from "~/utils/session.ts"
 import { getCacheManager } from "~/utils/cache/cache-manager.ts"
 import process from "node:process"
 
 export const handler: RouteHandler<unknown, AppState> = {
   GET(ctx: Context<AppState>) {
-    try {
-      // Require divvun org access for cache status
-      requireDivvunOrgAccess(ctx.req)
+    // Check if user has admin permissions for cache access
+    if (!userHasPermission(ctx.state.session ?? null, "canAccessAdminFeatures")) {
+      return new Response(
+        JSON.stringify({ error: "Insufficient permissions to access cache status" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
 
+    try {
       const cacheManager = getCacheManager()
       const stats = cacheManager.getStats()
 
@@ -26,11 +34,6 @@ export const handler: RouteHandler<unknown, AppState> = {
         },
       )
     } catch (error) {
-      if (error instanceof Response) {
-        // This is a redirect response from requireDivvunOrgAccess
-        return error
-      }
-
       console.error("Error fetching cache status:", error)
       return new Response(
         JSON.stringify({ error: "Failed to fetch cache status" }),
@@ -43,10 +46,18 @@ export const handler: RouteHandler<unknown, AppState> = {
   },
 
   async POST(ctx: Context<AppState>) {
-    try {
-      // Require divvun org access for cache refresh
-      requireDivvunOrgAccess(ctx.req)
+    // Check if user has admin permissions for cache management
+    if (!userHasPermission(ctx.state.session ?? null, "canAccessAdminFeatures")) {
+      return new Response(
+        JSON.stringify({ error: "Insufficient permissions to manage cache" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    }
 
+    try {
       const url = new URL(ctx.req.url)
       const action = url.searchParams.get("action")
 
@@ -88,11 +99,6 @@ export const handler: RouteHandler<unknown, AppState> = {
         )
       }
     } catch (error) {
-      if (error instanceof Response) {
-        // This is a redirect response from requireDivvunOrgAccess
-        return error
-      }
-
       console.error("Error performing cache action:", error)
       return new Response(
         JSON.stringify({ error: "Failed to perform cache action" }),

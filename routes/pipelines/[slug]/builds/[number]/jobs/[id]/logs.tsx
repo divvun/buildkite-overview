@@ -34,8 +34,8 @@ export const handler = {
 
     console.log("Handler params:", { pipelineSlug, buildNumber, jobId })
 
-    // Check if user has permission to view pipeline logs
-    if (!ctx.state.session || !userHasPermission(ctx.state.session, "canViewPrivatePipelines")) {
+    // Check if user is authenticated (job logs require GitHub login)
+    if (!ctx.state.session) {
       // For fullscreen, show the login required component
       return page(
         {

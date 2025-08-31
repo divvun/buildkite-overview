@@ -4,7 +4,7 @@ import Layout from "~/components/Layout.tsx"
 import QueuesContent from "~/islands/QueuesContent.tsx"
 import { fetchQueueStatus, type QueueStatus } from "~/utils/buildkite-data.ts"
 import { type AppState } from "~/utils/middleware.ts"
-import { requireDivvunOrgAccess, type SessionData } from "~/utils/session.ts"
+import { requireMember, type SessionData } from "~/utils/session.ts"
 
 interface QueuesProps {
   session: SessionData
@@ -15,8 +15,8 @@ interface QueuesProps {
 export const handler = {
   async GET(ctx: Context<AppState>) {
     try {
-      // Require authentication and divvun organization membership
-      const session = await requireDivvunOrgAccess(ctx.req)
+      // Require authentication and member role (includes access to agents/queues)
+      const session = await requireMember(ctx.req)
 
       try {
         console.log("Fetching queue status data...")

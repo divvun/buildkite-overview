@@ -130,7 +130,7 @@ export async function createSessionCookie(session: SessionData): Promise<string>
 
 // Role-based helper functions
 export function getUserRole(session: SessionData | null): UserRole {
-  return session?.role ?? UserRole.GUEST
+  return session?.role ?? UserRole.UNAUTHENTICATED
 }
 
 export function getUserPermissions(session: SessionData | null): UserPermissions {
@@ -148,8 +148,12 @@ export function userHasRole(session: SessionData | null, requiredRole: UserRole)
   return isRoleAtLeast(userRole, requiredRole)
 }
 
-export function isGuest(session: SessionData | null): boolean {
-  return getUserRole(session) === UserRole.GUEST
+export function isUnauthenticated(session: SessionData | null): boolean {
+  return getUserRole(session) === UserRole.UNAUTHENTICATED
+}
+
+export function isAuthenticated(session: SessionData | null): boolean {
+  return isRoleAtLeast(getUserRole(session), UserRole.AUTHENTICATED)
 }
 
 export function isMember(session: SessionData | null): boolean {
