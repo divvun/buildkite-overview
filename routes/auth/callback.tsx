@@ -1,5 +1,4 @@
 import { Context } from "fresh"
-import { State } from "~/utils.ts"
 import {
   exchangeCodeForTokens,
   getUserInfo,
@@ -7,10 +6,11 @@ import {
   getUserTeamMemberships,
   hasRequiredOrgAccess,
 } from "~/server/auth.ts"
-import { determineUserRole } from "~/utils/rbac.ts"
+import { getConfig } from "~/server/config.ts"
 import { createSessionCookie } from "~/server/session.ts"
 import { storeAccessToken } from "~/server/token-store.ts"
-import { getConfig } from "~/server/config.ts"
+import { State } from "~/utils.ts"
+import { determineUserRole } from "~/utils/rbac.ts"
 
 export const handler = {
   async GET(ctx: Context<State>) {
@@ -32,6 +32,7 @@ export const handler = {
 
     // Validate required parameters
     if (!code || !state) {
+      console.error("Missing OAuth parameters")
       return new Response(null, {
         status: 302,
         headers: {
@@ -83,6 +84,7 @@ export const handler = {
       const tokenSet = await exchangeCodeForTokens(code, storedCodeVerifier, state, storedState)
 
       if (!tokenSet.access_token) {
+        console.error("No access token received")
         throw new Error("No access token received")
       }
 
@@ -137,6 +139,7 @@ export const handler = {
       headers.append("Set-Cookie", `oauth_code_verifier=; ${cookieFlags}; Max-Age=0; Path=/`)
       headers.append("Set-Cookie", `return_url=; ${cookieFlags}; Max-Age=0; Path=/`)
 
+      console.log(`User ${user.login} authenticated successfully with role ${userRole}`)
       return new Response(null, {
         status: 302,
         headers,

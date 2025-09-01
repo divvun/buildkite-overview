@@ -71,7 +71,7 @@ app.get("/api2/:name", (ctx) => {
 // this can also be defined via a file. feel free to delete this!
 const exampleLoggerMiddleware = define.middleware(async (ctx) => {
   const response = await ctx.next()
-  const status = response instanceof Response ? response.status : 'unknown'
+  const status = response instanceof Response ? response.status : "unknown"
   console.log(`${ctx.req.method} ${status} ${ctx.req.url}`)
   return response
 })

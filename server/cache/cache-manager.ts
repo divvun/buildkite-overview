@@ -268,9 +268,12 @@ export class CacheManager {
   }
 
   private async enrichPipelinesWithGitHub(pipelines: AppPipeline[]): Promise<AppPipeline[]> {
-    const githubToken = Deno.env.get("GITHUB_APP_TOKEN")
+    const { getGithubCredentials } = await import("~/server/config.ts")
+    const githubCredentials = getGithubCredentials()
+    const githubToken = githubCredentials.appToken
+
     if (!githubToken) {
-      console.warn("GITHUB_APP_TOKEN not configured, skipping GitHub enrichment")
+      console.warn("GitHub app token not configured, skipping GitHub enrichment")
       return pipelines
     }
 

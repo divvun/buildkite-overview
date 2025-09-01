@@ -1,4 +1,3 @@
-import { type BuildkiteBuild, type BuildkitePipeline } from "~/types/buildkite.ts"
 import {
   type AgentMetrics,
   type AppAgent,
@@ -10,9 +9,10 @@ import {
   type QueueJob,
   type QueueStatus,
 } from "~/types/app.ts"
+import { type BuildkiteBuild, type BuildkitePipeline } from "~/types/buildkite.ts"
+import { formatDuration, formatTimeAgo, normalizeStatus, ORGANIZATIONS } from "~/utils/formatters.ts"
 import { GET_ORGANIZATION_CLUSTERS_AND_METRICS, getBuildkiteClient } from "./buildkite-client.ts"
 import { getCacheManager } from "./cache/cache-manager.ts"
-import { formatDuration, formatTimeAgo, normalizeStatus, ORGANIZATIONS } from "~/utils/formatters.ts"
 import { withRetry } from "./retry-helper.ts"
 
 // Minimal interface for pipeline status determination
@@ -258,15 +258,6 @@ export function extractRecentBuildsFromPipelines(pipelines: AppPipeline[], limit
   })
 
   return allBuilds.slice(0, limit)
-}
-
-export function enrichPipelinesWithGitHubData(
-  pipelines: AppPipeline[],
-): AppPipeline[] {
-  // This function is now deprecated - GitHub enrichment is handled
-  // automatically by the cache manager using the GITHUB_APP_TOKEN
-  // Just return the pipelines as they already contain GitHub data
-  return pipelines
 }
 
 function findFailingSince(builds: BuildHistoryItem[]): Date | null {
