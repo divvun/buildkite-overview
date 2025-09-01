@@ -111,6 +111,30 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
         <title>{props.state.t("login-page-title")}</title>
         <link rel="stylesheet" href="/libraries/webawesome/styles/webawesome.css" />
         <script type="module" src="/libraries/webawesome/webawesome.loader.js"></script>
+        <script type="module">
+          {`
+          import { allDefined, registerIconLibrary, unregisterIconLibrary, setDefaultIconFamily } from '/libraries/webawesome/webawesome.js';
+          
+          await allDefined();
+          
+          // Remove FontAwesome default library and register Boxicons as default
+          unregisterIconLibrary('default');
+          registerIconLibrary('default', {
+            resolver: name => {
+              // Handle GitHub logo specifically
+              if (name === 'github') {
+                return '/libraries/boxicons/svg/logos/bxl-github.svg';
+              }
+              // Map some common icon names
+              if (name === 'arrow-rotate-right') {
+                name = 'refresh';
+              }
+              return '/libraries/boxicons/svg/regular/bx-' + name + '.svg';
+            }
+          });
+          setDefaultIconFamily('default');
+          `}
+        </script>
       </head>
       <body>
         <div

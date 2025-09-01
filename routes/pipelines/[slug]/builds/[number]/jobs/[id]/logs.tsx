@@ -212,7 +212,17 @@ export default function FullscreenLogsPage(props: { data: FullscreenLogsPageProp
             // Remove FontAwesome default library and register Boxicons as default
             unregisterIconLibrary('default');
             registerIconLibrary('default', {
-              resolver: name => \`/libraries/boxicons/svg/regular/bx-\${name}.svg\`
+              resolver: name => {
+                // Handle GitHub logo specifically
+                if (name === 'github') {
+                  return '/libraries/boxicons/svg/logos/bxl-github.svg';
+                }
+                // Map some common icon names
+                if (name === 'arrow-rotate-right') {
+                  name = 'refresh';
+                }
+                return '/libraries/boxicons/svg/regular/bx-' + name + '.svg';
+              }
             });
             setDefaultIconFamily('default');
           `}

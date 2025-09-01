@@ -1,9 +1,8 @@
 // Security headers middleware
 // Adds essential security headers to protect against common attacks
 
-import { define } from "~/utils.ts"
-import type { AppState } from "~/server/middleware.ts"
 import { getConfig } from "~/server/config.ts"
+import { define } from "~/utils.ts"
 
 export interface SecurityHeadersConfig {
   contentSecurityPolicy?: string | false
@@ -22,7 +21,7 @@ const DEFAULT_CSP = [
   "img-src 'self' data: https:", // Allow external images (e.g., avatars from GitHub)
   "font-src 'self' data: fonts.gstatic.com",
   "connect-src 'self' data:", // Allow data URLs
-  "form-action 'self' https://builds.giellalt.org/*",
+  "form-action 'self' builds.giellalt.org",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
@@ -37,7 +36,7 @@ const PRODUCTION_CSP = [
   "img-src 'self' data: https: cdn.jsdelivr.net", // Allow external images and Boxicons SVGs
   "font-src 'self' data: fonts.gstatic.com",
   "connect-src 'self' data: https:", // Allow HTTPS requests
-  "form-action 'self' https://builds.giellalt.org/*",
+  "form-action 'self' builds.giellalt.org",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",

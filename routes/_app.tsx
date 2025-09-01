@@ -23,8 +23,16 @@ export default function App({ Component, state }: PageProps<unknown, AppState>) 
           unregisterIconLibrary('default');
           registerIconLibrary('default', {
             resolver: name => {
+              // Handle GitHub logo specifically
+              if (name === 'github') {
+                return '/libraries/boxicons/svg/logos/bxl-github.svg';
+              }
+              // Map some common icon names
               if (name === 'bars') {
                 name = 'menu';
+              }
+              if (name === 'arrow-rotate-right') {
+                name = 'refresh';
               }
               console.log('Resolving icon:', name);
               return \`/libraries/boxicons/svg/regular/bx-\${name}.svg\`
