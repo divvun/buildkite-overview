@@ -1,7 +1,6 @@
 console.log("🚀 Starting Buildkite Overview Application...")
 
 import { App, staticFiles } from "fresh"
-import { define } from "./utils.ts"
 import { getBackgroundPoller } from "./server/background-poller.ts"
 import { getCacheManager } from "./server/cache/cache-manager.ts"
 import { parseCliArgs } from "./server/cli.ts"
@@ -11,6 +10,7 @@ import { type AppState, localizationMiddleware, requireGlobalAuth, sessionMiddle
 import { securityHeaders } from "./server/security-headers.ts"
 import { startSessionCleanup } from "./server/session-store.ts"
 import { startTokenCleanup } from "./server/token-store.ts"
+import { define } from "./utils.ts"
 
 // Parse CLI arguments
 const cliOptions = parseCliArgs()
@@ -69,9 +69,11 @@ app.get("/api2/:name", (ctx) => {
 })
 
 // this can also be defined via a file. feel free to delete this!
-const exampleLoggerMiddleware = define.middleware((ctx) => {
-  console.log(`${ctx.req.method} ${ctx.req.url}`)
-  return ctx.next()
+const exampleLoggerMiddleware = define.middleware(async (ctx) => {
+  const response = await ctx.next()
+  const status = response instanceof Response ? response.status : 'unknown'
+  console.log(`${ctx.req.method} ${status} ${ctx.req.url}`)
+  return response
 })
 app.use(exampleLoggerMiddleware)
 
