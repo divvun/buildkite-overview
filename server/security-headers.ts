@@ -37,7 +37,7 @@ const PRODUCTION_CSP = [
   "img-src 'self' data: https: ka-f.fontawesome.com", // Allow external images and FontAwesome SVGs
   "font-src 'self' data: fonts.gstatic.com ka-f.fontawesome.com",
   "connect-src 'self' data: ka-f.fontawesome.com https:", // Allow FontAwesome icon fetching and HTTPS requests
-  "form-action 'self'",
+  "form-action 'self' https://builds.giellalt.org",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
