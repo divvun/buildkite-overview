@@ -32,7 +32,7 @@ const DEFAULT_CSP = [
 // Production-ready CSP (more restrictive)
 const PRODUCTION_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'sha256-TD1slf8Kg59cpgxSBug27yb3OWtTY16Od+ESF7pY72A=' 'sha256-FjUAjMKOpu3WTb29bhP7Rr6eMrTmEItWMn/b0HjOApQ='", // Allow specific WebAwesome initialization scripts
+  "script-src 'self' 'unsafe-inline'", // Temporarily allow unsafe-inline for debugging
   "style-src 'self' 'unsafe-inline' fonts.googleapis.com", // May need hashes for inline styles
   "img-src 'self' data: https: ka-f.fontawesome.com", // Allow external images and FontAwesome SVGs
   "font-src 'self' data: fonts.gstatic.com ka-f.fontawesome.com",
