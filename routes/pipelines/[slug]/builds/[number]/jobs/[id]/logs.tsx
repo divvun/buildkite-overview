@@ -1,11 +1,10 @@
 import { Context, page } from "fresh"
-import { type AppState, canAccessPipeline } from "~/server/middleware.ts"
-import { fetchAllPipelines } from "~/server/buildkite-data.ts"
-import FullscreenLogs from "~/islands/FullscreenLogs.tsx"
-import { processLogsIntoGroups } from "~/utils/log-processing.tsx"
 import LoginRequired from "~/components/LoginRequired.tsx"
-import { userHasPermission } from "~/server/session.ts"
+import FullscreenLogs from "~/islands/FullscreenLogs.tsx"
+import { fetchAllPipelines } from "~/server/buildkite-data.ts"
 import { getCacheManager } from "~/server/cache/cache-manager.ts"
+import { type AppState, canAccessPipeline } from "~/server/middleware.ts"
+import { processLogsIntoGroups } from "~/utils/log-processing.tsx"
 
 interface LogData {
   url?: string
