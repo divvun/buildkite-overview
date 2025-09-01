@@ -2,8 +2,8 @@ import { getCacheManager } from "./cache/cache-manager.ts"
 import { getPollingConfig } from "./config.ts"
 
 export interface PollingConfig {
-  pipelineRefreshIntervalMs: number
-  agentRefreshIntervalMs: number
+  pipelineIntervalMs: number
+  agentIntervalMs: number
   enabled: boolean
 }
 
@@ -14,11 +14,24 @@ export class BackgroundPoller {
   private isRunning = false
 
   constructor(config: PollingConfig = {
-    pipelineRefreshIntervalMs: 30 * 60 * 1000, // 30 minutes (webhooks handle real-time updates)
-    agentRefreshIntervalMs: 45 * 60 * 1000, // 45 minutes (webhooks handle real-time updates)
+    pipelineIntervalMs: 30 * 60 * 1000, // 30 minutes (webhooks handle real-time updates)
+    agentIntervalMs: 45 * 60 * 1000, // 45 minutes (webhooks handle real-time updates)
     enabled: true,
   }) {
-    this.config = config
+    // Safeguard against invalid intervals that could break everything
+    const MIN_INTERVAL_MS = 30 * 1000 // Minimum 30 seconds
+    const DEFAULT_PIPELINE_INTERVAL_MS = 2 * 60 * 1000 // 2 minutes
+    const DEFAULT_AGENT_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
+
+    this.config = {
+      enabled: config.enabled,
+      pipelineIntervalMs: config.pipelineIntervalMs > 0
+        ? Math.max(config.pipelineIntervalMs, MIN_INTERVAL_MS)
+        : DEFAULT_PIPELINE_INTERVAL_MS,
+      agentIntervalMs: config.agentIntervalMs > 0
+        ? Math.max(config.agentIntervalMs, MIN_INTERVAL_MS)
+        : DEFAULT_AGENT_INTERVAL_MS,
+    }
   }
 
   start(): void {
@@ -28,8 +41,8 @@ export class BackgroundPoller {
 
     this.isRunning = true
     console.log("🔄 Starting background polling service...")
-    console.log(`  - Pipeline data refresh: every ${this.config.pipelineRefreshIntervalMs / 1000}s`)
-    console.log(`  - Agent data refresh: every ${this.config.agentRefreshIntervalMs / 1000}s`)
+    console.log(`  - Pipeline data refresh: every ${this.config.pipelineIntervalMs / 1000}s`)
+    console.log(`  - Agent data refresh: every ${this.config.agentIntervalMs / 1000}s`)
 
     // Start pipeline data polling
     this.pipelineIntervalId = setInterval(async () => {
@@ -56,7 +69,7 @@ export class BackgroundPoller {
           }
         }
       }
-    }, this.config.pipelineRefreshIntervalMs)
+    }, this.config.pipelineIntervalMs)
 
     // Start agent data polling
     this.agentIntervalId = setInterval(async () => {
@@ -83,7 +96,7 @@ export class BackgroundPoller {
           }
         }
       }
-    }, this.config.agentRefreshIntervalMs)
+    }, this.config.agentIntervalMs)
 
     // Perform initial refresh after a short delay
     setTimeout(async () => {

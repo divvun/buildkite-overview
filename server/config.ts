@@ -150,8 +150,8 @@ function loadConfigFromTOML(configPath?: string): AppConfig {
       },
       polling: {
         enabled: parsed.polling?.enabled !== false, // Default to true
-        pipelineIntervalMs: parsed.polling?.pipeline_interval_ms || 120000, // 2 minutes default
-        agentIntervalMs: parsed.polling?.agent_interval_ms || 300000, // 5 minutes default
+        pipelineIntervalMs: Math.max(parsed.polling?.pipeline_interval_ms || 120000, 30000), // 2 minutes default, min 30s
+        agentIntervalMs: Math.max(parsed.polling?.agent_interval_ms || 300000, 30000), // 5 minutes default, min 30s
       },
     }
   } catch (error) {

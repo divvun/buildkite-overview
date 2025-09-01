@@ -30,33 +30,20 @@ export const sessionMiddleware = define.middleware(async (ctx) => {
     console.log("⚠️  Using mock session for development (bypass enabled)")
     ;(ctx.state as AppState).session = createMockSession()
   } else {
+    // Get session ID from cookie first
+    const sessionIdCookie = ctx.req.headers.get("cookie")
+      ?.split("; ")
+      .find((c) => c.startsWith("session_id="))
+      ?.split("=")[1]
+
     // Get session from request (optional, doesn't throw)
     let session = await getOptionalSession(ctx.req)
 
     // Check if session needs refresh
-    if (session && shouldRefreshSession(session)) {
-      // Note: refreshSession now requires sessionId, but we'll handle this differently
-      // For now, just update the expires_at time locally
-      session = {
-        ...session,
-        expires_at: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
-      }
-
-      // Set updated cookie for refreshed session
-      const sessionCookie = await createSessionCookie(session)
-
-      // Get response and add the cookie
-      const response = await ctx.next()
-      if (response instanceof Response) {
-        const newResponse = new Response(response.body, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: new Headers(response.headers),
-        })
-        newResponse.headers.append("Set-Cookie", sessionCookie)
-        ;(ctx.state as AppState).session = session
-        return newResponse
-      }
+    if (sessionIdCookie && session && shouldRefreshSession(session)) {
+      // Refresh the existing session instead of creating a new one
+      session = await refreshSession(sessionIdCookie, session)
+      console.log(`Session ${sessionIdCookie} refreshed for user ${session.user.login}`)
     }
 
     ;(ctx.state as AppState).session = session
