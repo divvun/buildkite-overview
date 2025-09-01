@@ -143,63 +143,77 @@ export async function getUserOrganizations(accessToken: string): Promise<string[
   return orgs.map((org: any) => org.login)
 }
 
-export async function getUserTeamMemberships(
-  accessToken: string,
-  user: GitHubUser,
-  organizations: string[],
-): Promise<string[]> {
-  const teamMemberships: string[] = []
-  const relevantOrgs = organizations.filter((org) => REQUIRED_ORGS.includes(org as any))
-
-  for (const org of relevantOrgs) {
-    try {
-      // First, get user's teams in the organization
-      const response = await fetch(`https://api.github.com/orgs/${org}/teams`, {
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Accept": "application/vnd.github.v3+json",
-          "User-Agent": "Divvun-Buildkite-Overview",
-        },
-      })
-
-      if (!response.ok) {
-        console.warn(`Failed to fetch teams for org ${org}: ${response.status}`)
-        continue
-      }
-
-      const teams = await response.json()
-
-      for (const team of teams) {
-        try {
-          // Check if user is a member of this team
-          const membershipResponse = await fetch(
-            `https://api.github.com/teams/${team.id}/memberships/${user.login}`,
-            {
-              headers: {
-                "Authorization": `Bearer ${accessToken}`,
-                "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "Divvun-Buildkite-Overview",
-              },
-            },
-          )
-
-          if (membershipResponse.status === 200) {
-            const membership = await membershipResponse.json()
-            if (membership.state === "active") {
-              teamMemberships.push(`${org}/${team.name}`)
-            }
+export async function getUserDataWithGraphQL(accessToken: string): Promise<{
+  user: GitHubUser
+  organizations: string[]
+  isBuildAdmin: boolean
+}> {
+  const query = `
+    query GetUserData {
+      viewer {
+        id: databaseId
+        login
+        name
+        email
+        avatarUrl
+        # Get ALL user's organizations
+        organizations(first: 100) {
+          nodes {
+            login
           }
-        } catch (error) {
-          console.warn(`Error checking membership for team ${team.name}:`, error)
         }
       }
-    } catch (error) {
-      console.warn(`Error fetching teams for org ${org}:`, error)
+      # Check if user is member of specific orgs we care about
+      divvun: organization(login: "divvun") {
+        viewerIsAMember
+        # Check if user is in Build Admins team
+        team(slug: "build-admins") {
+          viewerIsAMember
+        }
+      }
+      giellalt: organization(login: "giellalt") {
+        viewerIsAMember
+      }
     }
+  `
+
+  const response = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "User-Agent": "Divvun-Buildkite-Overview",
+    },
+    body: JSON.stringify({ query }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`GraphQL API error: ${response.status} ${response.statusText}`)
   }
 
-  console.log(`Team memberships found: [${teamMemberships.join(", ")}]`)
-  return teamMemberships
+  const data = await response.json()
+
+  if (data.errors) {
+    throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`)
+  }
+
+  const user = {
+    id: data.data.viewer.id,
+    login: data.data.viewer.login,
+    name: data.data.viewer.name,
+    email: data.data.viewer.email,
+    avatar_url: data.data.viewer.avatarUrl,
+    company: null,
+  }
+
+  // Get all organizations
+  const organizations = data.data.viewer.organizations.nodes.map((org: any) => org.login)
+
+  // Check if user is in Build Admins team
+  const isBuildAdmin = data.data.divvun?.team?.viewerIsAMember === true
+
+  console.log(`GraphQL query returned: orgs [${organizations.join(", ")}], buildAdmin: ${isBuildAdmin}`)
+  return { user, organizations, isBuildAdmin }
 }
 
 export function hasRequiredOrgAccess(userOrgs: string[]): boolean {
