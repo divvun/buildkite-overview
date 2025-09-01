@@ -60,14 +60,6 @@ if (shouldRequireAuth()) {
   app.use(requireGlobalAuth)
 }
 
-// this is the same as the /api/:name route defined via a file. feel free to delete this!
-app.get("/api2/:name", (ctx) => {
-  const name = ctx.params.name
-  return new Response(
-    `Hello, ${name.charAt(0).toUpperCase() + name.slice(1)}!`,
-  )
-})
-
 // this can also be defined via a file. feel free to delete this!
 const loggerMiddleware = define.middleware(async (ctx) => {
   if (ctx.req.url.endsWith("/health")) {

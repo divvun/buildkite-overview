@@ -1,4 +1,5 @@
 import { getCacheManager } from "./cache/cache-manager.ts"
+import { getPollingConfig } from "./config.ts"
 
 export interface PollingConfig {
   pipelineRefreshIntervalMs: number
@@ -165,12 +166,8 @@ let backgroundPollerInstance: BackgroundPoller | null = null
 
 export function getBackgroundPoller(): BackgroundPoller {
   if (!backgroundPollerInstance) {
-    // Get config from environment variables
-    const config: PollingConfig = {
-      pipelineRefreshIntervalMs: parseInt(Deno.env.get("PIPELINE_POLL_INTERVAL_MS") || "120000"), // 2 min default
-      agentRefreshIntervalMs: parseInt(Deno.env.get("AGENT_POLL_INTERVAL_MS") || "300000"), // 5 min default
-      enabled: Deno.env.get("BACKGROUND_POLLING_ENABLED") !== "false", // Enabled by default
-    }
+    // Get config from centralized config system
+    const config = getPollingConfig()
 
     backgroundPollerInstance = new BackgroundPoller(config)
   }

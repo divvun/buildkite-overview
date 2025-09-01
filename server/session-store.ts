@@ -60,7 +60,7 @@ function cleanupOldSessionFiles(dataDir = ".") {
 function getSessionDatabase(): Database {
   if (!sessionDb) {
     const config = getConfig()
-    const dataDir = Deno.env.get("DATA_DIR") || "."
+    const dataDir = config.app.dataDir
     const env = config.app.isProduction ? "" : "dev-"
     const dbPath = `${dataDir}/sessions-${env}v${SESSION_SCHEMA_VERSION}.db`
 

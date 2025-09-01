@@ -5,6 +5,7 @@ if (typeof Deno === "undefined") {
 }
 
 import { getConfig, shouldBypassOrgCheck } from "~/server/config.ts"
+import { createSession, getSession, updateSession } from "~/server/session-store.ts"
 import {
   BUILD_ADMIN_TEAMS,
   getRolePermissions,
@@ -14,7 +15,6 @@ import {
   type UserPermissions,
   UserRole,
 } from "~/utils/rbac.ts"
-import { createSession, getSession, updateSession } from "~/server/session-store.ts"
 
 import type { SessionData } from "~/types/session.ts"
 
@@ -30,12 +30,15 @@ export async function getSessionFromRequest(request: Request): Promise<SessionDa
       .find((c) => c.startsWith("session_id="))
       ?.split("=")[1]
 
+    console.log("Session ID from cookie:", sessionIdCookie)
+
     if (!sessionIdCookie) {
       return null
     }
 
     const sessionWithTokens = await getSession(sessionIdCookie)
     if (!sessionWithTokens) {
+      console.log("No session found")
       return null
     }
 

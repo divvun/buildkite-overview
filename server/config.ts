@@ -32,6 +32,14 @@ export interface AppConfig {
     isProduction: boolean
     requireAuth: boolean
     bypassOrgCheck: boolean
+    dataDir: string
+  }
+
+  // Background Polling Configuration
+  polling: {
+    enabled: boolean
+    pipelineIntervalMs: number
+    agentIntervalMs: number
   }
 }
 
@@ -52,6 +60,12 @@ interface ParsedTomlConfig {
     is_production?: boolean
     require_auth?: boolean
     bypass_org_check?: boolean
+    data_dir?: string
+  }
+  polling?: {
+    enabled?: boolean
+    pipeline_interval_ms?: number
+    agent_interval_ms?: number
   }
 }
 
@@ -132,6 +146,12 @@ function loadConfigFromTOML(configPath?: string): AppConfig {
         isProduction: parsed.app?.is_production === true,
         requireAuth: parsed.app?.require_auth === true,
         bypassOrgCheck: parsed.app?.bypass_org_check === true,
+        dataDir: parsed.app?.data_dir || ".",
+      },
+      polling: {
+        enabled: parsed.polling?.enabled !== false, // Default to true
+        pipelineIntervalMs: parsed.polling?.pipeline_interval_ms || 120000, // 2 minutes default
+        agentIntervalMs: parsed.polling?.agent_interval_ms || 300000, // 5 minutes default
       },
     }
   } catch (error) {
@@ -193,4 +213,14 @@ export function getGithubCredentials(): { clientId: string; clientSecret: string
     clientSecret: config.github.clientSecret,
     appToken: config.github.appToken,
   }
+}
+
+// App configuration accessors
+export function getDataDir(): string {
+  return getConfig().app.dataDir
+}
+
+// Polling configuration accessors
+export function getPollingConfig(): { enabled: boolean; pipelineIntervalMs: number; agentIntervalMs: number } {
+  return getConfig().polling
 }

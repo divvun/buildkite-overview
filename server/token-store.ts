@@ -52,7 +52,7 @@ function cleanupOldTokenFiles(dataDir = ".") {
 function getTokenDatabase(): Database {
   if (!tokenDb) {
     const config = getConfig()
-    const dataDir = Deno.env.get("DATA_DIR") || "."
+    const dataDir = config.app.dataDir
     const env = config.app.isProduction ? "" : "dev-"
     const dbPath = `${dataDir}/tokens-${env}v${TOKEN_SCHEMA_VERSION}.db`
 

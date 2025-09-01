@@ -4,6 +4,7 @@ if (typeof Deno === "undefined") {
 
 import { Database } from "@db/sqlite"
 import { expandGlobSync } from "@std/fs"
+import { getDataDir } from "../config.ts"
 
 // Cache schema version - increment this to force a fresh database
 const CACHE_SCHEMA_VERSION = 2
@@ -25,7 +26,7 @@ export class CacheDB {
   private db: Database
 
   constructor(path?: string) {
-    const dataDir = Deno.env.get("DATA_DIR") || "."
+    const dataDir = getDataDir()
     const dbPath = path || `${dataDir}/cache-v${CACHE_SCHEMA_VERSION}.db`
 
     // Ensure directory exists
