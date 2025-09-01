@@ -94,7 +94,7 @@ export default function BuildDetail(
     <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
       {error && (
         <wa-callout variant="warning" size="small">
-          <wa-icon slot="icon" name="triangle-exclamation" />
+          <wa-icon slot="icon" name="error" />
           {t("refresh-error")}: {error}
         </wa-callout>
       )}
@@ -145,7 +145,7 @@ export default function BuildDetail(
               <div class="wa-cluster wa-gap-l">
                 {build.branch && (
                   <div class="wa-caption-s wa-color-text-quiet">
-                    <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
+                    <wa-icon name="git-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
                     </wa-icon>
                     {repositoryName
                       ? (
@@ -165,7 +165,7 @@ export default function BuildDetail(
                 )}
                 {build.commit && (
                   <div class="wa-caption-s wa-color-text-quiet">
-                    <wa-icon name="code-commit" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
+                    <wa-icon name="git-commit" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
                     </wa-icon>
                     {repositoryName
                       ? (

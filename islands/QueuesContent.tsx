@@ -69,7 +69,7 @@ export default function QueuesContent({}: QueuesContentProps) {
   if (!data) {
     return (
       <wa-callout variant="danger">
-        <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+        <wa-icon slot="icon" name="error"></wa-icon>
         {t("failed-to-load-queues")}
       </wa-callout>
     )
@@ -108,7 +108,7 @@ export default function QueuesContent({}: QueuesContentProps) {
 
       {error && (
         <wa-callout variant="danger">
-          <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+          <wa-icon slot="icon" name="error"></wa-icon>
           {error}
         </wa-callout>
       )}

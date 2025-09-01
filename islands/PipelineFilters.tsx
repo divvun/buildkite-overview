@@ -62,7 +62,7 @@ export default function PipelineFilters({ initialSearch = "", initialStatus = ""
           onInput={(e: Event) => setSearch((e.target as HTMLInputElement).value)}
           onKeyDown={handleSearchKeyDown}
         >
-          <wa-icon slot="prefix" name="magnifying-glass"></wa-icon>
+          <wa-icon slot="prefix" name="search"></wa-icon>
         </wa-input>
       </form>
 

@@ -156,7 +156,7 @@ export default function BuildDetailPage(props: { data: BuildDetailProps; state: 
       >
         <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l) 0">
           <wa-callout variant="danger">
-            <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+            <wa-icon slot="icon" name="error"></wa-icon>
             {error || props.state.t("build-not-found")}
           </wa-callout>
 

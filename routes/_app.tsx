@@ -1,7 +1,7 @@
 import type { PageProps } from "fresh"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
-import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 import type { AppState } from "~/server/middleware.ts"
+import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
 
 export default function App({ Component, state }: PageProps<unknown, AppState>) {
   return (
@@ -14,13 +14,32 @@ export default function App({ Component, state }: PageProps<unknown, AppState>) 
           href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400&family=Noto+Sans+Hebrew:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
           rel="stylesheet"
         />
-        <link rel="stylesheet" href="/webawesome/styles/webawesome.css" />
-        <link rel="stylesheet" href="/webawesome/styles/themes/awesome.css" />
-        <link rel="stylesheet" href="/styles.css" />
-        <script type="module" src="/webawesome/webawesome.loader.js"></script>
+        <link rel="stylesheet" href="/libraries/webawesome/styles/webawesome.css" />
         <script type="module">
           {`
-          import { allDefined } from '/webawesome/webawesome.js';
+          import { registerIconLibrary, unregisterIconLibrary, setDefaultIconFamily } from '/libraries/webawesome/webawesome.js';
+          
+          // Remove FontAwesome default library and register Boxicons as default
+          unregisterIconLibrary('default');
+          registerIconLibrary('default', {
+            resolver: name => {
+              if (name === 'bars') {
+                name = 'menu';
+              }
+              console.log('Resolving icon:', name);
+              return \`/libraries/boxicons/svg/regular/bx-\${name}.svg\`
+            }
+          });
+          setDefaultIconFamily('default');
+        `}
+        </script>
+        <link rel="stylesheet" href="/libraries/webawesome/styles/themes/awesome.css" />
+        <link rel="stylesheet" href="/styles.css" />
+        <script type="module" src="/libraries/webawesome/webawesome.loader.js"></script>
+        <script type="module">
+          {`
+          import { allDefined } from '/libraries/webawesome/webawesome.js';
+          
           await allDefined();
         `}
         </script>

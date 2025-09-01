@@ -109,8 +109,8 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{props.state.t("login-page-title")}</title>
-        <link rel="stylesheet" href="/webawesome/styles/webawesome.css" />
-        <script type="module" src="/webawesome/webawesome.loader.js"></script>
+        <link rel="stylesheet" href="/libraries/webawesome/styles/webawesome.css" />
+        <script type="module" src="/libraries/webawesome/webawesome.loader.js"></script>
       </head>
       <body>
         <div
@@ -130,7 +130,7 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
 
               {errorMessage && (
                 <wa-callout variant="danger">
-                  <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+                  <wa-icon slot="icon" name="error"></wa-icon>
                   {errorMessage}
                 </wa-callout>
               )}
@@ -165,7 +165,7 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
                         class="wa-cluster wa-gap-xs"
                       >
                         {props.state.t("review-app-permissions")}
-                        <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+                        <wa-icon name="link-external" style="font-size: 0.75em"></wa-icon>
                       </a>
                     </p>
                   </div>
@@ -173,7 +173,7 @@ export default function Login(props: { data: LoginProps; state: AppState }) {
 
                 <div class="wa-stack wa-gap-xs wa-align-items-center">
                   <wa-callout variant="neutral">
-                    <wa-icon slot="icon" name="circle-info" variant="regular"></wa-icon>
+                    <wa-icon slot="icon" name="info-circle" variant="regular"></wa-icon>
                     {props.state.t("requires-membership", { org1: "divvun", org2: "giellalt" })}
                   </wa-callout>
                   <p class="wa-caption-xs wa-color-text-quiet wa-text-center">

@@ -20,8 +20,8 @@ const DEFAULT_CSP = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Relaxed for dev, should be stricter in prod
   "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
   "img-src 'self' data: https:", // Allow external images (e.g., avatars from GitHub)
-  "font-src 'self' data: fonts.gstatic.com ka-f.fontawesome.com",
-  "connect-src 'self' data: ka-f.fontawesome.com", // Allow FontAwesome icon fetching and data URLs
+  "font-src 'self' data: fonts.gstatic.com",
+  "connect-src 'self' data: cdn.jsdelivr.net", // Allow Boxicons icon fetching and data URLs
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
@@ -34,9 +34,9 @@ const PRODUCTION_CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'", // Temporarily allow unsafe-inline for debugging
   "style-src 'self' 'unsafe-inline' fonts.googleapis.com", // May need hashes for inline styles
-  "img-src 'self' data: https: ka-f.fontawesome.com", // Allow external images and FontAwesome SVGs
-  "font-src 'self' data: fonts.gstatic.com ka-f.fontawesome.com",
-  "connect-src 'self' data: ka-f.fontawesome.com https:", // Allow FontAwesome icon fetching and HTTPS requests
+  "img-src 'self' data: https: cdn.jsdelivr.net", // Allow external images and Boxicons SVGs
+  "font-src 'self' data: fonts.gstatic.com",
+  "connect-src 'self' data: cdn.jsdelivr.net https:", // Allow Boxicons icon fetching and HTTPS requests
   "form-action 'self' https://builds.giellalt.org",
   "base-uri 'self'",
   "object-src 'none'",

@@ -81,7 +81,7 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [], repos
     return (
       <wa-card>
         <wa-callout variant="danger">
-          <wa-icon slot="icon" name="triangle-exclamation" />
+          <wa-icon slot="icon" name="error" />
           <div class="wa-stack wa-gap-xs">
             <div>{t("error-label")} {error}</div>
             <div class="wa-caption-s">{t("pipeline-label")} {pipelineSlug}</div>
@@ -132,7 +132,7 @@ export default function PipelineBuilds({ pipelineSlug, initialBuilds = [], repos
                 </div>
                 <div class="wa-cluster wa-gap-s">
                   <div class="wa-caption-xs wa-color-text-quiet">
-                    <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle" />
+                    <wa-icon name="git-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle" />
                     {repositoryName && build.branch
                       ? (
                         <a

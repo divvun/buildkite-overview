@@ -510,7 +510,7 @@ export default function FullscreenLogs({
         <div class="toolbar-right wa-cluster">
           {logData?.url && (
             <wa-button variant="neutral" appearance="outlined" href={logData.url} target="_blank">
-              <wa-icon name="arrow-up-right-from-square" label={t("view-raw")}></wa-icon>
+              <wa-icon name="link-external" label={t("view-raw")}></wa-icon>
             </wa-button>
           )}
           <wa-button
@@ -543,7 +543,7 @@ export default function FullscreenLogs({
             appearance="outlined"
             onClick={() => globalThis.close()}
           >
-            <wa-icon name="xmark" label={t("close")}></wa-icon>
+            <wa-icon name="x" label={t("close")}></wa-icon>
           </wa-button>
         </div>
       </div>

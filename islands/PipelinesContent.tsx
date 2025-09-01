@@ -107,7 +107,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
   if (!data) {
     return (
       <wa-callout variant="danger">
-        <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+        <wa-icon slot="icon" name="error"></wa-icon>
         {t("failed-to-load-pipelines")}
       </wa-callout>
     )
@@ -136,7 +136,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
     <div class="wa-stack wa-gap-l">
       {error && (
         <wa-callout variant="danger">
-          <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+          <wa-icon slot="icon" name="error"></wa-icon>
           {error}
         </wa-callout>
       )}
@@ -247,7 +247,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
               onClick={() => handlePageChange(1)}
               title={t("first-page")}
             >
-              <wa-icon name="angles-left" />
+              <wa-icon name="chevrons-left" />
             </wa-button>
 
             <wa-button
@@ -309,7 +309,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
               onClick={() => handlePageChange(totalPages)}
               title={t("last-page")}
             >
-              <wa-icon name="angles-right" />
+              <wa-icon name="chevrons-right" />
             </wa-button>
           </div>
 

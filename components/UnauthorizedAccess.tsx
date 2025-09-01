@@ -57,7 +57,7 @@ export default function UnauthorizedAccess({
             </a>
           </wa-button>
           <wa-button variant="brand" appearance="outlined">
-            <wa-icon slot="prefix" name="arrow-right-from-bracket" />
+            <wa-icon slot="prefix" name="log-out" />
             <a href="/auth/logout" style="text-decoration: none; color: inherit">
               {translate("sign-out")}
             </a>

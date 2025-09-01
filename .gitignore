@@ -11,7 +11,7 @@ _fresh/
 node_modules/
 vendor/
 # WebAwesome files (copied during build)
-static/webawesome/
+static/libraries/
 # Cache database files (versioned)
 *.db
 *.db-shm

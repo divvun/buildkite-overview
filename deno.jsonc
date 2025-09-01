@@ -2,7 +2,7 @@
   "nodeModulesDir": "auto",
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check",
-    "dev": "deno run -A --watch=static/ --watch=routes/ --watch-exclude=static/webawesome/ dev.ts",
+    "dev": "deno run -A --watch=static/ --watch=routes/ --watch-exclude=static/libraries/ dev.ts",
     "build": "deno run -A dev.ts build",
     "compile": "deno compile --include static/ --include _fresh --include deno.jsonc -A buildkite-overview _fresh/compiled-entry.js",
     "start": "deno serve -A _fresh/server.js",
@@ -20,13 +20,14 @@
     },
     "exclude": ["node_modules", "utils/gql/buildkite.ts"]
   },
-  "exclude": ["**/_fresh/*", "**/static/webawesome/*", "utils/gql/buildkite.ts"],
+  "exclude": ["**/_fresh/*", "**/static/libraries/*", "utils/gql/buildkite.ts"],
   "imports": {
     "@optique/core": "jsr:@optique/core@^0.3.0",
     "@optique/run": "jsr:@optique/run@^0.3.0",
     "@std/fs": "jsr:@std/fs@^1.0.19",
     "@std/toml": "jsr:@std/toml@^1.0.1",
     "badge-maker": "npm:badge-maker@^5.0.2",
+    "boxicons": "npm:boxicons@^2.1.4",
     "~/": "./",
     "openid-client": "jsr:@panva/openid-client@^6.6.2",
     "webawesome": "npm:@awesome.me/webawesome@^3.0.0-beta.4",

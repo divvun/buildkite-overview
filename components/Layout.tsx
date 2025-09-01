@@ -42,7 +42,7 @@ export default function Layout(
           {/* Navigation Links */}
           <div class="wa-stack wa-gap-xs">
             <a href="/" class={currentPath === "/" ? "active" : ""} aria-label={translate("dashboard-overview")}>
-              <wa-icon slot="prefix" name="chart-line"></wa-icon>
+              <wa-icon slot="prefix" name="line-chart"></wa-icon>
               {translate("nav-overview")}
             </a>
             <a
@@ -50,7 +50,7 @@ export default function Layout(
               class={currentPath === "/pipelines" || currentPath?.startsWith("/pipelines/") ? "active" : ""}
               aria-label={translate("view-all-pipelines")}
             >
-              <wa-icon slot="prefix" name="layer-group"></wa-icon>
+              <wa-icon slot="prefix" name="layer"></wa-icon>
               {translate("nav-pipelines")}
             </a>
             {session && canManageAgents && (
@@ -60,7 +60,7 @@ export default function Layout(
                   class={currentPath === "/agents" ? "active" : ""}
                   aria-label={translate("view-build-agents")}
                 >
-                  <wa-icon slot="prefix" name="robot"></wa-icon>
+                  <wa-icon slot="prefix" name="bot"></wa-icon>
                   {translate("nav-agents")}
                 </a>
                 <a
@@ -68,7 +68,7 @@ export default function Layout(
                   class={currentPath === "/queues" ? "active" : ""}
                   aria-label={translate("view-build-queues")}
                 >
-                  <wa-icon slot="prefix" name="list"></wa-icon>
+                  <wa-icon slot="prefix" name="list-ul"></wa-icon>
                   {translate("nav-queues")}
                 </a>
               </>
@@ -108,11 +108,11 @@ export default function Layout(
                           style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: var(--wa-space-xs)"
                         >
                           {translate("view-github-profile")}
-                          <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+                          <wa-icon name="link-external" style="font-size: 0.75em"></wa-icon>
                         </a>
                       </wa-dropdown-item>
                       <wa-dropdown-item>
-                        <wa-icon slot="icon" name="shield-halved"></wa-icon>
+                        <wa-icon slot="icon" name="shield"></wa-icon>
                         <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
                           Role:{" "}
                           <wa-badge
@@ -130,7 +130,7 @@ export default function Layout(
                       </wa-dropdown-item>
                       <wa-divider></wa-divider>
                       <wa-dropdown-item>
-                        <wa-icon slot="icon" name="arrow-right-from-bracket"></wa-icon>
+                        <wa-icon slot="icon" name="log-out"></wa-icon>
                         <a href="/auth/logout" style="text-decoration: none; color: inherit">
                           {translate("logout")}
                         </a>
@@ -223,11 +223,11 @@ export default function Layout(
                     style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: var(--wa-space-xs)"
                   >
                     {translate("view-github-profile")}
-                    <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+                    <wa-icon name="link-external" style="font-size: 0.75em"></wa-icon>
                   </a>
                 </wa-dropdown-item>
                 <wa-dropdown-item>
-                  <wa-icon slot="icon" name="shield-halved"></wa-icon>
+                  <wa-icon slot="icon" name="shield"></wa-icon>
                   <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
                     Role:{" "}
                     <wa-badge
@@ -245,7 +245,7 @@ export default function Layout(
                 </wa-dropdown-item>
                 <wa-divider></wa-divider>
                 <wa-dropdown-item>
-                  <wa-icon slot="icon" name="arrow-right-from-bracket"></wa-icon>
+                  <wa-icon slot="icon" name="log-out"></wa-icon>
                   <a href="/auth/logout" style="text-decoration: none; color: inherit">
                     {translate("logout")}
                   </a>
@@ -307,15 +307,15 @@ export default function Layout(
           <h3 class="wa-heading-xs">{translate("resources")}</h3>
           <a href="https://buildkite.com/divvun" target="_blank" rel="noopener" class="wa-cluster wa-gap-xs">
             {translate("buildkite-dashboard")}
-            <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+            <wa-icon name="link-external" style="font-size: 0.75em"></wa-icon>
           </a>
           <a href="https://github.com/divvun" target="_blank" rel="noopener" class="wa-cluster wa-gap-xs">
             {translate("github-divvun")}
-            <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+            <wa-icon name="link-external" style="font-size: 0.75em"></wa-icon>
           </a>
           <a href="https://github.com/giellalt" target="_blank" rel="noopener" class="wa-cluster wa-gap-xs">
             {translate("github-giellalt")}
-            <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+            <wa-icon name="link-external" style="font-size: 0.75em"></wa-icon>
           </a>
         </div>
       </footer>

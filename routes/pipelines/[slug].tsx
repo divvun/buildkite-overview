@@ -123,7 +123,7 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
       >
         <div class="wa-stack wa-gap-l" style="padding: var(--wa-space-l)">
           <wa-callout variant="danger">
-            <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+            <wa-icon slot="icon" name="error"></wa-icon>
             {error || props.state.t("pipeline-not-found")}
           </wa-callout>
 
@@ -185,7 +185,7 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
 
               <div class="wa-cluster wa-gap-s">
                 <div class="wa-caption-m wa-color-text-quiet">
-                  <wa-icon name="code-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
+                  <wa-icon name="git-branch" style="margin-right: var(--wa-space-3xs); vertical-align: middle">
                   </wa-icon>
                   {pipeline.repo
                     ? (

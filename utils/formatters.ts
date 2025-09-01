@@ -73,13 +73,13 @@ export function getStatusIcon(status: string): string {
   const normalizedStatus = normalizeStatus(status)
   switch (normalizedStatus) {
     case "passed":
-      return "circle-check"
+      return "check-circle"
     case "failed":
-      return "circle-xmark"
+      return "x-circle"
     case "running":
       return "spinner" // Note: Use isRunningStatus() to render wa-spinner instead
     case "blocked":
-      return "circle-pause" // Paused/blocked state
+      return "pause-circle" // Paused/blocked state
     case "waiting":
       return "clock" // Waiting for something
     case "scheduled":
@@ -134,11 +134,11 @@ export function getHealthBorderStyle(status: string): string {
 export function getConnectionIcon(state: string): string {
   switch (state) {
     case "connected":
-      return "circle-check"
+      return "check-circle"
     case "disconnected":
-      return "circle-xmark"
+      return "x-circle"
     case "lost":
-      return "triangle-exclamation"
+      return "error"
     default:
       return "circle"
   }

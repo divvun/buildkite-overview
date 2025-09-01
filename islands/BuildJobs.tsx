@@ -160,7 +160,7 @@ export default function BuildJobs(
     return (
       <wa-card>
         <wa-callout variant="danger">
-          <wa-icon slot="icon" name="triangle-exclamation" />
+          <wa-icon slot="icon" name="error" />
           {error}
         </wa-callout>
       </wa-card>

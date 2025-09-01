@@ -639,3 +639,7 @@ wa-page[view="mobile"] .desktop-header-actions {
 .log-fullscreen .log-table-container {
   max-height: calc(100vh - 120px) !important;
 }
+
+.wa-heading-m {
+  margin-bottom: 0.5rem;
+}

@@ -82,7 +82,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
   if (!data) {
     return (
       <wa-callout variant="danger">
-        <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+        <wa-icon slot="icon" name="error"></wa-icon>
         {t("failed-to-load-dashboard")}
       </wa-callout>
     )
@@ -94,7 +94,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
     <>
       {error && (
         <wa-callout variant="danger">
-          <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+          <wa-icon slot="icon" name="error"></wa-icon>
           {error}
         </wa-callout>
       )}
@@ -230,7 +230,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                             ))}
                           </div>
                           <wa-badge variant="danger">
-                            <wa-icon slot="prefix" name="triangle-exclamation"></wa-icon>
+                            <wa-icon slot="prefix" name="error"></wa-icon>
                             <span class="failed-badge-text">{t("failed-status")}</span>
                           </wa-badge>
                         </div>

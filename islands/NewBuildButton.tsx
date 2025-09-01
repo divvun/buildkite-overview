@@ -70,7 +70,7 @@ export default function NewBuildButton({ pipelineSlug }: NewBuildButtonProps) {
 
       {error && (
         <wa-callout variant="warning" size="small">
-          <wa-icon slot="icon" name="triangle-exclamation" />
+          <wa-icon slot="icon" name="error" />
           {error}
         </wa-callout>
       )}

@@ -75,7 +75,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
   if (!data) {
     return (
       <wa-callout variant="danger">
-        <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+        <wa-icon slot="icon" name="error"></wa-icon>
         {t("failed-to-load-agents")}
       </wa-callout>
     )
@@ -134,7 +134,7 @@ export default function AgentsContent({ orgFilter }: AgentsContentProps) {
 
       {error && (
         <wa-callout variant="danger">
-          <wa-icon slot="icon" name="triangle-exclamation"></wa-icon>
+          <wa-icon slot="icon" name="error"></wa-icon>
           {error}
         </wa-callout>
       )}

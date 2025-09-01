@@ -151,7 +151,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
       <div class="wa-flank">
         {logData?.url && (
           <wa-button size="small" appearance="plain">
-            <wa-icon slot="prefix" name="arrow-up-right-from-square" />
+            <wa-icon slot="prefix" name="link-external" />
             <a href={logData.url} target="_blank" style="text-decoration: none; color: inherit">
               View Raw
             </a>
@@ -174,14 +174,14 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
           {error && (
             <div style="padding: var(--wa-space-s)">
               <wa-callout variant="warning" size="small">
-                <wa-icon slot="icon" name="triangle-exclamation" />
+                <wa-icon slot="icon" name="error" />
                 {error}
                 {logData?.url && (
                   <div>
                     You can view the logs directly in{" "}
                     <a href={logData.url} target="_blank" rel="noopener noreferrer" class="wa-cluster wa-gap-xs">
                       Buildkite
-                      <wa-icon name="arrow-up-right-from-square" style="font-size: 0.75em"></wa-icon>
+                      <wa-icon name="link-external" style="font-size: 0.75em"></wa-icon>
                     </a>
                   </div>
                 )}
@@ -389,7 +389,7 @@ export default function JobLogs({ jobId, buildNumber, pipelineSlug }: JobLogsPro
 
           {!logData?.content && !loading && !error && (
             <div class="wa-stack wa-gap-s wa-align-items-center" style="padding: var(--wa-space-m)">
-              <wa-icon name="file-lines" style="font-size: 1.5rem; color: var(--wa-color-neutral-fill-loud)" />
+              <wa-icon name="file" style="font-size: 1.5rem; color: var(--wa-color-neutral-fill-loud)" />
               <p class="wa-caption-s wa-color-text-quiet">{t("no-logs-available")}</p>
             </div>
           )}

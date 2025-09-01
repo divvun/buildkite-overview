@@ -201,14 +201,21 @@ export default function FullscreenLogsPage(props: { data: FullscreenLogsPageProp
             href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400&family=Noto+Sans+Hebrew:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
             rel="stylesheet"
           />
-          <link rel="stylesheet" href="/webawesome/styles/webawesome.css" />
-          <link rel="stylesheet" href="/webawesome/styles/themes/awesome.css" />
+          <link rel="stylesheet" href="/libraries/webawesome/styles/webawesome.css" />
+          <link rel="stylesheet" href="/libraries/webawesome/styles/themes/awesome.css" />
           <link rel="stylesheet" href="/styles.css" />
-          <script type="module" src="/webawesome/webawesome.loader.js"></script>
+          <script type="module" src="/libraries/webawesome/webawesome.loader.js"></script>
           <script type="module">
             {`
-            import { allDefined } from '/webawesome/webawesome.js';
+            import { allDefined, registerIconLibrary, unregisterIconLibrary, setDefaultIconFamily } from '/libraries/webawesome/webawesome.js';
             await allDefined();
+            
+            // Remove FontAwesome default library and register Boxicons as default
+            unregisterIconLibrary('default');
+            registerIconLibrary('default', {
+              resolver: name => \`/libraries/boxicons/svg/regular/bx-\${name}.svg\`
+            });
+            setDefaultIconFamily('default');
           `}
           </script>
           <style>
