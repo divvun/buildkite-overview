@@ -64,6 +64,10 @@ function getSessionDatabase(): Database {
     const env = config.app.isProduction ? "" : "dev-"
     const dbPath = `${dataDir}/sessions-${env}v${SESSION_SCHEMA_VERSION}.db`
 
+    console.log(`Initializing session database at: ${dbPath}`)
+    console.log(`Production mode: ${config.app.isProduction}`)
+    console.log(`Data directory: ${dataDir}`)
+
     // Ensure directory exists
     const dir = dbPath.substring(0, dbPath.lastIndexOf("/"))
     if (dir && dir !== ".") {
@@ -139,6 +143,9 @@ export async function createSession(sessionData: SessionData): Promise<SessionWi
   const csrfToken = generateCSRFToken()
   const now = Date.now()
 
+  console.log(`Creating session ${sessionId} for user ${sessionData.user.login} (ID: ${sessionData.user.id})`)
+  console.log(`Session expires at: ${new Date(sessionData.expires_at)}`)
+
   // Remove access token from session data before encryption
   // We'll store it separately and securely
   const sessionForStorage = {
@@ -149,20 +156,27 @@ export async function createSession(sessionData: SessionData): Promise<SessionWi
 
   const encryptedData = await encryptData(JSON.stringify(sessionForStorage))
 
-  db.prepare(`
-    INSERT INTO sessions (
-      session_id, encrypted_data, user_id, csrf_token, 
-      expires_at, created_at, last_accessed
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    sessionId,
-    encryptedData,
-    sessionData.user.id,
-    csrfToken,
-    sessionData.expires_at,
-    now,
-    now,
-  )
+  try {
+    db.prepare(`
+      INSERT INTO sessions (
+        session_id, encrypted_data, user_id, csrf_token, 
+        expires_at, created_at, last_accessed
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      sessionId,
+      encryptedData,
+      sessionData.user.id,
+      csrfToken,
+      sessionData.expires_at,
+      now,
+      now,
+    )
+
+    console.log(`✅ Session ${sessionId} successfully inserted into database`)
+  } catch (error) {
+    console.error(`❌ Failed to insert session ${sessionId}:`, error)
+    throw error
+  }
 
   return {
     ...sessionData,
@@ -174,20 +188,39 @@ export async function createSession(sessionData: SessionData): Promise<SessionWi
 // Retrieve a session by ID
 export async function getSession(sessionId: string): Promise<SessionWithTokens | null> {
   if (!sessionId || typeof sessionId !== "string") {
+    console.log("Invalid session ID provided to getSession")
     return null
   }
 
   const db = getSessionDatabase()
   const now = Date.now()
 
+  console.log(`Looking up session ${sessionId} at ${new Date(now)}`)
+
   const row = db.prepare(`
     SELECT * FROM sessions 
     WHERE session_id = ? AND expires_at > ?
-  `).get(sessionId) as StoredSession | undefined
+  `).get(sessionId, now) as StoredSession | undefined
 
   if (!row) {
+    // Check if session exists but is expired
+    const expiredRow = db.prepare(`
+      SELECT expires_at, user_id FROM sessions WHERE session_id = ?
+    `).get(sessionId) as { expires_at: number; user_id: number } | undefined
+
+    if (expiredRow) {
+      console.log(
+        `❌ Session ${sessionId} exists but expired at ${new Date(
+          expiredRow.expires_at,
+        )} (user ID: ${expiredRow.user_id})`,
+      )
+    } else {
+      console.log(`❌ Session ${sessionId} not found in database at all`)
+    }
     return null
   }
+
+  console.log(`✅ Session ${sessionId} found for user ID ${row.user_id}, expires at ${new Date(row.expires_at)}`)
 
   // Decrypt session data
   const decryptedData = await decryptData(row.encrypted_data)
