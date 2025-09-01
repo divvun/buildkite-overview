@@ -69,13 +69,16 @@ app.get("/api2/:name", (ctx) => {
 })
 
 // this can also be defined via a file. feel free to delete this!
-const exampleLoggerMiddleware = define.middleware(async (ctx) => {
+const loggerMiddleware = define.middleware(async (ctx) => {
+  if (ctx.req.url.endsWith("/health")) {
+    return ctx.next()
+  }
   const response = await ctx.next()
   const status = response instanceof Response ? response.status : "unknown"
   console.log(`${ctx.req.method} ${status} ${ctx.req.url}`)
   return response
 })
-app.use(exampleLoggerMiddleware)
+app.use(loggerMiddleware)
 
 // Include file-system based routes here
 app.fsRoutes()
