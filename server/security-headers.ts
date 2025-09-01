@@ -21,7 +21,7 @@ const DEFAULT_CSP = [
   "img-src 'self' data: https:", // Allow external images (e.g., avatars from GitHub)
   "font-src 'self' data: fonts.gstatic.com",
   "connect-src 'self' data:", // Allow data URLs
-  "form-action 'self' builds.giellalt.org",
+  "form-action 'self' https:",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
@@ -36,7 +36,7 @@ const PRODUCTION_CSP = [
   "img-src 'self' data: https: cdn.jsdelivr.net", // Allow external images and Boxicons SVGs
   "font-src 'self' data: fonts.gstatic.com",
   "connect-src 'self' data: https:", // Allow HTTPS requests
-  "form-action 'self' builds.giellalt.org",
+  "form-action 'self' https:",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
