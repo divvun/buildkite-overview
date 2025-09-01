@@ -2,9 +2,10 @@ import type { TypedDocumentNode } from "@graphql-typed-document-node/core"
 import { makeBadge } from "badge-maker"
 import { Context } from "fresh"
 import { gql } from "graphql-tag"
-import { type BuildkiteBuild, type BuildkitePipeline, getBuildkiteClient } from "~/utils/buildkite-client.ts"
+import { getBuildkiteClient } from "~/server/buildkite-client.ts"
+import type { BuildkiteBuild, BuildkitePipeline } from "~/types/buildkite.ts"
 import { normalizeStatus } from "~/utils/formatters.ts"
-import { type AppState, isPrivatePipeline } from "~/utils/middleware.ts"
+import { type AppState, isPrivatePipeline } from "~/server/middleware.ts"
 
 // Query to get a single pipeline by slug
 export const GET_SINGLE_PIPELINE: TypedDocumentNode<

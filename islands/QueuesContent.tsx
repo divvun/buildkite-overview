@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "preact/hooks"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
-import { type QueueBuild, type QueueJob, type QueueStatus } from "~/utils/buildkite-data.ts"
+import { type QueueBuild, type QueueJob, type QueueStatus } from "~/types/app.ts"
 import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface QueuesData {

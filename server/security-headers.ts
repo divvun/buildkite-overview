@@ -2,7 +2,8 @@
 // Adds essential security headers to protect against common attacks
 
 import { define } from "~/utils.ts"
-import { getConfig } from "~/utils/config.ts"
+import type { AppState } from "~/server/middleware.ts"
+import { getConfig } from "~/server/config.ts"
 
 export interface SecurityHeadersConfig {
   contentSecurityPolicy?: string | false
@@ -17,10 +18,10 @@ export interface SecurityHeadersConfig {
 const DEFAULT_CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Relaxed for dev, should be stricter in prod
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
   "img-src 'self' data: https:", // Allow external images (e.g., avatars from GitHub)
-  "font-src 'self' data:",
-  "connect-src 'self'", // Only allow connections to same origin - APIs are server-side only
+  "font-src 'self' data: fonts.gstatic.com ka-f.fontawesome.com",
+  "connect-src 'self' data: ka-f.fontawesome.com", // Allow FontAwesome icon fetching and data URLs
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
@@ -32,10 +33,10 @@ const DEFAULT_CSP = [
 const PRODUCTION_CSP = [
   "default-src 'self'",
   "script-src 'self'", // No unsafe-inline or unsafe-eval in production
-  "style-src 'self' 'unsafe-inline'", // May need hashes for inline styles
+  "style-src 'self' 'unsafe-inline' fonts.googleapis.com", // May need hashes for inline styles
   "img-src 'self' data: https:", // Allow external images (e.g., avatars from GitHub)
-  "font-src 'self' data:",
-  "connect-src 'self'", // Only allow connections to same origin - APIs are server-side only
+  "font-src 'self' data: fonts.gstatic.com ka-f.fontawesome.com",
+  "connect-src 'self' data: ka-f.fontawesome.com", // Allow FontAwesome icon fetching and data URLs
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
@@ -100,7 +101,7 @@ export function createSecurityHeaders(config: SecurityHeadersConfig = {}) {
     newResponse.headers.set("Permissions-Policy", permissionsPolicy)
 
     // Cross-Origin-Embedder-Policy and Cross-Origin-Opener-Policy for additional isolation
-    newResponse.headers.set("Cross-Origin-Embedder-Policy", "require-corp")
+    newResponse.headers.set("Cross-Origin-Embedder-Policy", "credentialless")
     newResponse.headers.set("Cross-Origin-Opener-Policy", "same-origin")
 
     // Remove potentially revealing server headers

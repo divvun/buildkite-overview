@@ -1,3 +1,7 @@
+if (typeof Deno === "undefined") {
+  throw new Error("Config module can only be used on the server side")
+}
+
 import { Database } from "@db/sqlite"
 import { expandGlobSync } from "@std/fs"
 

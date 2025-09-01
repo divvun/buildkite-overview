@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks"
 import BuildJobs from "~/islands/BuildJobs.tsx"
-import { type BuildkiteBuild, type BuildkiteJob } from "~/utils/buildkite-client.ts"
+import { type BuildkiteBuild, type BuildkiteJob } from "~/types/buildkite.ts"
 import {
   formatDuration,
   formatTimeAgo,

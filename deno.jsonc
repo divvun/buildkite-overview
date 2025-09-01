@@ -10,13 +10,20 @@
     "gen-gql": "bash ./gen-gql.sh"
   },
   "lint": {
+    "plugins": ["./lint-plugins/no-server-imports.ts"],
     "rules": {
-      "tags": ["fresh", "recommended"]
+      "tags": ["fresh", "recommended"],
+      "include": [
+        "island-protection/no-server-imports-in-islands",
+        "island-protection/no-server-only-imports-in-islands"
+      ]
     },
     "exclude": ["node_modules", "utils/gql/buildkite.ts"]
   },
   "exclude": ["**/_fresh/*", "**/static/webawesome/*", "utils/gql/buildkite.ts"],
   "imports": {
+    "@optique/core": "jsr:@optique/core@^0.3.0",
+    "@optique/run": "jsr:@optique/run@^0.3.0",
     "@std/fs": "jsr:@std/fs@^1.0.19",
     "@std/toml": "jsr:@std/toml@^1.0.1",
     "badge-maker": "npm:badge-maker@^5.0.2",

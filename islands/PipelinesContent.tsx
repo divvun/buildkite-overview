@@ -1,9 +1,8 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
-import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
-import { type AppPipeline } from "~/utils/buildkite-data.ts"
+import { type AppPipeline } from "~/types/app.ts"
 import {
   getBadgeVariant,
   getHealthBorderStyle,
@@ -175,7 +174,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
           )
           : (
             paginatedPipelines.map((pipeline) => (
-              <BuildHistoryTooltip key={pipeline.id} pipelineSlug={pipeline.slug}>
+              <div key={pipeline.id}>
                 <wa-card class="clickable-card" style={getHealthBorderStyle(pipeline.status)}>
                   <a
                     href={`/pipelines/${pipeline.slug}`}
@@ -232,7 +231,7 @@ export default function PipelinesContent({ statusFilter, searchQuery }: Pipeline
                     </div>
                   </a>
                 </wa-card>
-              </BuildHistoryTooltip>
+              </div>
             ))
           )}
       </div>

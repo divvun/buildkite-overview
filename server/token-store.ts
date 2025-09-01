@@ -2,8 +2,12 @@
 // Access tokens should never be stored in cookies or session storage
 
 import { Database } from "@db/sqlite"
-import { decryptData, encryptData } from "~/utils/crypto.ts"
-import { getConfig } from "~/utils/config.ts"
+import { expandGlobSync } from "@std/fs"
+import { decryptData, encryptData } from "~/server/crypto.ts"
+import { getConfig } from "~/server/config.ts"
+
+// Token schema version - increment this to force a fresh database
+const TOKEN_SCHEMA_VERSION = 1
 
 // Helper to extract changes from SQLite result
 function getChanges(result: unknown): number {
@@ -21,10 +25,51 @@ interface StoredToken {
 
 let tokenDb: Database | null = null
 
+// Clean up old token database files
+function cleanupOldTokenFiles(dataDir = ".") {
+  try {
+    // Find all tokens-*-v*.db* files using glob in the data directory
+    const globPattern = `${dataDir}/tokens-*-v*.db*`
+    for (const file of expandGlobSync(globPattern)) {
+      const match = file.name.match(/^tokens-.*-v(\d+)\.db/)
+      if (match) {
+        const fileVersion = parseInt(match[1])
+        if (fileVersion < TOKEN_SCHEMA_VERSION) {
+          console.log(`🗑️  Cleaning up old token file: ${file.name}`)
+          try {
+            Deno.removeSync(file.path)
+          } catch (error) {
+            console.warn(`Failed to remove ${file.name}:`, error)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to cleanup old token files:", error)
+  }
+}
+
 function getTokenDatabase(): Database {
   if (!tokenDb) {
     const config = getConfig()
-    const dbPath = config.app.isProduction ? "tokens.db" : "tokens-dev.db"
+    const dataDir = Deno.env.get("DATA_DIR") || "."
+    const env = config.app.isProduction ? "" : "dev-"
+    const dbPath = `${dataDir}/tokens-${env}v${TOKEN_SCHEMA_VERSION}.db`
+
+    // Ensure directory exists
+    const dir = dbPath.substring(0, dbPath.lastIndexOf("/"))
+    if (dir && dir !== ".") {
+      try {
+        Deno.mkdirSync(dir, { recursive: true })
+      } catch (err) {
+        if (!(err instanceof Deno.errors.AlreadyExists)) {
+          throw err
+        }
+      }
+    }
+
+    // Clean up old token database versions
+    cleanupOldTokenFiles(dataDir)
 
     tokenDb = new Database(dbPath)
 

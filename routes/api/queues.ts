@@ -1,7 +1,8 @@
 import { Context } from "fresh"
-import { fetchQueueStatus, type QueueStatus } from "~/utils/buildkite-data.ts"
-import { type AppState } from "~/utils/middleware.ts"
-import { userHasPermission } from "~/utils/session.ts"
+import { fetchQueueStatus } from "~/server/buildkite-data.ts"
+import type { QueueStatus } from "~/types/app.ts"
+import { type AppState } from "~/server/middleware.ts"
+import { userHasPermission } from "~/server/session.ts"
 
 interface QueuesResponse {
   queueStatus: QueueStatus[]

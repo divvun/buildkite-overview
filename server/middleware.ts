@@ -7,13 +7,13 @@ import {
   getOptionalSession,
   getUserRole,
   refreshSession,
-  type SessionData,
   shouldRefreshSession,
   userHasPermission,
   userHasRole,
-} from "~/utils/session.ts"
+} from "./session.ts"
 import { type UserPermissions, UserRole } from "~/utils/rbac.ts"
-import { shouldBypassOrgCheck, shouldRequireAuth } from "~/utils/config.ts"
+import { shouldBypassOrgCheck, shouldRequireAuth } from "./config.ts"
+import type { SessionData } from "~/types/session.ts"
 
 // Extend the State interface to include session and localization
 export interface AppState extends State {

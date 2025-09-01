@@ -2,9 +2,13 @@
 // This module handles session storage separately from user-facing cookies
 
 import { Database } from "@db/sqlite"
-import type { SessionData } from "~/utils/session.ts"
-import { decryptData, encryptData, generateCSRFToken } from "~/utils/crypto.ts"
-import { getConfig } from "~/utils/config.ts"
+import { expandGlobSync } from "@std/fs"
+import type { SessionData } from "~/types/session.ts"
+import { decryptData, encryptData, generateCSRFToken } from "~/server/crypto.ts"
+import { getConfig } from "~/server/config.ts"
+
+// Session schema version - increment this to force a fresh database
+const SESSION_SCHEMA_VERSION = 1
 
 // Helper to extract changes from SQLite result
 function getChanges(result: unknown): number {
@@ -29,10 +33,51 @@ interface SessionWithTokens extends SessionData {
 // Database connection for session storage
 let sessionDb: Database | null = null
 
+// Clean up old session database files
+function cleanupOldSessionFiles(dataDir = ".") {
+  try {
+    // Find all sessions-*-v*.db* files using glob in the data directory
+    const globPattern = `${dataDir}/sessions-*-v*.db*`
+    for (const file of expandGlobSync(globPattern)) {
+      const match = file.name.match(/^sessions-.*-v(\d+)\.db/)
+      if (match) {
+        const fileVersion = parseInt(match[1])
+        if (fileVersion < SESSION_SCHEMA_VERSION) {
+          console.log(`🗑️  Cleaning up old session file: ${file.name}`)
+          try {
+            Deno.removeSync(file.path)
+          } catch (error) {
+            console.warn(`Failed to remove ${file.name}:`, error)
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to cleanup old session files:", error)
+  }
+}
+
 function getSessionDatabase(): Database {
   if (!sessionDb) {
     const config = getConfig()
-    const dbPath = config.app.isProduction ? "sessions.db" : "sessions-dev.db"
+    const dataDir = Deno.env.get("DATA_DIR") || "."
+    const env = config.app.isProduction ? "" : "dev-"
+    const dbPath = `${dataDir}/sessions-${env}v${SESSION_SCHEMA_VERSION}.db`
+
+    // Ensure directory exists
+    const dir = dbPath.substring(0, dbPath.lastIndexOf("/"))
+    if (dir && dir !== ".") {
+      try {
+        Deno.mkdirSync(dir, { recursive: true })
+      } catch (err) {
+        if (!(err instanceof Deno.errors.AlreadyExists)) {
+          throw err
+        }
+      }
+    }
+
+    // Clean up old session database versions
+    cleanupOldSessionFiles(dataDir)
 
     sessionDb = new Database(dbPath)
 
@@ -263,7 +308,7 @@ export function getSessionStats(): { total: number; expired: number; active: num
 }
 
 // Constant-time string comparison helper (re-export from crypto module)
-import { constantTimeCompare } from "~/utils/crypto.ts"
+import { constantTimeCompare } from "~/server/crypto.ts"
 
 // Initialize cleanup scheduler
 let cleanupInterval: number | null = null

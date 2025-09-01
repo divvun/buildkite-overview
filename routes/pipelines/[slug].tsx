@@ -2,9 +2,11 @@ import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import PipelineBuilds from "~/islands/PipelineBuilds.tsx"
 import NewBuildButton from "~/islands/NewBuildButton.tsx"
-import { type BuildkiteBuild, GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/utils/buildkite-client.ts"
-import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { getCacheManager } from "~/utils/cache/cache-manager.ts"
+import { GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/server/buildkite-client.ts"
+import type { BuildkiteBuild } from "~/types/buildkite.ts"
+import { fetchAllPipelines } from "~/server/buildkite-data.ts"
+import type { AppPipeline } from "~/types/app.ts"
+import { getCacheManager } from "~/server/cache/cache-manager.ts"
 import {
   formatTimeAgo,
   getBadgeVariant,
@@ -12,9 +14,10 @@ import {
   getTranslatedStatus,
   isRunningStatus,
 } from "~/utils/formatters.ts"
-import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
-import { withRetry } from "~/utils/retry-helper.ts"
-import { type SessionData, userHasPermission } from "~/utils/session.ts"
+import { type AppState, canAccessPipeline } from "~/server/middleware.ts"
+import { withRetry } from "~/server/retry-helper.ts"
+import { userHasPermission } from "~/server/session.ts"
+import type { SessionData } from "~/types/session.ts"
 
 interface PipelineDetailProps {
   session?: SessionData | null

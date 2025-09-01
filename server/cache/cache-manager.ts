@@ -7,8 +7,8 @@ import {
   getBuildkiteClient,
 } from "../buildkite-client.ts"
 import { withRetry } from "../retry-helper.ts"
-import { ORGANIZATIONS } from "../formatters.ts"
-import type { AppAgent, AppPipeline } from "../buildkite-data.ts"
+import { ORGANIZATIONS } from "~/utils/formatters.ts"
+import type { AppAgent, AppPipeline } from "~/types/app.ts"
 
 interface MemoryCacheItem<T> {
   data: T
@@ -588,6 +588,7 @@ export class CacheManager {
       connectedAt: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
       disconnectedAt: agent.disconnectedAt ? new Date(agent.disconnectedAt) : undefined,
       lastSeen: agent.connectedAt ? new Date(agent.connectedAt) : undefined,
+      priority: agent.priority ?? 0,
     }
   }
 

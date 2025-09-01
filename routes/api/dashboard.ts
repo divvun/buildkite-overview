@@ -1,7 +1,8 @@
 import { Context } from "fresh"
-import { type AgentMetrics, type FailingPipeline, fetchAgentMetrics, fetchQueueStatus } from "~/utils/buildkite-data.ts"
-import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
-import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
+import { fetchAgentMetrics, fetchQueueStatus } from "~/server/buildkite-data.ts"
+import type { AgentMetrics, FailingPipeline } from "~/types/app.ts"
+import { type AppState, filterPipelinesForUser } from "~/server/middleware.ts"
+import { fetchDashboardData } from "~/server/pipeline-data-service.ts"
 
 interface DashboardResponse {
   totalPipelines: number

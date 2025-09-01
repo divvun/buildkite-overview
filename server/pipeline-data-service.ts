@@ -1,5 +1,5 @@
 import { getCacheManager } from "./cache/cache-manager.ts"
-import type { AppBuild, AppPipeline, BuildHistoryItem, FailingPipeline } from "./buildkite-data.ts"
+import type { AppBuild, AppPipeline, BuildHistoryItem, FailingPipeline } from "~/types/app.ts"
 
 export interface DashboardData {
   pipelines: AppPipeline[]

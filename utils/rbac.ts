@@ -45,7 +45,7 @@ export function getRolePermissions(role: UserRole): UserPermissions {
         canViewPublicPipelines: true,
         canViewPrivatePipelines: true,
         canCreateBuilds: true,
-        canManageAgents: false,
+        canManageAgents: true,
         canViewQueues: true,
         canAccessAdminFeatures: false,
       }

@@ -1,6 +1,7 @@
 import { Context } from "fresh"
-import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
+import { fetchAllPipelines } from "~/server/buildkite-data.ts"
+import type { AppPipeline } from "~/types/app.ts"
+import { type AppState, filterPipelinesForUser } from "~/server/middleware.ts"
 
 interface PipelinesResponse {
   pipelines: AppPipeline[]

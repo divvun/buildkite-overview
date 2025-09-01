@@ -1,8 +1,8 @@
 import { Context, page } from "fresh"
-import { generateAuthUrl } from "~/utils/auth.ts"
-import { type AppState } from "~/utils/middleware.ts"
-import { getOptionalSession } from "~/utils/session.ts"
-import { getGithubCredentials, isProduction } from "~/utils/config.ts"
+import { generateAuthUrl } from "~/server/auth.ts"
+import { type AppState } from "~/server/middleware.ts"
+import { getOptionalSession } from "~/server/session.ts"
+import { getGithubCredentials, isProduction } from "~/server/config.ts"
 
 export const config = {
   skipInheritedLayouts: true,

@@ -2,9 +2,10 @@ import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import PipelineFilters from "~/islands/PipelineFilters.tsx"
 import PipelinesContent from "~/islands/PipelinesContent.tsx"
-import { type AppPipeline, fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
-import { type SessionData } from "~/utils/session.ts"
+import { fetchAllPipelines } from "~/server/buildkite-data.ts"
+import type { AppPipeline } from "~/types/app.ts"
+import { type AppState, filterPipelinesForUser } from "~/server/middleware.ts"
+import type { SessionData } from "~/types/session.ts"
 
 interface PipelinesProps {
   session?: SessionData | null

@@ -1,7 +1,7 @@
 import { Context, RouteHandler } from "fresh"
-import { getCacheManager } from "~/utils/cache/cache-manager.ts"
-import { type AppState } from "~/utils/middleware.ts"
-import { getBuildkiteWebhookToken } from "~/utils/config.ts"
+import { getCacheManager } from "~/server/cache/cache-manager.ts"
+import { type AppState } from "~/server/middleware.ts"
+import { getBuildkiteWebhookToken } from "~/server/config.ts"
 
 interface BuildkiteWebhookEvent {
   event: string

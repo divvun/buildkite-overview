@@ -1,5 +1,5 @@
 import { createDefine } from "fresh"
-import { SessionData } from "./utils/session.ts"
+import type { SessionData } from "./types/session.ts"
 
 export interface State {
   session?: SessionData | null

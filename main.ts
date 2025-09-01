@@ -1,16 +1,22 @@
+console.log("🚀 Starting Buildkite Overview Application...")
+
 import { App, staticFiles } from "fresh"
 import { define } from "./utils.ts"
-import { getBackgroundPoller } from "./utils/background-poller.ts"
-import { getCacheManager } from "./utils/cache/cache-manager.ts"
-import { type AppState, localizationMiddleware, requireGlobalAuth, sessionMiddleware } from "./utils/middleware.ts"
-import { getConfig, shouldBypassOrgCheck, shouldRequireAuth } from "./utils/config.ts"
-import { startSessionCleanup } from "./utils/session-store.ts"
-import { startTokenCleanup } from "./utils/token-store.ts"
-import { securityHeaders } from "./utils/security-headers.ts"
-import { csrfContext, csrfProtection } from "./utils/csrf.ts"
+import { getBackgroundPoller } from "./server/background-poller.ts"
+import { getCacheManager } from "./server/cache/cache-manager.ts"
+import { parseCliArgs } from "./server/cli.ts"
+import { getConfig, shouldBypassOrgCheck, shouldRequireAuth } from "./server/config.ts"
+import { csrfContext, csrfProtection } from "./server/csrf.ts"
+import { type AppState, localizationMiddleware, requireGlobalAuth, sessionMiddleware } from "./server/middleware.ts"
+import { securityHeaders } from "./server/security-headers.ts"
+import { startSessionCleanup } from "./server/session-store.ts"
+import { startTokenCleanup } from "./server/token-store.ts"
 
-// Initialize configuration (validates environment variables)
-const config = getConfig()
+// Parse CLI arguments
+const cliOptions = parseCliArgs()
+
+// Initialize configuration (validates environment variables/config file)
+getConfig(cliOptions.config)
 console.log("✅ Configuration initialized and validated")
 
 // Log configuration status

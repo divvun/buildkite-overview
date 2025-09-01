@@ -2,9 +2,11 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import AgentsContent from "~/islands/AgentsContent.tsx"
-import { type AppAgent, fetchAllAgents } from "~/utils/buildkite-data.ts"
-import { type AppState } from "~/utils/middleware.ts"
-import { requireMember, type SessionData } from "~/utils/session.ts"
+import { fetchAllAgents } from "~/server/buildkite-data.ts"
+import type { AppAgent } from "~/types/app.ts"
+import { type AppState } from "~/server/middleware.ts"
+import { requireMember } from "~/server/session.ts"
+import type { SessionData } from "~/types/session.ts"
 
 interface AgentsProps {
   session: SessionData

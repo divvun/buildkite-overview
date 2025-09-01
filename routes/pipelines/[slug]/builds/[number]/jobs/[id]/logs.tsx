@@ -1,10 +1,11 @@
 import { Context, page } from "fresh"
-import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
-import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
+import { type AppState, canAccessPipeline } from "~/server/middleware.ts"
+import { fetchAllPipelines } from "~/server/buildkite-data.ts"
 import FullscreenLogs from "~/islands/FullscreenLogs.tsx"
 import { processLogsIntoGroups } from "~/utils/log-processing.tsx"
 import LoginRequired from "~/components/LoginRequired.tsx"
-import { userHasPermission } from "~/utils/session.ts"
+import { userHasPermission } from "~/server/session.ts"
+import { getCacheManager } from "~/server/cache/cache-manager.ts"
 
 interface LogData {
   url?: string
@@ -130,7 +131,6 @@ export const handler = {
 
     // Try to get job command from cache
     try {
-      const { getCacheManager } = await import("~/utils/cache/cache-manager.ts")
       const cacheManager = getCacheManager()
 
       // Extract UUID from GraphQL ID if it's base64 encoded

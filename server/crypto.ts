@@ -5,7 +5,7 @@ if (typeof Deno === "undefined") {
   throw new Error("Crypto utilities can only be used on the server side")
 }
 
-import { getSessionSecret } from "~/utils/config.ts"
+import { getSessionSecret } from "~/server/config.ts"
 
 // Convert string to Uint8Array for crypto operations
 function stringToUint8Array(str: string): Uint8Array {

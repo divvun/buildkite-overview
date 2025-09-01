@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "preact/hooks"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
-import { type AppAgent } from "~/utils/buildkite-data.ts"
+import { type AppAgent } from "~/types/app.ts"
 import { formatDuration, formatLastSeen, getConnectionIcon, getConnectionVariant } from "~/utils/formatters.ts"
 import { useLocalization } from "~/utils/localization-context.tsx"
 

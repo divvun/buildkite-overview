@@ -1,17 +1,12 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import BuildDetail from "~/islands/BuildDetail.tsx"
-import {
-  type BuildkiteBuild,
-  type BuildkiteJob,
-  GET_BUILD_DETAILS,
-  GET_PIPELINE_BUILDS,
-  getBuildkiteClient,
-} from "~/utils/buildkite-client.ts"
-import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
-import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
-import { withRetry } from "~/utils/retry-helper.ts"
-import { type SessionData } from "~/utils/session.ts"
+import { GET_BUILD_DETAILS, GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/server/buildkite-client.ts"
+import type { BuildkiteBuild, BuildkiteJob } from "~/types/buildkite.ts"
+import { fetchAllPipelines } from "~/server/buildkite-data.ts"
+import { type AppState, canAccessPipeline } from "~/server/middleware.ts"
+import { withRetry } from "~/server/retry-helper.ts"
+import type { SessionData } from "~/types/session.ts"
 
 interface BuildDetailProps {
   session?: SessionData | null

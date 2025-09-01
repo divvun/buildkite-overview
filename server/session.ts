@@ -1,3 +1,10 @@
+console.log("🔧 Loading session utilities...")
+
+if (typeof Deno === "undefined") {
+  throw new Error("Session module can only be used on the server side")
+}
+
+import { getConfig, shouldBypassOrgCheck } from "~/server/config.ts"
 import {
   BUILD_ADMIN_TEAMS,
   getRolePermissions,
@@ -7,24 +14,9 @@ import {
   type UserPermissions,
   UserRole,
 } from "~/utils/rbac.ts"
-import { getConfig, shouldBypassOrgCheck } from "~/utils/config.ts"
-import { createSession, deleteSession, getSession, updateSession } from "~/utils/session-store.ts"
+import { createSession, getSession, updateSession } from "~/server/session-store.ts"
 
-export interface SessionUser {
-  id: number
-  login: string
-  name: string | null
-  email: string | null
-  avatar_url: string
-}
-
-export interface SessionData {
-  user: SessionUser
-  organizations: string[]
-  teamMemberships: string[]
-  role: UserRole
-  expires_at: number
-}
+import type { SessionData } from "~/types/session.ts"
 
 export async function getSessionFromRequest(request: Request): Promise<SessionData | null> {
   // Check if BYPASS_ORG_CHECK is enabled for development

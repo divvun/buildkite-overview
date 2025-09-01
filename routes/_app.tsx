@@ -1,7 +1,7 @@
 import type { PageProps } from "fresh"
 import AutoRefresh from "~/islands/AutoRefresh.tsx"
 import { AUTO_REFRESH_INTERVAL_SECONDS } from "~/utils/constants.ts"
-import type { AppState } from "~/utils/middleware.ts"
+import type { AppState } from "~/server/middleware.ts"
 
 export default function App({ Component, state }: PageProps<unknown, AppState>) {
   return (

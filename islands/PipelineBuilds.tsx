@@ -1,5 +1,5 @@
 import { useEffect, useState } from "preact/hooks"
-import { type BuildkiteBuild } from "~/utils/buildkite-client.ts"
+import { type BuildkiteBuild } from "~/types/buildkite.ts"
 import {
   formatDuration,
   formatTimeAgo,

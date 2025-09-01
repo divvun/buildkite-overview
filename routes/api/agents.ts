@@ -1,7 +1,8 @@
 import { Context } from "fresh"
-import { type AppAgent, fetchAllAgents } from "~/utils/buildkite-data.ts"
-import { type AppState } from "~/utils/middleware.ts"
-import { userHasPermission } from "~/utils/session.ts"
+import { fetchAllAgents } from "~/server/buildkite-data.ts"
+import type { AppAgent } from "~/types/app.ts"
+import { type AppState } from "~/server/middleware.ts"
+import { userHasPermission } from "~/server/session.ts"
 
 interface AgentsResponse {
   agents: AppAgent[]

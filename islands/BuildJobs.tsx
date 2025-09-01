@@ -1,7 +1,7 @@
 import { useEffect, useState } from "preact/hooks"
 import { useLocalization } from "~/utils/localization-context.tsx"
 import JobLogs from "~/islands/JobLogs.tsx"
-import { type BuildkiteJob } from "~/utils/buildkite-client.ts"
+import { type BuildkiteJob } from "~/types/buildkite.ts"
 import {
   formatDuration as formatDurationFromUtils,
   formatTimeAgo as formatTimeAgoFromUtils,

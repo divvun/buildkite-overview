@@ -2,9 +2,10 @@
 // Protects against Cross-Site Request Forgery attacks
 
 import { define } from "~/utils.ts"
-import { constantTimeCompare, generateCSRFToken } from "~/utils/crypto.ts"
-import { getSession } from "~/utils/session-store.ts"
-import { getConfig } from "~/utils/config.ts"
+import type { AppState } from "~/server/middleware.ts"
+import { constantTimeCompare, generateCSRFToken } from "~/server/crypto.ts"
+import { getSession } from "~/server/session-store.ts"
+import { getConfig } from "~/server/config.ts"
 
 export interface CSRFProtectedState {
   csrfToken?: string

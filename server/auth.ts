@@ -10,7 +10,7 @@ import {
 } from "openid-client"
 import { BUILD_ADMIN_TEAMS, REQUIRED_ORGS } from "~/utils/rbac.ts"
 
-import { getBaseUrl, getGithubCredentials, shouldBypassOrgCheck } from "~/utils/config.ts"
+import { getBaseUrl, getGithubCredentials, shouldBypassOrgCheck } from "./config.ts"
 
 // Get OAuth configuration from secure config module
 function getOAuthCredentials() {

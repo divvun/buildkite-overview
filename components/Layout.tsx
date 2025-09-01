@@ -1,7 +1,7 @@
 import type { ComponentChildren } from "preact"
 import LanguageSelector from "~/islands/LanguageSelector.tsx"
-import type { SessionData } from "~/utils/session.ts"
-import { getUserRole, userHasPermission } from "~/utils/session.ts"
+import type { SessionData } from "~/types/session.ts"
+import { UserRole } from "~/utils/rbac.ts"
 
 interface BreadcrumbItem {
   label: string
@@ -32,9 +32,9 @@ export default function Layout(
   // Use provided t function or create a fallback that returns the key
   const translate = t || ((id: string) => id)
 
-  // Get user role for UI decisions
-  const userRole = getUserRole(session ?? null)
-  const canManageAgents = userHasPermission(session ?? null, "canManageAgents")
+  // Get user role for UI decisions (client-safe implementation)
+  const userRole = session?.role ?? UserRole.UNAUTHENTICATED
+  const canManageAgents = session?.role === UserRole.ADMIN || session?.role === UserRole.MEMBER
   const content = (
     <wa-page mobile-breakpoint="768">
       <nav slot="navigation" aria-label={translate("primary-navigation")}>
@@ -116,11 +116,11 @@ export default function Layout(
                         <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
                           Role:{" "}
                           <wa-badge
-                            variant={userRole === "admin"
+                            variant={userRole === UserRole.ADMIN
                               ? "success"
-                              : userRole === "member"
+                              : userRole === UserRole.MEMBER
                               ? "brand"
-                              : userRole === "authenticated"
+                              : userRole === UserRole.AUTHENTICATED
                               ? "warning"
                               : "neutral"}
                           >
@@ -231,11 +231,11 @@ export default function Layout(
                   <span style="display: flex; align-items: center; gap: var(--wa-space-xs)">
                     Role:{" "}
                     <wa-badge
-                      variant={userRole === "admin"
+                      variant={userRole === UserRole.ADMIN
                         ? "success"
-                        : userRole === "member"
+                        : userRole === UserRole.MEMBER
                         ? "brand"
-                        : userRole === "authenticated"
+                        : userRole === UserRole.AUTHENTICATED
                         ? "warning"
                         : "neutral"}
                     >

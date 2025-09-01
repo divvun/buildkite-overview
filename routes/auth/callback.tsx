@@ -6,11 +6,11 @@ import {
   getUserOrganizations,
   getUserTeamMemberships,
   hasRequiredOrgAccess,
-} from "~/utils/auth.ts"
+} from "~/server/auth.ts"
 import { determineUserRole } from "~/utils/rbac.ts"
-import { createSessionCookie } from "~/utils/session.ts"
-import { storeAccessToken } from "~/utils/token-store.ts"
-import { getConfig } from "~/utils/config.ts"
+import { createSessionCookie } from "~/server/session.ts"
+import { storeAccessToken } from "~/server/token-store.ts"
+import { getConfig } from "~/server/config.ts"
 
 export const handler = {
   async GET(ctx: Context<State>) {

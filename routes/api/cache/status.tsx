@@ -1,7 +1,7 @@
 import { Context, RouteHandler } from "fresh"
-import { type AppState } from "~/utils/middleware.ts"
-import { userHasPermission } from "~/utils/session.ts"
-import { getCacheManager } from "~/utils/cache/cache-manager.ts"
+import { type AppState } from "~/server/middleware.ts"
+import { userHasPermission } from "~/server/session.ts"
+import { getCacheManager } from "~/server/cache/cache-manager.ts"
 import process from "node:process"
 
 export const handler: RouteHandler<unknown, AppState> = {

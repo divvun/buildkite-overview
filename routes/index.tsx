@@ -2,10 +2,11 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import DashboardContent from "~/islands/DashboardContent.tsx"
-import { type AgentMetrics, type FailingPipeline, fetchAgentMetrics, fetchQueueStatus } from "~/utils/buildkite-data.ts"
-import { type AppState, filterPipelinesForUser } from "~/utils/middleware.ts"
-import { fetchDashboardData } from "~/utils/pipeline-data-service.ts"
-import { type SessionData } from "~/utils/session.ts"
+import { fetchAgentMetrics, fetchQueueStatus } from "~/server/buildkite-data.ts"
+import type { AgentMetrics, FailingPipeline } from "~/types/app.ts"
+import { type AppState, filterPipelinesForUser } from "~/server/middleware.ts"
+import { fetchDashboardData } from "~/server/pipeline-data-service.ts"
+import type { SessionData } from "~/types/session.ts"
 
 interface HomeProps {
   session?: SessionData | null

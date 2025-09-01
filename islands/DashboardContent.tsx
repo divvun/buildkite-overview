@@ -1,12 +1,11 @@
 /// <reference path="../types/webawesome.d.ts" />
 import { useCallback, useEffect, useState } from "preact/hooks"
-import BuildHistoryTooltip from "~/components/BuildHistoryTooltip.tsx"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
-import { type AgentMetrics, type BuildHistoryItem, type FailingPipeline } from "~/utils/buildkite-data.ts"
+import { type AgentMetrics, type BuildHistoryItem, type FailingPipeline } from "~/types/app.ts"
+import { type SessionData } from "~/types/session.ts"
 import { formatDurationSeconds, formatFailingSince } from "~/utils/formatters.ts"
 import { useLocalization } from "~/utils/localization-context.tsx"
-import { type SessionData } from "~/utils/session.ts"
 
 interface DashboardData {
   totalPipelines: number
@@ -193,7 +192,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
           ? (
             <div class="wa-stack wa-gap-s" style="margin-top: var(--wa-space-m)">
               {failingPipelines.map((pipeline: FailingPipeline) => (
-                <BuildHistoryTooltip key={pipeline.id} pipelineSlug={pipeline.slug}>
+                <div key={pipeline.id}>
                   <wa-card class="clickable-card">
                     <a
                       href={`/pipelines/${pipeline.slug}`}
@@ -238,7 +237,7 @@ export default function DashboardContent({ session }: DashboardContentProps) {
                       </div>
                     </a>
                   </wa-card>
-                </BuildHistoryTooltip>
+                </div>
               ))}
             </div>
           )

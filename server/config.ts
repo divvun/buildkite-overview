@@ -2,10 +2,13 @@
 // This module should NEVER be imported by client-side code
 // All configuration access is centralized here to prevent leakage
 
+console.log("🔧 Loading configuration...")
+
 if (typeof Deno === "undefined") {
   throw new Error("Config module can only be used on the server side")
 }
 
+import { existsSync } from "@std/fs"
 import { parse } from "@std/toml"
 
 export interface AppConfig {
@@ -32,18 +35,73 @@ export interface AppConfig {
   }
 }
 
-// Load and parse TOML configuration from environment variable
-function loadConfigFromTOML(): AppConfig {
-  const configToml = Deno.env.get("CONFIG_TOML")
+// Interface for parsed TOML structure
+interface ParsedTomlConfig {
+  github?: {
+    client_id?: string
+    client_secret?: string
+    app_token?: string
+  }
+  buildkite?: {
+    api_key?: string
+    webhook_token?: string
+  }
+  app?: {
+    base_url?: string
+    session_secret?: string
+    is_production?: boolean
+    require_auth?: boolean
+    bypass_org_check?: boolean
+  }
+}
 
-  if (!configToml) {
-    console.error("❌ Missing CONFIG_TOML environment variable")
-    console.error("Please provide configuration as a TOML string in the CONFIG_TOML environment variable.")
-    Deno.exit(1)
+// Load and parse TOML configuration from file or environment variable
+function loadConfigFromTOML(configPath?: string): AppConfig {
+  let configToml: string
+
+  if (configPath) {
+    // Load from specified file path
+    if (!existsSync(configPath)) {
+      console.error(`❌ Config file not found: ${configPath}`)
+      Deno.exit(1)
+    }
+
+    try {
+      configToml = Deno.readTextFileSync(configPath)
+    } catch (error) {
+      console.error(`❌ Failed to read config file: ${configPath}`)
+      console.error(error instanceof Error ? error.message : String(error))
+      Deno.exit(1)
+    }
+  } else {
+    // Try CONFIG_TOML environment variable first
+    configToml = Deno.env.get("CONFIG_TOML") ?? ""
+
+    // If no CONFIG_TOML, try default config.toml file
+    if (!configToml) {
+      const defaultConfigPath = "config.toml"
+      if (existsSync(defaultConfigPath)) {
+        try {
+          configToml = Deno.readTextFileSync(defaultConfigPath)
+          console.log(`✅ Loaded config from ${defaultConfigPath}`)
+        } catch (error) {
+          console.error(`❌ Failed to read default config file: ${defaultConfigPath}`)
+          console.error(error instanceof Error ? error.message : String(error))
+          Deno.exit(1)
+        }
+      } else {
+        console.error("❌ No configuration found")
+        console.error("Please provide configuration via:")
+        console.error("  1. -c/--config flag with config file path")
+        console.error("  2. CONFIG_TOML environment variable")
+        console.error("  3. config.toml file in current directory")
+        Deno.exit(1)
+      }
+    }
   }
 
   try {
-    const parsed = parse(configToml) as Record<string, any>
+    const parsed = parse(configToml) as ParsedTomlConfig
 
     // Validate required structure
     if (!parsed.github?.client_id || !parsed.github?.client_secret || !parsed.github?.app_token) {
@@ -52,6 +110,10 @@ function loadConfigFromTOML(): AppConfig {
 
     if (!parsed.buildkite?.api_key || !parsed.buildkite?.webhook_token) {
       throw new Error("Missing required buildkite configuration fields")
+    }
+
+    if (!parsed.app?.session_secret) {
+      throw new Error("Missing required app.session_secret in configuration. Generate one with: openssl rand -hex 32")
     }
 
     return {
@@ -66,7 +128,7 @@ function loadConfigFromTOML(): AppConfig {
       },
       app: {
         baseUrl: parsed.app?.base_url || "http://localhost:8000",
-        sessionSecret: parsed.app?.session_secret || generateSessionSecret(),
+        sessionSecret: parsed.app.session_secret,
         isProduction: parsed.app?.is_production === true,
         requireAuth: parsed.app?.require_auth === true,
         bypassOrgCheck: parsed.app?.bypass_org_check === true,
@@ -79,29 +141,17 @@ function loadConfigFromTOML(): AppConfig {
   }
 }
 
-// Generate session secret if not provided
-function generateSessionSecret(): string {
-  const randomSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
-
-  console.warn("⚠️  Using generated session secret (no session_secret in config)")
-  console.warn("   Set session_secret in your TOML configuration for production")
-
-  return randomSecret
-}
-
 // Initialize configuration
-function createConfig(): AppConfig {
-  return loadConfigFromTOML()
+function createConfig(configPath?: string): AppConfig {
+  return loadConfigFromTOML(configPath)
 }
 
 // Singleton configuration instance
 let config: AppConfig | null = null
 
-export function getConfig(): AppConfig {
+export function getConfig(configPath?: string): AppConfig {
   if (!config) {
-    config = createConfig()
+    config = createConfig(configPath)
   }
   return config
 }

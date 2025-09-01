@@ -1,7 +1,7 @@
 import { Context, RouteHandler } from "fresh"
-import { type AppState, canAccessPipeline } from "~/utils/middleware.ts"
-import { getCacheManager } from "~/utils/cache/cache-manager.ts"
-import { fetchAllPipelines } from "~/utils/buildkite-data.ts"
+import { type AppState, canAccessPipeline } from "~/server/middleware.ts"
+import { getCacheManager } from "~/server/cache/cache-manager.ts"
+import { fetchAllPipelines } from "~/server/buildkite-data.ts"
 
 export const handler: RouteHandler<unknown, AppState> = {
   async GET(ctx: Context<AppState>) {

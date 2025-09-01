@@ -1,101 +1,23 @@
+import { type BuildkiteBuild, type BuildkitePipeline } from "~/types/buildkite.ts"
 import {
-  type BuildkiteBuild,
-  type BuildkitePipeline,
-  GET_ORGANIZATION_CLUSTERS_AND_METRICS,
-  getBuildkiteClient,
-} from "./buildkite-client.ts"
+  type AgentMetrics,
+  type AppAgent,
+  type AppBuild,
+  type AppPipeline,
+  type BuildHistoryItem,
+  type FailingPipeline,
+  type QueueBuild,
+  type QueueJob,
+  type QueueStatus,
+} from "~/types/app.ts"
+import { GET_ORGANIZATION_CLUSTERS_AND_METRICS, getBuildkiteClient } from "./buildkite-client.ts"
 import { getCacheManager } from "./cache/cache-manager.ts"
-import { formatDuration, formatTimeAgo, normalizeStatus, ORGANIZATIONS } from "./formatters.ts"
+import { formatDuration, formatTimeAgo, normalizeStatus, ORGANIZATIONS } from "~/utils/formatters.ts"
 import { withRetry } from "./retry-helper.ts"
-
-export interface AppPipeline {
-  id: string
-  name: string
-  slug: string
-  repo?: string
-  status: string
-  lastBuild: string
-  tags: string[]
-  visibility?: string
-  builds: {
-    total: number
-    passed: number
-    failed: number
-  }
-  buildHistory?: BuildHistoryItem[]
-  url: string
-}
-
-export interface AppBuild {
-  name: string
-  status: string
-  duration: string
-  lastRun: string
-  repo: string
-  url: string
-  pipelineSlug?: string
-  number?: number
-}
-
-export interface BuildHistoryItem {
-  status: "passed" | "success" | "failed" | "running" | "cancelled" | "blocked" | "waiting" | "scheduled"
-  buildNumber: number
-  finishedAt?: string
-}
 
 // Minimal interface for pipeline status determination
 interface BuildWithState {
   state: string
-}
-
-export interface FailingPipeline {
-  id: string
-  name: string
-  slug: string
-  repo?: string
-  visibility?: string
-  tags?: string[]
-  failingSince: Date
-  last10Builds: BuildHistoryItem[]
-  url: string
-}
-
-export interface AgentMetrics {
-  averageWaitTime: number // in seconds
-  p95WaitTime: number // in seconds
-  p99WaitTime: number // in seconds
-}
-
-export interface AppAgent {
-  id: string
-  name: string
-  hostname?: string
-  connectionState: string
-  isRunningJob: boolean
-  operatingSystem?: string
-  version?: string
-  ipAddress?: string
-  organization: string
-  queueKey?: string
-  metadata?: Array<{
-    key: string
-    value: string
-  }>
-  currentJob?: {
-    id: string
-    state: string
-    url?: string
-    pipelineName: string
-    pipelineSlug: string
-    buildNumber: number
-    buildUrl: string
-    startedAt?: string
-    duration?: string
-  }
-  createdAt: Date
-  connectedAt?: Date
-  disconnectedAt?: Date
-  lastSeen?: Date
 }
 
 function mapBuildToHistoryItem(build: BuildkiteBuild): BuildHistoryItem {
@@ -585,41 +507,6 @@ export async function fetchAgentMetrics(): Promise<AgentMetrics> {
 }
 
 // Queue analysis interfaces and functions
-export interface QueueStatus {
-  queueKey: string
-  runningJobs: QueueJob[]
-  scheduledJobs: QueueJob[]
-  scheduledBuilds: QueueBuild[]
-  connectedAgents: number
-  availableAgents: number
-}
-
-export interface QueueBuild {
-  buildId: string
-  buildNumber: number
-  pipelineName: string
-  pipelineSlug: string
-  repo?: string
-  buildUrl: string
-  scheduledAt: string
-  jobs: QueueJob[]
-}
-
-export interface QueueJob {
-  id: string
-  buildId: string
-  buildNumber: number
-  pipelineName: string
-  pipelineSlug: string
-  repo?: string
-  state: string
-  createdAt: string
-  scheduledAt?: string
-  startedAt?: string
-  agentQueryRules?: string[]
-  url?: string
-  buildUrl: string
-}
 
 // Extract jobs from builds and group by queue
 function extractJobsByQueue(builds: any[], jobState: string): Map<string, QueueJob[]> {
