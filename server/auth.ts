@@ -167,8 +167,9 @@ export async function getUserDataWithGraphQL(accessToken: string): Promise<{
       divvun: organization(login: "divvun") {
         viewerIsAMember
         # Check if user is in Build Admins team
+        # If this returns non-null, user is a member
         team(slug: "build-admins") {
-          viewerIsAMember
+          slug
         }
       }
       giellalt: organization(login: "giellalt") {
@@ -210,7 +211,8 @@ export async function getUserDataWithGraphQL(accessToken: string): Promise<{
   const organizations = data.data.viewer.organizations.nodes.map((org: any) => org.login)
 
   // Check if user is in Build Admins team
-  const isBuildAdmin = data.data.divvun?.team?.viewerIsAMember === true
+  // If team is not null, user is a member (otherwise team would be null)
+  const isBuildAdmin = !!data.data.divvun?.team
 
   console.log(`GraphQL query returned: orgs [${organizations.join(", ")}], buildAdmin: ${isBuildAdmin}`)
   return { user, organizations, isBuildAdmin }
