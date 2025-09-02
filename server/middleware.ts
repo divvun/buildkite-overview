@@ -11,7 +11,7 @@ import {
   refreshSession,
   shouldRefreshSession,
   userHasPermission,
-  userHasRole
+  userHasRole,
 } from "./session.ts"
 
 // Extend the State interface to include session and localization

@@ -2,7 +2,7 @@ import { Context, page } from "fresh"
 import { generateAuthUrl } from "~/server/auth.ts"
 import { type AppState } from "~/server/middleware.ts"
 import { getOptionalSession } from "~/server/session.ts"
-import { getGithubCredentials, isProduction } from "~/server/config.ts"
+import { getBaseUrl, getGithubCredentials, isProduction } from "~/server/config.ts"
 
 export const config = {
   skipInheritedLayouts: true,
@@ -30,17 +30,38 @@ export const handler = {
       })
     }
 
+    // Check Referer header to determine where user came from
+    let refererReturnUrl: string | undefined
+    const referer = ctx.req.headers.get("referer")
+    if (referer) {
+      try {
+        const refererUrl = new URL(referer)
+        const baseUrl = getBaseUrl()
+        const baseUrlObj = new URL(baseUrl)
+
+        // If referer is from our domain and not the login page itself
+        if (refererUrl.origin === baseUrlObj.origin && !refererUrl.pathname.includes("/auth/login")) {
+          refererReturnUrl = refererUrl.pathname + refererUrl.search
+        }
+      } catch (error) {
+        // Invalid URL, ignore
+      }
+    }
+
+    // Use referer return URL if no explicit return URL is provided
+    const finalReturnUrl = returnUrl || refererReturnUrl
+
     // Create appropriate message based on context
     let message: string | undefined
     if (reason === "logs_require_auth") {
       message = "Please sign in with GitHub to view build logs"
-    } else if (returnUrl?.includes("/logs")) {
+    } else if (finalReturnUrl?.includes("/logs")) {
       message = "Sign in to view build logs"
     }
 
     return page({
       error: error || undefined,
-      returnUrl: returnUrl || undefined,
+      returnUrl: finalReturnUrl || undefined,
       message,
     })
   },

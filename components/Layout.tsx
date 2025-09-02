@@ -253,15 +253,15 @@ export default function Layout(
               </wa-dropdown>
             )
             : (
-              <wa-button size="small" variant="brand" appearance="outlined">
+              <wa-button
+                size="small"
+                variant="brand"
+                appearance="outlined"
+                href="/auth/login"
+                aria-label={translate("sign-in-github")}
+              >
                 <wa-icon slot="prefix" name="github"></wa-icon>
-                <a
-                  href="/auth/login"
-                  style="text-decoration: none; color: inherit"
-                  aria-label={translate("sign-in-github")}
-                >
-                  {translate("login")}
-                </a>
+                {translate("login")}
               </wa-button>
             )}
         </div>
