@@ -10,5 +10,4 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  # Uncomment and modify for specific storage class
-  # storageClassName: "fast-ssd"
+  storageClassName: "local-path"
