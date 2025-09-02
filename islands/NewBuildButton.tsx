@@ -15,11 +15,20 @@ export default function NewBuildButton({ pipelineSlug }: NewBuildButtonProps) {
     setError("")
 
     try {
+      // Get CSRF token from meta tag
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")
+
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      }
+
+      if (csrfToken) {
+        headers["X-CSRF-Token"] = csrfToken
+      }
+
       const response = await fetch(`/api/pipelines/${pipelineSlug}/builds/create`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
       })
 
       const data = await response.json()

@@ -1,11 +1,10 @@
 // CSRF Protection middleware and utilities
 // Protects against Cross-Site Request Forgery attacks
 
-import { define } from "~/utils.ts"
+import { constantTimeCompare } from "~/server/crypto.ts"
 import type { AppState } from "~/server/middleware.ts"
-import { constantTimeCompare, generateCSRFToken } from "~/server/crypto.ts"
 import { getSession } from "~/server/session-store.ts"
-import { getConfig } from "~/server/config.ts"
+import { define } from "~/utils.ts"
 
 export interface CSRFProtectedState {
   csrfToken?: string
@@ -192,7 +191,7 @@ export async function generateCSRFInput(request: Request): Promise<string> {
 // Middleware to add CSRF token to page context
 export const csrfContext = define.middleware(async (ctx) => {
   const csrfToken = await getCSRFTokenForSession(ctx.req) // Add CSRF token to state for templates to use
-  ;(ctx.state as CSRFProtectedState).csrfToken = csrfToken || undefined
+  ;(ctx.state as AppState).csrfToken = csrfToken || undefined
 
   return await ctx.next()
 })

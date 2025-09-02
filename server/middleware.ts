@@ -1,19 +1,18 @@
 import { FluentBundle } from "@fluent/bundle"
+import type { SessionData } from "~/types/session.ts"
 import { define, State } from "~/utils.ts"
 import type { SupportedLocale } from "~/utils/localization.ts"
+import { type UserPermissions, UserRole } from "~/utils/rbac.ts"
+import { shouldBypassOrgCheck, shouldRequireAuth } from "./config.ts"
 import {
   createMockSession,
-  createSessionCookie,
   getOptionalSession,
   getUserRole,
   refreshSession,
   shouldRefreshSession,
   userHasPermission,
-  userHasRole,
+  userHasRole
 } from "./session.ts"
-import { type UserPermissions, UserRole } from "~/utils/rbac.ts"
-import { shouldBypassOrgCheck, shouldRequireAuth } from "./config.ts"
-import type { SessionData } from "~/types/session.ts"
 
 // Extend the State interface to include session and localization
 export interface AppState extends State {
@@ -22,6 +21,7 @@ export interface AppState extends State {
   l10n: FluentBundle
   t: (id: string, args?: Record<string, unknown>) => string
   title?: string
+  csrfToken?: string
 }
 
 export const sessionMiddleware = define.middleware(async (ctx) => {

@@ -10,6 +10,7 @@ export default function App({ Component, state }: PageProps<unknown, AppState>) 
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{state?.title || state?.t?.("default-app-title") || "Buildkite Overview"}</title>
+        {state?.csrfToken && <meta name="csrf-token" content={state.csrfToken} />}
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400&family=Noto+Sans+Hebrew:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
           rel="stylesheet"
@@ -27,14 +28,22 @@ export default function App({ Component, state }: PageProps<unknown, AppState>) 
               if (name === 'github') {
                 return '/libraries/boxicons/svg/logos/bxl-github.svg';
               }
-              // Map some common icon names
+              // Map FontAwesome icon names to Boxicons equivalents
               if (name === 'bars') {
                 name = 'menu';
               }
               if (name === 'arrow-rotate-right') {
                 name = 'refresh';
               }
-              console.log('Resolving icon:', name);
+              if (name === 'circle-xmark') {
+                name = 'x-circle';
+              }
+              if (name === 'spinner') {
+                name = 'loader-circle';
+              }
+              if (name === 'clock') {
+                name = 'time';
+              }
               return \`/libraries/boxicons/svg/regular/bx-\${name}.svg\`
             }
           });
