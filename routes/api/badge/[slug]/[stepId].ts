@@ -63,9 +63,6 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
                     finishedAt
                     exitStatus
                     passed
-                    createdAt
-                    retriedInJobId
-                    retried
                     step {
                       key
                     }
@@ -75,7 +72,6 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
                     uuid
                     label
                     state
-                    createdAt
                     step {
                       key
                     }
@@ -85,13 +81,11 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
                     uuid
                     label
                     state
-                    createdAt
                   }
                   ... on JobTypeWait {
                     id
                     uuid
                     state
-                    createdAt
                   }
                 }
               }
@@ -231,13 +225,6 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     const job = latestBuild.jobs?.edges?.[0]?.node
 
     console.log(`[Step Badge Debug] Job found:`, job)
-    if (job && "retriedInJobId" in job) {
-      console.log(`[Step Badge Debug] Job retriedInJobId:`, job.retriedInJobId)
-      console.log(`[Step Badge Debug] Job retried:`, (job as any).retried)
-    }
-    if (job && "createdAt" in job) {
-      console.log(`[Step Badge Debug] Job createdAt:`, (job as any).createdAt)
-    }
 
     if (!job) {
       console.log(`[Step Badge Debug] No job found for step key: ${stepId}`)

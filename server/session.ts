@@ -30,8 +30,6 @@ export async function getSessionFromRequest(request: Request): Promise<SessionDa
       .find((c) => c.startsWith("session_id="))
       ?.split("=")[1]
 
-    console.log("Session ID from cookie:", sessionIdCookie)
-
     if (!sessionIdCookie) {
       return null
     }
