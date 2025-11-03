@@ -29,6 +29,35 @@ export const BUILD_STATUS_MAP: Record<string, string> = {
   "unknown": "unknown",
 }
 
+// Job status mapping from Buildkite JobStates enum
+// Note: Jobs don't have PASSED/FAILED states - they have FINISHED with a passed/exitStatus field
+export const JOB_STATUS_MAP: Record<string, string> = {
+  "ACCEPTED": "running",
+  "ASSIGNED": "running",
+  "BLOCKED": "blocked",
+  "BLOCKED_FAILED": "blocked",
+  "BROKEN": "failed",
+  "CANCELED": "canceled",
+  "CANCELING": "canceled",
+  "EXPIRED": "failed",
+  "FINISHED": "finished", // Special case: check passed/exitStatus
+  "LIMITED": "waiting",
+  "LIMITING": "waiting",
+  "PENDING": "waiting",
+  "PLATFORM_LIMITED": "waiting",
+  "PLATFORM_LIMITING": "waiting",
+  "RESERVED": "scheduled",
+  "RUNNING": "running",
+  "SCHEDULED": "scheduled",
+  "SKIPPED": "passed",
+  "TIMED_OUT": "failed",
+  "TIMING_OUT": "failed",
+  "UNBLOCKED": "blocked",
+  "UNBLOCKED_FAILED": "blocked",
+  "WAITING": "waiting",
+  "WAITING_FAILED": "failed",
+}
+
 /**
  * Checks if a build is in a finished/terminal state and should not be refreshed
  */
@@ -46,6 +75,32 @@ export function isBuildFinished(state: string): boolean {
 
 export function normalizeStatus(status: string): string {
   return BUILD_STATUS_MAP[status] || "unknown"
+}
+
+/**
+ * Get normalized status for a job
+ * Jobs use different states than builds and require checking passed/exitStatus for FINISHED jobs
+ */
+export function getJobStatus(job: { state?: string; passed?: boolean; exitStatus?: number | null }): string {
+  if (!job.state) return "unknown"
+
+  const mapped = JOB_STATUS_MAP[job.state]
+
+  // Special handling for FINISHED state - check if the job passed or failed
+  if (job.state === "FINISHED") {
+    // Check passed field first (most reliable)
+    if (job.passed !== undefined) {
+      return job.passed ? "passed" : "failed"
+    }
+    // Fallback to exitStatus (0 = success, non-zero = failure, null/undefined = unknown)
+    if (job.exitStatus !== undefined && job.exitStatus !== null) {
+      return job.exitStatus === 0 ? "passed" : "failed"
+    }
+    // If we can't determine, return as finished
+    return "passed" // Default to passed for finished jobs without clear failure
+  }
+
+  return mapped || "unknown"
 }
 
 export function getBadgeVariant(status: string): "brand" | "neutral" | "success" | "warning" | "danger" {

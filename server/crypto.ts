@@ -9,7 +9,7 @@ import { getSessionSecret } from "~/server/config.ts"
 
 // Convert string to Uint8Array for crypto operations
 function stringToUint8Array(str: string): Uint8Array {
-  return new TextEncoder().encode(str)
+  return new TextEncoder().encode(str) as Uint8Array
 }
 
 // Convert Uint8Array to string
@@ -28,18 +28,19 @@ function hexToUint8Array(hex: string): Uint8Array {
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = parseInt(hex.substr(i, 2), 16)
   }
-  return bytes
+  return bytes as Uint8Array
 }
 
 // Generate a random IV for encryption
 function generateIV(): Uint8Array {
-  return crypto.getRandomValues(new Uint8Array(12)) // 12 bytes for GCM
+  return crypto.getRandomValues(new Uint8Array(12)) as Uint8Array // 12 bytes for GCM
 }
 
 // Derive key from session secret using PBKDF2
 async function deriveKey(secret: string, salt: Uint8Array): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
+    // @ts-expect-error: TypeScript type definitions issue with ArrayBufferLike vs ArrayBuffer
     stringToUint8Array(secret),
     { name: "PBKDF2" },
     false,
@@ -49,6 +50,7 @@ async function deriveKey(secret: string, salt: Uint8Array): Promise<CryptoKey> {
   return crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
+      // @ts-expect-error: TypeScript type definitions issue with ArrayBufferLike vs ArrayBuffer
       salt,
       iterations: 100000,
       hash: "SHA-256",
@@ -67,12 +69,14 @@ async function deriveKey(secret: string, salt: Uint8Array): Promise<CryptoKey> {
 async function generateHMAC(data: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
+    // @ts-expect-error: TypeScript type definitions issue with ArrayBufferLike vs ArrayBuffer
     stringToUint8Array(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
   )
 
+  // @ts-expect-error: TypeScript type definitions issue with ArrayBufferLike vs ArrayBuffer
   const signature = await crypto.subtle.sign("HMAC", key, stringToUint8Array(data))
   return uint8ArrayToHex(new Uint8Array(signature))
 }
@@ -81,6 +85,7 @@ async function generateHMAC(data: string, secret: string): Promise<string> {
 async function verifyHMAC(data: string, signature: string, secret: string): Promise<boolean> {
   const key = await crypto.subtle.importKey(
     "raw",
+    // @ts-expect-error: TypeScript type definitions issue with ArrayBufferLike vs ArrayBuffer
     stringToUint8Array(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
@@ -90,6 +95,7 @@ async function verifyHMAC(data: string, signature: string, secret: string): Prom
   const isValid = await crypto.subtle.verify(
     "HMAC",
     key,
+    // @ts-expect-error: TypeScript type definitions issue with ArrayBufferLike vs ArrayBuffer
     hexToUint8Array(signature),
     stringToUint8Array(data),
   )
@@ -100,11 +106,12 @@ async function verifyHMAC(data: string, signature: string, secret: string): Prom
 // Encrypt data using AES-GCM
 export async function encryptData(data: string): Promise<string> {
   const secret = getSessionSecret()
-  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const salt = crypto.getRandomValues(new Uint8Array(16)) as Uint8Array
   const iv = generateIV()
 
   const key = await deriveKey(secret, salt)
   const encrypted = await crypto.subtle.encrypt(
+    // @ts-expect-error: TypeScript type definitions issue with ArrayBufferLike vs ArrayBuffer
     { name: "AES-GCM", iv },
     key,
     stringToUint8Array(data),

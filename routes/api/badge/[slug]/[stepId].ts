@@ -4,7 +4,7 @@ import { Context } from "fresh"
 import { gql } from "graphql-tag"
 import { getBuildkiteClient } from "~/server/buildkite-client.ts"
 import type { BuildkiteBuild, BuildkiteJob, BuildkitePipeline } from "~/types/buildkite.ts"
-import { normalizeStatus } from "~/utils/formatters.ts"
+import { getJobStatus, normalizeStatus } from "~/utils/formatters.ts"
 import { type AppState, isPrivatePipeline } from "~/server/middleware.ts"
 
 interface BuildWithJobs extends BuildkiteBuild {
@@ -240,9 +240,11 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     }
 
     // Get the job status and label
-    const status = ("state" in job ? job.state : null) || "unknown"
+    // Use getJobStatus which properly handles job states (FINISHED, RUNNING, etc.)
+    const status = getJobStatus(job as { state?: string; passed?: boolean; exitStatus?: number | null })
     const jobLabel = customLabel || ("label" in job ? job.label : null) || stepId
 
+    console.log(`[Step Badge Debug] Job object:`, job)
     console.log(`[Step Badge Debug] Final status: ${status}, label: ${jobLabel}`)
 
     // Generate the SVG badge
