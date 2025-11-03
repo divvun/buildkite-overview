@@ -31,7 +31,7 @@
     "badge-maker": "npm:badge-maker@^5.0.2",
     "boxicons": "npm:boxicons@^2.1.4",
     "openid-client": "jsr:@panva/openid-client@^6.8.1",
-    "webawesome": "npm:@awesome.me/webawesome@^3.0.0",
+    "webawesome": "./static/libraries/webawesome",
     "@graphql-typed-document-node/core": "npm:@graphql-typed-document-node/core@^3.2.0",
     "@urql/preact": "npm:@urql/preact@^4.1.2",
     "graphql-tag": "jsr:@necessary/graphql-tag@^2.12.6-test.2",

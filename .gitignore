@@ -10,8 +10,7 @@ _fresh/
 # npm + other dependencies
 node_modules/
 vendor/
-# WebAwesome files (copied during build)
-static/libraries/
+static/libraries/boxicons
 # Cache database files (versioned)
 *.db
 *.db-shm
