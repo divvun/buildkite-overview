@@ -15,7 +15,7 @@ interface BuildWithJobs extends BuildkiteBuild {
   }
 }
 
-// Query to get a pipeline with the latest build including job details
+// Query to get a pipeline with the latest build including filtered job details
 export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
   {
     pipeline: BuildkitePipeline & {
@@ -26,9 +26,9 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
       }
     }
   },
-  { pipelineSlug: string }
+  { pipelineSlug: string; stepKey: string[] }
 > = gql`
-  query GetPipelineWithJobs($pipelineSlug: ID!) {
+  query GetPipelineWithJobs($pipelineSlug: ID!, $stepKey: [String!]!) {
     pipeline(slug: $pipelineSlug) {
       id
       name
@@ -51,7 +51,7 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
             startedAt
             finishedAt
             createdAt
-            jobs(first: 50) {
+            jobs(first: 1, step: {key: $stepKey}) {
               edges {
                 node {
                   ... on JobTypeCommand {
@@ -153,26 +153,6 @@ function isAuthorizedForPrivateBadge(request: Request): boolean {
   return false
 }
 
-/**
- * Find a job by step key in the build's jobs
- */
-function findJobByStepKey(jobs: BuildWithJobs["jobs"], stepKey: string): BuildkiteJob | null {
-  if (!jobs?.edges) {
-    return null
-  }
-
-  for (const edge of jobs.edges) {
-    const job = edge.node
-    // Check if job has a step with matching key
-    // JobTypeCommand and JobTypeBlock have step.key
-    if ("step" in job && job.step && "key" in job.step && job.step.key === stepKey) {
-      return job
-    }
-  }
-
-  return null
-}
-
 export const handler = async (ctx: Context<AppState>): Promise<Response> => {
   const req = ctx.req
   const slug = ctx.params.slug as string
@@ -191,6 +171,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
 
     const result = await client.query(GET_PIPELINE_WITH_JOBS, {
       pipelineSlug: fullPipelineSlug,
+      stepKey: [stepId],
     }).toPromise()
 
     if (!result.data?.pipeline) {
@@ -237,8 +218,8 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       })
     }
 
-    // Find the job matching the step key
-    const job = findJobByStepKey(latestBuild.jobs, stepId)
+    // Get the job matching the step key (API filtered it for us)
+    const job = latestBuild.jobs?.edges?.[0]?.node
 
     if (!job) {
       // Step not found in the latest build
@@ -253,8 +234,8 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     }
 
     // Get the job status and label
-    const status = job.state || "unknown"
-    const jobLabel = customLabel || ("label" in job ? job.label : stepId) || stepId
+    const status = ("state" in job ? job.state : null) || "unknown"
+    const jobLabel = customLabel || ("label" in job ? job.label : null) || stepId
 
     // Generate the SVG badge
     const badgeSvg = generateStepBadgeSvg(jobLabel, status)
