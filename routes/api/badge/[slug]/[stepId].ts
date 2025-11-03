@@ -63,6 +63,9 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
                     finishedAt
                     exitStatus
                     passed
+                    createdAt
+                    retriedInJobId
+                    retried
                     step {
                       key
                     }
@@ -72,6 +75,7 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
                     uuid
                     label
                     state
+                    createdAt
                     step {
                       key
                     }
@@ -81,11 +85,13 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
                     uuid
                     label
                     state
+                    createdAt
                   }
                   ... on JobTypeWait {
                     id
                     uuid
                     state
+                    createdAt
                   }
                 }
               }
@@ -174,6 +180,9 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       stepKey: [stepId],
     }).toPromise()
 
+    console.log(`[Step Badge Debug] Pipeline: ${fullPipelineSlug}, Step: ${stepId}`)
+    console.log(`[Step Badge Debug] Full result:`, JSON.stringify(result.data, null, 2))
+
     if (!result.data?.pipeline) {
       // Return a "not found" badge
       const notFoundBadge = generateStepBadgeSvg(customLabel || stepId, "unknown")
@@ -221,7 +230,17 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     // Get the job matching the step key (API filtered it for us)
     const job = latestBuild.jobs?.edges?.[0]?.node
 
+    console.log(`[Step Badge Debug] Job found:`, job)
+    if (job && "retriedInJobId" in job) {
+      console.log(`[Step Badge Debug] Job retriedInJobId:`, job.retriedInJobId)
+      console.log(`[Step Badge Debug] Job retried:`, (job as any).retried)
+    }
+    if (job && "createdAt" in job) {
+      console.log(`[Step Badge Debug] Job createdAt:`, (job as any).createdAt)
+    }
+
     if (!job) {
+      console.log(`[Step Badge Debug] No job found for step key: ${stepId}`)
       // Step not found in the latest build
       const notFoundBadge = generateStepBadgeSvg(customLabel || stepId, "not found")
       return new Response(notFoundBadge, {
@@ -236,6 +255,8 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     // Get the job status and label
     const status = ("state" in job ? job.state : null) || "unknown"
     const jobLabel = customLabel || ("label" in job ? job.label : null) || stepId
+
+    console.log(`[Step Badge Debug] Final status: ${status}, label: ${jobLabel}`)
 
     // Generate the SVG badge
     const badgeSvg = generateStepBadgeSvg(jobLabel, status)
