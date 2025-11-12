@@ -22,7 +22,7 @@
   "exclude": ["**/_fresh/*", "**/static/libraries/*", "utils/gql/buildkite.ts"],
   "imports": {
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^0.9.13",
-    "vite": "npm:vite@^7.1.12",
+    "vite": "npm:vite@^7.2.2",
     "~/": "./",
     "@optique/core": "jsr:@optique/core@^0.3.2",
     "@optique/run": "jsr:@optique/run@^0.3.2",
@@ -37,7 +37,7 @@
     "graphql-tag": "jsr:@necessary/graphql-tag@^2.12.6-test.2",
     "fresh": "jsr:@fresh/core@^2.1.4",
     "preact": "npm:preact@^10.27.2",
-    "@preact/signals": "npm:@preact/signals@^2.3.2",
+    "@preact/signals": "npm:@preact/signals@^2.5.0",
     "@db/sqlite": "jsr:@db/sqlite@^0.12.0",
     "@fluent/bundle": "npm:@fluent/bundle@^0.18.0",
     "@fluent/langneg": "npm:@fluent/langneg@^0.7.0"

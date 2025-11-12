@@ -7,7 +7,7 @@ export enum UserRole {
 
 // Configuration constants
 export const REQUIRED_ORGS = ["divvun", "giellalt"] as const
-export const BUILD_ADMIN_TEAMS = ["divvun/Build Admins"] as const
+export const BUILD_ADMIN_TEAMS = ["divvun/build-admins"] as const
 
 export interface UserPermissions {
   canViewPublicPipelines: boolean

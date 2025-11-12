@@ -73,6 +73,16 @@ export default function Layout(
                 </a>
               </>
             )}
+            {session && userRole === UserRole.ADMIN && (
+              <a
+                href="/admin/builds"
+                class={currentPath === "/admin/builds" ? "active" : ""}
+                aria-label="View build history"
+              >
+                <wa-icon slot="prefix" name="clock-rotate-left"></wa-icon>
+                Build History
+              </a>
+            )}
           </div>
 
           {/* Mobile-only Language and User controls */}
@@ -193,6 +203,15 @@ export default function Layout(
                 {translate("nav-queues")}
               </a>
             </>
+          )}
+          {session && userRole === UserRole.ADMIN && (
+            <a
+              href="/admin/builds"
+              class={`wa-desktop-only ${currentPath === "/admin/builds" ? "active" : ""}`}
+              aria-label="View build history"
+            >
+              Build History
+            </a>
           )}
         </div>
         <div class="wa-cluster wa-gap-xs desktop-header-actions">
