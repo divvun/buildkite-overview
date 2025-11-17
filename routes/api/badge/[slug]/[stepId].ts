@@ -2,6 +2,7 @@ import type { TypedDocumentNode } from "@graphql-typed-document-node/core"
 import { makeBadge } from "badge-maker"
 import { Context } from "fresh"
 import { gql } from "graphql-tag"
+import { parse as parseYaml } from "jsr:@std/yaml"
 import { getBuildkiteClient } from "~/server/buildkite-client.ts"
 import type { BuildkiteBuild, BuildkiteJob, BuildkitePipeline } from "~/types/buildkite.ts"
 import { getJobStatus, normalizeStatus } from "~/utils/formatters.ts"
@@ -19,6 +20,9 @@ interface BuildWithJobs extends BuildkiteBuild {
 export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
   {
     pipeline: BuildkitePipeline & {
+      steps: {
+        yaml: string
+      }
       builds: {
         edges: Array<{
           node: BuildWithJobs
@@ -40,6 +44,9 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
       }
       tags {
         label
+      }
+      steps {
+        yaml
       }
       builds(first: 1) {
         edges {
@@ -96,6 +103,134 @@ export const GET_PIPELINE_WITH_JOBS: TypedDocumentNode<
     }
   }
 `
+
+// Query to get multiple jobs for child steps
+export const GET_BUILD_JOBS: TypedDocumentNode<
+  {
+    build: {
+      jobs: {
+        edges: Array<{
+          node: BuildkiteJob
+        }>
+      }
+    }
+  },
+  { buildId: string; stepKeys: string[] }
+> = gql`
+  query GetBuildJobs($buildId: ID!, $stepKeys: [String!]!) {
+    build(uuid: $buildId) {
+      jobs(first: 50, step: {key: $stepKeys}) {
+        edges {
+          node {
+            ... on JobTypeCommand {
+              id
+              uuid
+              label
+              state
+              startedAt
+              finishedAt
+              exitStatus
+              passed
+              step {
+                key
+              }
+            }
+            ... on JobTypeBlock {
+              id
+              uuid
+              label
+              state
+              step {
+                key
+              }
+            }
+            ... on JobTypeTrigger {
+              id
+              uuid
+              label
+              state
+            }
+            ... on JobTypeWait {
+              id
+              uuid
+              state
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+/**
+ * Interface for a pipeline step definition
+ */
+interface PipelineStep {
+  key?: string
+  label?: string
+  group?: string
+  steps?: PipelineStep[]
+  command?: string | string[]
+  wait?: string | null
+  block?: string | null
+  trigger?: string
+  [key: string]: unknown
+}
+
+/**
+ * Find a group step by key in the pipeline YAML
+ */
+function findGroupStep(steps: PipelineStep[], targetKey: string): PipelineStep | null {
+  for (const step of steps) {
+    if (step.key === targetKey && step.group) {
+      return step
+    }
+    if (step.steps) {
+      const found = findGroupStep(step.steps, targetKey)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/**
+ * Extract all child step keys from a group step
+ */
+function extractChildStepKeys(groupStep: PipelineStep): string[] {
+  const keys: string[] = []
+
+  if (!groupStep.steps) return keys
+
+  for (const step of groupStep.steps) {
+    if (step.key) {
+      keys.push(step.key)
+    }
+    if (step.steps) {
+      keys.push(...extractChildStepKeys(step))
+    }
+  }
+
+  return keys
+}
+
+/**
+ * Aggregate job statuses to determine overall group status
+ * Priority: failed > running > blocked > waiting/scheduled > passed
+ */
+function aggregateJobStatuses(jobs: Array<{ state?: string; passed?: boolean; exitStatus?: number | null }>): string {
+  if (jobs.length === 0) return "unknown"
+
+  const statuses = jobs.map((job) => getJobStatus(job))
+
+  if (statuses.some((s) => s === "failed")) return "failed"
+  if (statuses.some((s) => s === "running")) return "running"
+  if (statuses.some((s) => s === "blocked")) return "blocked"
+  if (statuses.some((s) => s === "waiting" || s === "scheduled")) return "waiting"
+  if (statuses.every((s) => s === "passed")) return "passed"
+  if (statuses.some((s) => s === "canceled")) return "canceled"
+
+  return "unknown"
+}
 
 /**
  * Generate an SVG badge for a job/step status
@@ -228,7 +363,66 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
 
     if (!job) {
       console.log(`[Step Badge Debug] No job found for step key: ${stepId}`)
-      // Step not found in the latest build
+
+      // Check if this is a group step by parsing the pipeline YAML
+      // Groups in Buildkite don't create jobs themselves - only their child steps do.
+      // When a group step key is provided, we need to:
+      // 1. Parse the pipeline YAML to find the group definition
+      // 2. Extract all child step keys from the group
+      // 3. Query jobs for all child steps
+      // 4. Aggregate their statuses to determine the overall group status
+      try {
+        const stepsYaml = pipeline.steps?.yaml
+        if (stepsYaml) {
+          console.log(`[Step Badge Debug] Parsing pipeline YAML to detect group`)
+          const parsedSteps = parseYaml(stepsYaml) as { steps?: PipelineStep[] }
+          const steps = parsedSteps?.steps || (Array.isArray(parsedSteps) ? parsedSteps as PipelineStep[] : [])
+
+          const groupStep = findGroupStep(steps, stepId)
+
+          if (groupStep) {
+            console.log(`[Step Badge Debug] Found group step:`, groupStep.group)
+
+            // Extract child step keys
+            const childStepKeys = extractChildStepKeys(groupStep)
+            console.log(`[Step Badge Debug] Child step keys:`, childStepKeys)
+
+            if (childStepKeys.length > 0) {
+              // Query jobs for all child steps
+              const buildId = latestBuild.id
+              const jobsResult = await client.query(GET_BUILD_JOBS, {
+                buildId,
+                stepKeys: childStepKeys,
+              }).toPromise()
+
+              console.log(`[Step Badge Debug] Child jobs result:`, JSON.stringify(jobsResult.data, null, 2))
+
+              const childJobs = jobsResult.data?.build?.jobs?.edges?.map((edge) => edge.node) || []
+
+              if (childJobs.length > 0) {
+                // Aggregate child job statuses
+                const aggregatedStatus = aggregateJobStatuses(childJobs)
+                const groupLabel = customLabel || groupStep.group || stepId
+
+                console.log(`[Step Badge Debug] Aggregated status for group: ${aggregatedStatus}`)
+
+                const groupBadge = generateStepBadgeSvg(groupLabel, aggregatedStatus)
+                return new Response(groupBadge, {
+                  status: 200,
+                  headers: {
+                    "Content-Type": "image/svg+xml",
+                    "Cache-Control": isPrivate ? "private, max-age=60" : "public, max-age=300",
+                  },
+                })
+              }
+            }
+          }
+        }
+      } catch (yamlError) {
+        console.error(`[Step Badge Debug] Error parsing YAML:`, yamlError)
+      }
+
+      // Step not found in the latest build and not a group
       const notFoundBadge = generateStepBadgeSvg(customLabel || stepId, "not found")
       return new Response(notFoundBadge, {
         status: 200,

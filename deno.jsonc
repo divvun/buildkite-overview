@@ -26,7 +26,7 @@
     "~/": "./",
     "@optique/core": "jsr:@optique/core@^0.3.2",
     "@optique/run": "jsr:@optique/run@^0.3.2",
-    "@std/fs": "jsr:@std/fs@^1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.20",
     "@std/toml": "jsr:@std/toml@^1.0.11",
     "badge-maker": "npm:badge-maker@^5.0.2",
     "boxicons": "npm:boxicons@^2.1.4",
