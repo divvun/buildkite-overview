@@ -530,3 +530,22 @@ export const CREATE_BUILD_MUTATION = mutation((m) => [
     ],
   ),
 ])
+
+// Mutation for cancelling a build
+export const CANCEL_BUILD_MUTATION = mutation((m) => [
+  m.buildCancel(
+    { input: $("input") },
+    (payload) => [
+      payload.build((build) => [
+        build.id,
+        build.number,
+        build.state,
+        build.pipeline((p) => [
+          p.id,
+          p.name,
+          p.slug,
+        ]),
+      ]),
+    ],
+  ),
+])

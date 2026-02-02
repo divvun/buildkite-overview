@@ -2,11 +2,12 @@
 import { useCallback, useEffect, useState } from "preact/hooks"
 import EmptyState from "~/components/EmptyState.tsx"
 import SkeletonLoader from "~/components/SkeletonLoader.tsx"
-import { type QueueBuild, type QueueJob, type QueueStatus } from "~/types/app.ts"
+import { type LongRunningBuild, type QueueBuild, type QueueJob, type QueueStatus } from "~/types/app.ts"
 import { useLocalization } from "~/utils/localization-context.tsx"
 
 interface QueuesData {
   queueStatus: QueueStatus[]
+  longRunningBuilds: LongRunningBuild[]
   error?: string
 }
 
@@ -75,7 +76,7 @@ export default function QueuesContent({}: QueuesContentProps) {
     )
   }
 
-  const { queueStatus, error } = data
+  const { queueStatus, longRunningBuilds, error } = data
 
   // Calculate summary statistics
   const totalQueues = queueStatus.length
@@ -111,6 +112,64 @@ export default function QueuesContent({}: QueuesContentProps) {
           <wa-icon slot="icon" name="error"></wa-icon>
           {error}
         </wa-callout>
+      )}
+
+      {/* Long-Running Builds */}
+      {longRunningBuilds && longRunningBuilds.length > 0 && (
+        <wa-card>
+          <div style="padding: var(--wa-space-m)">
+            <div class="wa-flank wa-gap-s" style="margin-bottom: var(--wa-space-s)">
+              <h3 class="wa-heading-s">{t("long-running-builds")}</h3>
+              <wa-badge variant="warning">{longRunningBuilds.length}</wa-badge>
+            </div>
+            <p class="wa-body-s wa-color-text-quiet" style="margin-bottom: var(--wa-space-m)">
+              {t("long-running-builds-description")}
+            </p>
+            <div class="wa-stack wa-gap-s">
+              {longRunningBuilds.map((build) => (
+                <div
+                  key={build.id}
+                  class="wa-stack wa-gap-3xs"
+                  style="padding: var(--wa-space-m); background: var(--wa-color-warning-fill-subtle); border-radius: var(--wa-border-radius-s); border-left: 3px solid var(--wa-color-warning-fill-loud)"
+                >
+                  <div class="wa-flank wa-gap-s">
+                    <div class="wa-stack wa-gap-3xs">
+                      <span class="wa-body-s wa-font-weight-semibold">
+                        {build.pipelineName} #{build.buildNumber}
+                      </span>
+                      <span class="wa-caption-s wa-color-text-quiet">
+                        {build.repo && `${build.repo} • `}
+                        {build.branch && `${build.branch} • `}
+                        {build.commit}
+                      </span>
+                    </div>
+                    <div class="wa-cluster wa-gap-s">
+                      <wa-badge variant="warning">
+                        {t("running-for", { duration: build.runningDurationFormatted })}
+                      </wa-badge>
+                      <a href={build.buildUrl} target="_blank" rel="noopener" class="wa-caption-s">
+                        {t("view-build-external")}
+                      </a>
+                    </div>
+                  </div>
+                  {build.message && (
+                    <span class="wa-caption-s wa-color-text-quiet" style="font-style: italic">
+                      {build.message.length > 100 ? `${build.message.substring(0, 100)}...` : build.message}
+                    </span>
+                  )}
+                  <div class="wa-cluster wa-gap-s">
+                    <span class="wa-caption-xs wa-color-text-quiet">
+                      {t("started-at", { time: new Date(build.startedAt).toLocaleString() })}
+                    </span>
+                    <span class="wa-caption-xs wa-color-text-quiet">
+                      {t("jobs-running", { running: build.runningJobCount, total: build.jobCount })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </wa-card>
       )}
 
       {/* Queue Overview */}

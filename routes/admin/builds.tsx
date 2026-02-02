@@ -2,6 +2,7 @@
 import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import BuildHistory from "~/islands/BuildHistory.tsx"
+import CancelQueuedBuilds from "~/islands/CancelQueuedBuilds.tsx"
 import { type AppState } from "~/server/middleware.ts"
 import { requireAdmin } from "~/server/session.ts"
 import type { SessionData } from "~/types/session.ts"
@@ -63,6 +64,8 @@ export default function BuildsPage(props: { data: BuildHistoryProps; state: AppS
             View the last 50 completed builds across all pipelines in chronological order (newest first).
           </p>
         </header>
+
+        <CancelQueuedBuilds />
 
         <BuildHistory initialBuilds={initialBuilds} />
       </div>

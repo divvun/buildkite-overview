@@ -124,3 +124,23 @@ export interface QueueJob {
   agentQueryRules?: string[]
   url?: string
 }
+
+export interface LongRunningBuild {
+  id: string
+  buildNumber: number
+  pipelineName: string
+  pipelineSlug: string
+  repo?: string
+  state: string
+  branch?: string
+  commit?: string
+  message?: string
+  startedAt: string
+  runningDurationMs: number
+  runningDurationFormatted: string
+  thresholdHours: number
+  exceedsThresholdBy: string
+  buildUrl: string
+  jobCount: number
+  runningJobCount: number
+}

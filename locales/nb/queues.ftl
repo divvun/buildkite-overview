@@ -62,3 +62,11 @@ loading-queue-data-title = Laster kødata...
 loading-queue-data-desc = Samler informasjon om byggekøer og agenttilgjengelighet.
 all-quiet-title = Alt er stille på byggefronten! 🎉
 all-quiet-desc = Ingen bygg er for øyeblikket planlagt eller kjører på tvers av noen køer. Dette er en god ting – alle pipelinene dine er ledige og klare for nytt arbeid!
+
+# Langvarige bygg
+long-running-builds = Langvarige bygg
+long-running-builds-description = Disse byggene har kjørt i mer enn 3 timer og trenger kanskje oppmerksomhet.
+running-for = Kjørt i {$duration}
+started-at = Startet: {$time}
+jobs-running = {$running}/{$total} jobber kjører
+job-count = {$count} jobber

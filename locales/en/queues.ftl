@@ -62,3 +62,11 @@ loading-queue-data-title = Loading queue data...
 loading-queue-data-desc = Gathering information about build queues and agent availability.
 all-quiet-title = All quiet on the build front! 🎉
 all-quiet-desc = No builds are currently scheduled or running across any queues. This is a good thing - all your pipelines are idle and ready for new work!
+
+# Long-running builds
+long-running-builds = Long-Running Builds
+long-running-builds-description = These builds have been running for more than 3 hours and may need attention.
+running-for = Running for {$duration}
+started-at = Started: {$time}
+jobs-running = {$running}/{$total} jobs running
+job-count = {$count} jobs

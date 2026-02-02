@@ -5,6 +5,7 @@ import {
   type AppPipeline,
   type BuildHistoryItem,
   type FailingPipeline,
+  type LongRunningBuild,
   type QueueBuild,
   type QueueJob,
   type QueueStatus,
@@ -740,6 +741,116 @@ export async function fetchQueueStatus(): Promise<QueueStatus[]> {
     return queueStatuses
   } catch (error) {
     console.error("Error fetching queue status:", error)
+    return []
+  }
+}
+
+/**
+ * Format milliseconds as a human-readable duration string
+ */
+export function formatDurationMs(ms: number): string {
+  const seconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+
+  if (days > 0) {
+    const remainingHours = hours % 24
+    return `${days}d ${remainingHours}h`
+  }
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60
+    return `${hours}h ${remainingMinutes}m`
+  }
+  if (minutes > 0) {
+    const remainingSeconds = seconds % 60
+    return `${minutes}m ${remainingSeconds}s`
+  }
+  return `${seconds}s`
+}
+
+/**
+ * Fetch all builds that have been running longer than the specified threshold
+ */
+export async function fetchLongRunningBuilds(
+  thresholdHours: number = 3,
+): Promise<LongRunningBuild[]> {
+  // Check cache first (30 second TTL)
+  const cacheManager = getCacheManager()
+  const cacheKey = `long-running-builds-${thresholdHours}`
+  const cached = cacheManager.getFromMemoryCache<LongRunningBuild[]>(cacheKey)
+  if (cached) {
+    console.log("Using cached long-running builds")
+    return cached
+  }
+
+  console.log(`Cache miss for long-running builds, fetching from API (threshold: ${thresholdHours}h)...`)
+
+  try {
+    const { fetchRunningBuildsRest } = await import("./buildkite-client.ts")
+    const runningBuilds = await fetchRunningBuildsRest()
+
+    const thresholdMs = thresholdHours * 60 * 60 * 1000
+    const now = Date.now()
+    const longRunningBuilds: LongRunningBuild[] = []
+
+    for (const build of runningBuilds) {
+      // Use started_at if available, otherwise created_at
+      const startTimeStr = build.started_at || build.created_at
+      if (!startTimeStr) continue
+
+      const startedAt = new Date(startTimeStr)
+      const runningDurationMs = now - startedAt.getTime()
+
+      // Skip builds that haven't exceeded the threshold
+      if (runningDurationMs < thresholdMs) continue
+
+      // Extract repo from pipeline repository URL
+      let repo: string | undefined
+      if (build.pipeline.repository?.url) {
+        const repoUrl = build.pipeline.repository.url
+        const sshMatch = repoUrl.match(/git@github\.com:([^\/]+\/[^\/]+?)(?:\.git)?$/)
+        const httpsMatch = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+?)(?:\.git)?(?:\/.*)?$/)
+        repo = (sshMatch || httpsMatch)?.[1]
+      }
+
+      // Count jobs
+      const jobCount = build.jobs?.length || 0
+      const runningJobCount = build.jobs?.filter((j) => j.state.toLowerCase() === "running").length || 0
+
+      const exceedsByMs = runningDurationMs - thresholdMs
+      longRunningBuilds.push({
+        id: build.id,
+        buildNumber: build.number,
+        pipelineName: build.pipeline.name,
+        pipelineSlug: build.pipeline.slug,
+        repo,
+        state: build.state,
+        branch: build.branch,
+        commit: build.commit?.substring(0, 7),
+        message: build.message,
+        startedAt: startTimeStr,
+        runningDurationMs,
+        runningDurationFormatted: formatDurationMs(runningDurationMs),
+        thresholdHours,
+        exceedsThresholdBy: formatDurationMs(exceedsByMs),
+        buildUrl: build.web_url,
+        jobCount,
+        runningJobCount,
+      })
+    }
+
+    // Sort by running duration (longest first)
+    longRunningBuilds.sort((a, b) => b.runningDurationMs - a.runningDurationMs)
+
+    console.log(`Found ${longRunningBuilds.length} long-running builds (> ${thresholdHours}h)`)
+
+    // Cache the result for 30 seconds
+    cacheManager.setInMemoryCache(cacheKey, longRunningBuilds, 30)
+
+    return longRunningBuilds
+  } catch (error) {
+    console.error("Error fetching long-running builds:", error)
     return []
   }
 }
