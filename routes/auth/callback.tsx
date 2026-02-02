@@ -96,7 +96,7 @@ export const handler = {
 
       // Determine user role based on org and team membership
       const roleStart = Date.now()
-      const teamMemberships = isBuildAdmin ? ["divvun/Build Admins"] : []
+      const teamMemberships = isBuildAdmin ? ["divvun/build-admins"] : []
       const userRole = determineUserRole(userOrgs, teamMemberships)
       console.log(`⏱️  Role determination took ${Date.now() - roleStart}ms`)
 
