@@ -35,11 +35,11 @@ export const handler = [
   {
     async GET(_ctx: Context<AppState>): Promise<Response> {
       try {
-        console.log("API: Fetching queued builds for preview...")
+        console.log("[cancel-queued-builds] GET: Fetching queued builds for preview...")
 
         const builds = await fetchScheduledBuilds()
 
-        console.log(`API: Found ${builds.length} queued builds`)
+        console.log(`[cancel-queued-builds] GET: Found ${builds.length} queued builds`)
 
         const response: QueuedBuildsResponse = {
           builds,
@@ -49,7 +49,10 @@ export const handler = [
           headers: { "Content-Type": "application/json" },
         })
       } catch (error) {
-        console.error("API Error fetching queued builds:", error)
+        console.error("[cancel-queued-builds] GET: Error fetching queued builds:")
+        console.error("[cancel-queued-builds] GET: Error type:", error?.constructor?.name)
+        console.error("[cancel-queued-builds] GET: Error message:", error instanceof Error ? error.message : String(error))
+        console.error("[cancel-queued-builds] GET: Error stack:", error instanceof Error ? error.stack : "N/A")
 
         if (error instanceof Response) {
           return error
@@ -57,7 +60,7 @@ export const handler = [
 
         const errorResponse: QueuedBuildsResponse = {
           builds: [],
-          error: "Unable to load queued builds. Please check your configuration and try again.",
+          error: `Unable to load queued builds: ${error instanceof Error ? error.message : String(error)}`,
         }
 
         return new Response(JSON.stringify(errorResponse), {

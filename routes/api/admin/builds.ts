@@ -44,17 +44,22 @@ export const handler = [
           headers: { "Content-Type": "application/json" },
         })
       } catch (error) {
-        console.error("API Error fetching build history:", error)
+        console.error("[/api/admin/builds] Error fetching build history:")
+        console.error("[/api/admin/builds] Error type:", error?.constructor?.name)
+        console.error("[/api/admin/builds] Error message:", error instanceof Error ? error.message : String(error))
+        if (error instanceof Error && error.stack) {
+          console.error("[/api/admin/builds] Stack trace:", error.stack)
+        }
 
         // Handle response errors
         if (error instanceof Response) {
           return error
         }
 
+        const errorMessage = error instanceof Error ? error.message : String(error)
         const errorResponse: BuildHistoryResponse = {
           builds: [],
-          error:
-            "Unable to load build history. This could be due to: 1) Missing BUILDKITE_API_KEY environment variable, 2) Invalid API key, or 3) Network connectivity issues. Please check your configuration and try again.",
+          error: `Unable to load build history: ${errorMessage}`,
         }
 
         return new Response(JSON.stringify(errorResponse), {
