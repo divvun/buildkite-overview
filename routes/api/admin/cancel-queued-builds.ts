@@ -3,13 +3,18 @@ import type { AppState } from "~/server/middleware.ts"
 import {
   type BuildkiteBuildRest,
   CANCEL_BUILD_MUTATION,
+  fetchRunningBuildsRest,
   fetchScheduledBuilds,
   getBuildkiteClient,
+  restIdToGraphqlId,
 } from "~/server/buildkite-client.ts"
 import { userHasPermission } from "~/server/session.ts"
 
+const LONG_RUNNING_THRESHOLD_HOURS = 3
+
 interface QueuedBuildsResponse {
   builds: BuildkiteBuildRest[]
+  longRunningBuilds: BuildkiteBuildRest[]
   error?: string
 }
 
@@ -36,6 +41,7 @@ export const handler = {
     if (!userHasPermission(ctx.state.session ?? null, "canAccessAdminFeatures")) {
       const errorResponse: QueuedBuildsResponse = {
         builds: [],
+        longRunningBuilds: [],
         error: "Insufficient permissions to view queued builds",
       }
 
@@ -46,21 +52,38 @@ export const handler = {
     }
 
     try {
-      console.log("[/api/admin/cancel-queued-builds] GET: Fetching queued builds for preview...")
+      console.log("[/api/admin/cancel-queued-builds] GET: Fetching queued and long-running builds...")
 
-      const builds = await fetchScheduledBuilds()
+      // Fetch scheduled builds and running builds in parallel
+      const [scheduledBuilds, runningBuilds] = await Promise.all([
+        fetchScheduledBuilds(),
+        fetchRunningBuildsRest(),
+      ])
 
-      console.log(`[/api/admin/cancel-queued-builds] GET: Found ${builds.length} queued builds`)
+      // Filter running builds to only include long-running ones (> threshold hours)
+      const thresholdMs = LONG_RUNNING_THRESHOLD_HOURS * 60 * 60 * 1000
+      const now = Date.now()
+      const longRunningBuilds = runningBuilds.filter((build) => {
+        const startTime = build.started_at || build.created_at
+        if (!startTime) return false
+        const runningMs = now - new Date(startTime).getTime()
+        return runningMs > thresholdMs
+      })
+
+      console.log(
+        `[/api/admin/cancel-queued-builds] GET: Found ${scheduledBuilds.length} queued, ${longRunningBuilds.length} long-running builds`,
+      )
 
       const response: QueuedBuildsResponse = {
-        builds,
+        builds: scheduledBuilds,
+        longRunningBuilds,
       }
 
       return new Response(JSON.stringify(response), {
         headers: { "Content-Type": "application/json" },
       })
     } catch (error) {
-      console.error("[/api/admin/cancel-queued-builds] GET: Error fetching queued builds:")
+      console.error("[/api/admin/cancel-queued-builds] GET: Error fetching builds:")
       console.error("[/api/admin/cancel-queued-builds] GET: Error type:", error?.constructor?.name)
       console.error(
         "[/api/admin/cancel-queued-builds] GET: Error message:",
@@ -76,7 +99,8 @@ export const handler = {
 
       const errorResponse: QueuedBuildsResponse = {
         builds: [],
-        error: `Unable to load queued builds: ${error instanceof Error ? error.message : String(error)}`,
+        longRunningBuilds: [],
+        error: `Unable to load builds: ${error instanceof Error ? error.message : String(error)}`,
       }
 
       return new Response(JSON.stringify(errorResponse), {
@@ -104,13 +128,50 @@ export const handler = {
     }
 
     try {
-      console.log("[/api/admin/cancel-queued-builds] POST: Cancelling all queued builds...")
+      // Parse request body to get target
+      let target: "queued" | "long-running" | "all" = "all"
+      try {
+        const body = await ctx.req.json()
+        if (body.target && ["queued", "long-running", "all"].includes(body.target)) {
+          target = body.target
+        }
+      } catch {
+        // No body or invalid JSON - default to "all"
+      }
 
-      const builds = await fetchScheduledBuilds()
+      console.log(`[/api/admin/cancel-queued-builds] POST: Cancelling builds (target: ${target})...`)
 
-      console.log(`[/api/admin/cancel-queued-builds] POST: Found ${builds.length} queued builds to cancel`)
+      // Fetch builds based on target
+      const [scheduledBuilds, runningBuilds] = await Promise.all([
+        fetchScheduledBuilds(),
+        fetchRunningBuildsRest(),
+      ])
 
-      if (builds.length === 0) {
+      // Filter running builds to only include long-running ones
+      const thresholdMs = LONG_RUNNING_THRESHOLD_HOURS * 60 * 60 * 1000
+      const now = Date.now()
+      const longRunningBuilds = runningBuilds.filter((build) => {
+        const startTime = build.started_at || build.created_at
+        if (!startTime) return false
+        const runningMs = now - new Date(startTime).getTime()
+        return runningMs > thresholdMs
+      })
+
+      // Determine which builds to cancel
+      let buildsToCancel: BuildkiteBuildRest[] = []
+      if (target === "queued") {
+        buildsToCancel = scheduledBuilds
+      } else if (target === "long-running") {
+        buildsToCancel = longRunningBuilds
+      } else {
+        buildsToCancel = [...scheduledBuilds, ...longRunningBuilds]
+      }
+
+      console.log(
+        `[/api/admin/cancel-queued-builds] POST: Found ${buildsToCancel.length} builds to cancel (${scheduledBuilds.length} queued, ${longRunningBuilds.length} long-running)`,
+      )
+
+      if (buildsToCancel.length === 0) {
         const response: CancelAllResponse = {
           totalQueued: 0,
           cancelled: 0,
@@ -126,10 +187,14 @@ export const handler = {
       const client = getBuildkiteClient()
       const results: CancelResult[] = []
 
-      for (const build of builds) {
+      for (const build of buildsToCancel) {
         try {
+          // Convert REST API UUID to GraphQL node ID
+          const graphqlId = restIdToGraphqlId(build.id, "Build")
+          console.log(`[/api/admin/cancel-queued-builds] POST: Converting ID ${build.id} -> ${graphqlId}`)
+
           const result = await client.mutation(CANCEL_BUILD_MUTATION, {
-            input: { id: build.id },
+            input: { id: graphqlId },
           })
 
           if (result.error) {
@@ -176,7 +241,7 @@ export const handler = {
       console.log(`[/api/admin/cancel-queued-builds] POST: Cancelled ${cancelled} builds, ${failed} failed`)
 
       const response: CancelAllResponse = {
-        totalQueued: builds.length,
+        totalQueued: buildsToCancel.length,
         cancelled,
         failed,
         results,
@@ -186,7 +251,7 @@ export const handler = {
         headers: { "Content-Type": "application/json" },
       })
     } catch (error) {
-      console.error("[/api/admin/cancel-queued-builds] POST: Error cancelling queued builds:")
+      console.error("[/api/admin/cancel-queued-builds] POST: Error cancelling builds:")
       console.error("[/api/admin/cancel-queued-builds] POST: Error type:", error?.constructor?.name)
       console.error(
         "[/api/admin/cancel-queued-builds] POST: Error message:",

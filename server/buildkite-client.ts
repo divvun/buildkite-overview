@@ -531,6 +531,16 @@ export const CREATE_BUILD_MUTATION = mutation((m) => [
   ),
 ])
 
+/**
+ * Convert a REST API UUID to a GraphQL node ID
+ * Buildkite GraphQL IDs are base64-encoded strings in format "Type---uuid"
+ */
+export function restIdToGraphqlId(restId: string, type: "Build" | "Pipeline" | "Job" = "Build"): string {
+  // Encode as base64: "Build---uuid" -> "QnVpbGQtLS11dWlk..."
+  const plainId = `${type}---${restId}`
+  return btoa(plainId)
+}
+
 // Mutation for cancelling a build
 export const CANCEL_BUILD_MUTATION = mutation((m) => [
   m.buildCancel(
