@@ -1,6 +1,7 @@
 // Buildkite API types - client safe
 export interface BuildkiteBuild {
   id: string
+  uuid?: string
   number: number
   state: string
   url: string
