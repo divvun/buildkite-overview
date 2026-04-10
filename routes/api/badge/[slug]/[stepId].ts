@@ -299,6 +299,7 @@ async function resolveGroupStepStatus(
     }).toPromise()
 
     const stepsYaml = yamlResult.data?.pipeline?.steps?.yaml
+    console.log(`[Step Badge] YAML fetch for ${pipelineSlug}: ${stepsYaml ? `${stepsYaml.length} chars` : 'null'}, error: ${yamlResult.error?.message ?? 'none'}`)
     if (!stepsYaml) {
       console.warn(`[Step Badge] Could not fetch pipeline YAML for ${pipelineSlug}`)
       return null
@@ -435,6 +436,8 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
 
     // Get the job matching the step key (API filtered it for us)
     const job = latestBuild.jobs?.edges?.[0]?.node
+
+    console.log(`[Step Badge] Build ${latestBuild.uuid}, job found: ${!!job}, edges: ${latestBuild.jobs?.edges?.length ?? 'no jobs field'}`)
 
     if (!job) {
       // No direct job match - this step key is likely a group step.
