@@ -378,6 +378,13 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       stepKey: [stepId],
     }).toPromise()
 
+    console.log(`[Step Badge] Query result for ${fullPipelineSlug}/${stepId}:`, JSON.stringify({
+      hasData: !!result.data,
+      hasPipeline: !!result.data?.pipeline,
+      error: result.error?.message,
+      graphQLErrors: result.error?.graphQLErrors?.map((e: { message: string }) => e.message),
+    }))
+
     if (result.error) {
       console.error(`[Step Badge] GraphQL error for ${fullPipelineSlug}/${stepId}:`, result.error.message)
     }
