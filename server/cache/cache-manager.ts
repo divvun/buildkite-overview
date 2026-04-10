@@ -1025,7 +1025,8 @@ export class CacheManager {
     this.memoryCache.delete(memKey)
 
     // Invalidate pipeline list cache to refresh status
-    this.memoryCache.delete("all-pipelines")
+    this.memoryCache.delete("all-pipelines-enriched")
+    this.memoryCache.delete("all-pipelines-basic")
   }
 
   async updateJobStatus(jobId: string, state: string, pipelineSlug: string, buildNumber: number): Promise<void> {
@@ -1048,11 +1049,11 @@ export class CacheManager {
   async invalidatePipelineCache(pipelineSlug?: string): Promise<void> {
     if (pipelineSlug) {
       console.log(`🗑️ Invalidating cache for pipeline ${pipelineSlug}`)
-      // For now, invalidate all pipeline cache
-      // TODO: Implement pipeline-specific cache invalidation
     }
 
-    this.memoryCache.delete("all-pipelines")
+    this.memoryCache.delete("all-pipelines-enriched")
+    this.memoryCache.delete("all-pipelines-basic")
+    this.db.invalidatePipelines(pipelineSlug)
   }
 
   // Public methods for external cache access

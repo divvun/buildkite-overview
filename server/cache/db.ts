@@ -185,6 +185,14 @@ export class CacheDB {
       .run(slug, orgSlug, JSON.stringify(data), now, now + ttlSeconds * 1000)
   }
 
+  invalidatePipelines(pipelineSlug?: string): void {
+    if (pipelineSlug) {
+      this.db.prepare("DELETE FROM cache_pipelines WHERE slug = ?").run(pipelineSlug)
+    } else {
+      this.db.prepare("DELETE FROM cache_pipelines").run()
+    }
+  }
+
   getCachedPipelines(orgSlug?: string): any[] {
     const now = Date.now()
     let query = "SELECT data_json FROM cache_pipelines WHERE expires_at > ?"
