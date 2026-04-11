@@ -234,7 +234,7 @@ export class CacheManager {
 
       // Cache all pipelines from this org with 15-minute TTL
       for (const pipeline of allOrgPipelines) {
-        this.db.cachePipeline(pipeline.slug, orgSlug, pipeline, 15 * 60) // 15 minutes
+        this.db.cachePipeline(pipeline.slug, orgSlug, pipeline, 60) // 1 minute
       }
 
       allPipelines.push(...allOrgPipelines)
