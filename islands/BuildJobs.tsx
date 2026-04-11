@@ -210,7 +210,7 @@ export default function BuildJobs(
                       style={`font-size: 1rem; color: ${
                         ["NOT_RUN", "SKIPPED", "WAITING_FAILED"].includes(job.state)
                           ? "var(--wa-color-neutral-fill-loud)"
-                          : ["PASSED", "FINISHED"].includes(job.state) && job.passed
+                          : job.state === "PASSED" || (job.state === "FINISHED" && job.passed !== false)
                           ? "var(--wa-color-success-fill-loud)"
                           : ["FAILED", "CANCELED"].includes(job.state) ||
                               (job.state === "FINISHED" && job.passed === false)
