@@ -1,4 +1,12 @@
 // Application types - client safe
+export interface AppPipelineJob {
+  stepKey?: string
+  label?: string
+  state: string
+  passed?: boolean
+  exitStatus?: number | null
+}
+
 export interface AppPipeline {
   id: string
   name: string
@@ -14,6 +22,7 @@ export interface AppPipeline {
     failed: number
   }
   buildHistory?: BuildHistoryItem[]
+  latestBuildJobs?: AppPipelineJob[]
   url: string
 }
 

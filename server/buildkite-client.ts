@@ -123,6 +123,30 @@ export const GET_ORGANIZATION_PIPELINES_PAGINATED: TypedDocumentNode<
                 }
               }
             }
+            latestBuildWithJobs: builds(first: 1) {
+              edges {
+                node {
+                  id
+                  number
+                  state
+                  jobs(first: 50) {
+                    edges {
+                      node {
+                        ... on JobTypeCommand {
+                          label
+                          state
+                          passed
+                          exitStatus
+                          step {
+                            key
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

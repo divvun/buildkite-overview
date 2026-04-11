@@ -8,7 +8,7 @@ import {
 } from "../buildkite-client.ts"
 import { withRetry } from "../retry-helper.ts"
 import { ORGANIZATIONS } from "~/utils/formatters.ts"
-import type { AppAgent, AppPipeline } from "~/types/app.ts"
+import type { AppAgent, AppPipeline, AppPipelineJob } from "~/types/app.ts"
 
 interface MemoryCacheItem<T> {
   data: T
@@ -539,6 +539,22 @@ export class CacheManager {
       finishedAt: build.finishedAt || build.createdAt,
     }))
 
+    // Extract jobs from the latest build (fetched via GraphQL alias)
+    const latestBuildWithJobs = pipeline.latestBuildWithJobs?.edges?.[0]?.node
+    let latestBuildJobs: AppPipelineJob[] | undefined
+    if (latestBuildWithJobs?.jobs?.edges) {
+      latestBuildJobs = latestBuildWithJobs.jobs.edges
+        .map((edge: any) => edge.node)
+        .filter((node: any) => node && node.state) // Filter out empty nodes (non-command job types)
+        .map((job: any) => ({
+          stepKey: job.step?.key,
+          label: job.label,
+          state: job.state,
+          passed: job.passed,
+          exitStatus: job.exitStatus,
+        }))
+    }
+
     return {
       id: pipeline.id,
       name: pipeline.name,
@@ -550,6 +566,7 @@ export class CacheManager {
       visibility: pipeline.visibility.toLowerCase(),
       builds: buildStats,
       buildHistory,
+      latestBuildJobs,
       url: pipeline.url,
     }
   }
