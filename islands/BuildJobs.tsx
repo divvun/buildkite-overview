@@ -26,13 +26,13 @@ function getJobBadgeVariant(status: string, passed?: boolean): string {
 function getJobStatusIcon(status: string, passed?: boolean): string {
   switch (status) {
     case "PASSED":
-      return "circle-check"
+      return "check-circle"
     case "FINISHED":
       // For finished jobs, check if they actually passed
-      return passed === false ? "circle-xmark" : "circle-check"
+      return passed === false ? "x-circle" : "check-circle"
     case "FAILED":
     case "CANCELED":
-      return "circle-xmark"
+      return "x-circle"
     case "RUNNING":
     case "CREATING":
     case "CANCELING":
@@ -42,7 +42,7 @@ function getJobStatusIcon(status: string, passed?: boolean): string {
     case "WAITING":
       return "clock"
     case "BLOCKED":
-      return "circle-pause"
+      return "pause-circle"
     case "NOT_RUN":
     case "SKIPPED":
     case "WAITING_FAILED":
@@ -50,7 +50,7 @@ function getJobStatusIcon(status: string, passed?: boolean): string {
     default:
       // For unknown statuses, check passed flag as fallback
       if (passed === false) {
-        return "circle-xmark"
+        return "x-circle"
       }
       return "circle"
   }
