@@ -18,8 +18,7 @@ interface MemoryCacheItem<T> {
 export class CacheManager {
   private db: CacheDB
   private memoryCache: Map<string, MemoryCacheItem<any>> = new Map()
-  private inFlightRequests: WeakMap<symbol, Promise<any>> = new WeakMap()
-  private lockSymbols: Map<string, symbol> = new Map()
+  private inFlightRequests: Map<string, Promise<any>> = new Map()
 
   constructor() {
     this.db = new CacheDB()
@@ -63,28 +62,19 @@ export class CacheManager {
   }
 
   private async withLock<T>(key: string, operation: () => Promise<T>): Promise<T> {
-    // Check if there's already a symbol (and thus an in-flight request) for this key
-    const existingSymbol = this.lockSymbols.get(key)
-    if (existingSymbol && this.inFlightRequests.has(existingSymbol)) {
-      const existingRequest = this.inFlightRequests.get(existingSymbol)!
+    const existing = this.inFlightRequests.get(key)
+    if (existing) {
       console.log(`Waiting for in-flight request: ${key}`)
-      return await existingRequest
+      return await existing
     }
 
-    // Create a new symbol for this lock
-    const lockSymbol = Symbol(key)
-    this.lockSymbols.set(key, lockSymbol)
-
-    // Start a new request and store the promise
     const promise = operation()
-    this.inFlightRequests.set(lockSymbol, promise)
+    this.inFlightRequests.set(key, promise)
 
     try {
-      const result = await promise
-      return result
+      return await promise
     } finally {
-      // Clean up - the WeakMap entry will be GC'd when the symbol is collected
-      this.lockSymbols.delete(key)
+      this.inFlightRequests.delete(key)
     }
   }
 
