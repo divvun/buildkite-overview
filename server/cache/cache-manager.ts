@@ -145,6 +145,8 @@ export class CacheManager {
 
       // Cache basic pipelines (without GitHub enrichment) for immediate response
       this.setInMemory("all-pipelines-basic", cachedPipelines, 60) // 1 minute
+      // Clear enriched cache so stale enriched data can't outlive fresh basic data
+      this.memoryCache.delete("all-pipelines-enriched")
 
       // Trigger background enrichment (fire and forget)
       this.enrichPipelinesInBackground(cachedPipelines)
