@@ -75,82 +75,75 @@ export const handler: RouteHandler<unknown, AppState> = {
 
       // Parse the webhook payload
       const payload: BuildkiteWebhookEvent = await ctx.req.json()
-      console.log(`📥 Received Buildkite webhook: ${payload.event}`)
 
       // Get cache manager instance
       const cacheManager = getCacheManager()
+
+      // Extract common identifiers for logging
+      const pipelineSlug = payload.build?.pipeline?.slug || payload.pipeline?.slug
+      const buildNumber = payload.build?.number || payload.job?.build?.number
 
       // Handle different event types
       switch (payload.event) {
         case "build.scheduled":
           if (payload.build) {
-            const pipelineSlug = payload.build.pipeline?.slug || payload.pipeline?.slug
-            console.log(`📅 Build scheduled: ${pipelineSlug}#${payload.build.number}`)
+            console.log(`📅 Build scheduled: ${pipelineSlug}#${buildNumber} (branch: ${payload.build.branch || "unknown"})`)
             await handleBuildScheduled(cacheManager, payload.build, pipelineSlug)
           }
           break
 
         case "build.started":
           if (payload.build) {
-            const pipelineSlug = payload.build.pipeline?.slug || payload.pipeline?.slug
-            console.log(`🚀 Build started: ${pipelineSlug}#${payload.build.number}`)
+            console.log(`🚀 Build started: ${pipelineSlug}#${buildNumber} (branch: ${payload.build.branch || "unknown"})`)
             await handleBuildStarted(cacheManager, payload.build, pipelineSlug)
           }
           break
 
         case "build.running":
           if (payload.build) {
-            const pipelineSlug = payload.build.pipeline?.slug || payload.pipeline?.slug
-            console.log(`🏃 Build running: ${pipelineSlug}#${payload.build.number}`)
+            console.log(`🏃 Build running: ${pipelineSlug}#${buildNumber} (branch: ${payload.build.branch || "unknown"})`)
             await handleBuildRunning(cacheManager, payload.build, pipelineSlug)
           }
           break
 
         case "build.finished":
           if (payload.build) {
-            const pipelineSlug = payload.build.pipeline?.slug || payload.pipeline?.slug
-            console.log(`✅ Build finished: ${pipelineSlug}#${payload.build.number} - ${payload.build.state}`)
+            console.log(`🏁 Build finished: ${pipelineSlug}#${buildNumber} → ${payload.build.state} (branch: ${payload.build.branch || "unknown"})`)
             await handleBuildFinished(cacheManager, payload.build, pipelineSlug)
           }
           break
 
         case "job.scheduled":
           if (payload.job) {
-            const pipelineSlug = payload.pipeline?.slug
-            const buildNumber = payload.build?.number
-            console.log(`📅 Job scheduled: ${payload.job.name || payload.job.id} in pipeline ${pipelineSlug}`)
+            console.log(`📅 Job scheduled: ${pipelineSlug}#${buildNumber} → ${payload.job.name || payload.job.id}`)
             await handleJobScheduled(cacheManager, payload.job, pipelineSlug, buildNumber)
           }
           break
 
         case "job.started":
           if (payload.job) {
-            const pipelineSlug = payload.pipeline?.slug
-            const buildNumber = payload.build?.number
-            console.log(`🔧 Job started: ${payload.job.name || payload.job.id} in pipeline ${pipelineSlug}`)
+            console.log(`🔧 Job started: ${pipelineSlug}#${buildNumber} → ${payload.job.name || payload.job.id}`)
             await handleJobStarted(cacheManager, payload.job, pipelineSlug, buildNumber)
           }
           break
 
         case "job.finished":
           if (payload.job) {
-            const pipelineSlug = payload.pipeline?.slug
-            const buildNumber = payload.build?.number
-            console.log(`🏁 Job finished: ${payload.job.name || payload.job.id} - ${payload.job.state}`)
+            console.log(`🏁 Job finished: ${pipelineSlug}#${buildNumber} → ${payload.job.name || payload.job.id} (${payload.job.state})`)
             await handleJobFinished(cacheManager, payload.job, pipelineSlug, buildNumber)
           }
           break
 
         case "agent.connected":
           if (payload.agent) {
-            console.log(`🔌 Agent connected: ${payload.agent.name}`)
+            console.log(`🔌 Agent connected: ${payload.agent.name} (${payload.agent.hostname})`)
             await handleAgentConnected(cacheManager, payload.agent)
           }
           break
 
         case "agent.disconnected":
           if (payload.agent) {
-            console.log(`🔌 Agent disconnected: ${payload.agent.name}`)
+            console.log(`🔌 Agent disconnected: ${payload.agent.name} (${payload.agent.hostname})`)
             await handleAgentDisconnected(cacheManager, payload.agent)
           }
           break
@@ -160,7 +153,7 @@ export const handler: RouteHandler<unknown, AppState> = {
           break
 
         default:
-          console.log(`📋 Unhandled webhook event: ${payload.event}`)
+          console.log(`📋 Unhandled webhook event: ${payload.event} (pipeline: ${pipelineSlug || "unknown"})`)
       }
 
       return new Response("OK", { status: 200 })
@@ -203,6 +196,8 @@ async function handleBuildRunning(cacheManager: any, build: any, pipelineSlug?: 
   }
   try {
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    // Refresh pipeline so badges show "running" status during long builds
+    await cacheManager.refreshSinglePipeline(pipelineSlug)
   } catch (error) {
     console.error("Error caching build:", error)
   }
