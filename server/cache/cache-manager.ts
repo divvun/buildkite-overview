@@ -668,6 +668,18 @@ export class CacheManager {
     })
   }
 
+  // Update a cached pipeline's status from a webhook build state (no API call).
+  // Derives the display status using the same logic as determinePipelineStatus.
+  updatePipelineStatusFromBuild(pipelineSlug: string, buildState: string): void {
+    const status = this.determinePipelineStatus([{ state: buildState.toUpperCase() }])
+    const updated = this.db.updatePipelineStatus(pipelineSlug, status)
+    if (updated) {
+      console.log(`✅ Updated pipeline ${pipelineSlug} status to: ${status} (from build state: ${buildState})`)
+    } else {
+      console.warn(`⚠️ Pipeline ${pipelineSlug} not found in cache, cannot update status`)
+    }
+  }
+
   // Refresh a single pipeline's cached data (called by webhooks)
   async refreshSinglePipeline(pipelineSlug: string): Promise<void> {
     const fullSlug = `divvun/${pipelineSlug}`

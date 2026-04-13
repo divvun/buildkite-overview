@@ -172,6 +172,7 @@ async function handleBuildScheduled(cacheManager: any, build: any, pipelineSlug?
   }
   try {
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    cacheManager.updatePipelineStatusFromBuild(pipelineSlug, build.state)
   } catch (error) {
     console.error("Error caching build:", error)
   }
@@ -184,6 +185,7 @@ async function handleBuildStarted(cacheManager: any, build: any, pipelineSlug?: 
   }
   try {
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    cacheManager.updatePipelineStatusFromBuild(pipelineSlug, build.state)
   } catch (error) {
     console.error("Error caching build:", error)
   }
@@ -196,9 +198,10 @@ async function handleBuildRunning(cacheManager: any, build: any, pipelineSlug?: 
   }
   try {
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    // Update the pipeline status from the build state without fetching from API.
     // Don't refreshSinglePipeline here — the build just started and jobs don't
-    // have step keys yet, so it would overwrite good cached data with incomplete data.
-    // Pipeline refresh happens on job.finished and build.finished instead.
+    // have step keys yet, which would overwrite good cached job data.
+    cacheManager.updatePipelineStatusFromBuild(pipelineSlug, build.state)
   } catch (error) {
     console.error("Error caching build:", error)
   }

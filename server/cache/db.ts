@@ -185,6 +185,22 @@ export class CacheDB {
       .run(slug, orgSlug, JSON.stringify(data), now, now + ttlSeconds * 1000)
   }
 
+  updatePipelineStatus(slug: string, status: string): boolean {
+    const row = this.db
+      .prepare("SELECT data_json, org_slug, expires_at FROM cache_pipelines WHERE slug = ?")
+      .get(slug) as { data_json: string; org_slug: string; expires_at: number } | undefined
+
+    if (!row) return false
+
+    const data = JSON.parse(row.data_json)
+    data.status = status
+    const now = Date.now()
+    this.db
+      .prepare("UPDATE cache_pipelines SET data_json = ?, fetched_at = ? WHERE slug = ?")
+      .run(JSON.stringify(data), now, slug)
+    return true
+  }
+
   invalidatePipelines(pipelineSlug?: string): void {
     if (pipelineSlug) {
       this.db.prepare("DELETE FROM cache_pipelines WHERE slug = ?").run(pipelineSlug)
