@@ -194,12 +194,11 @@ export class CacheDB {
   }
 
   getCachedPipelines(orgSlug?: string): any[] {
-    const now = Date.now()
-    let query = "SELECT data_json FROM cache_pipelines WHERE expires_at > ?"
-    let params: (number | string)[] = [now]
+    let query = "SELECT data_json FROM cache_pipelines"
+    const params: string[] = []
 
     if (orgSlug) {
-      query += " AND org_slug = ?"
+      query += " WHERE org_slug = ?"
       params.push(orgSlug)
     }
 
@@ -232,12 +231,11 @@ export class CacheDB {
   }
 
   getCachedAgents(orgSlug?: string): any[] {
-    const now = Date.now()
-    let query = "SELECT data_json FROM cache_agents WHERE expires_at > ?"
-    let params: (number | string)[] = [now]
+    let query = "SELECT data_json FROM cache_agents"
+    const params: string[] = []
 
     if (orgSlug) {
-      query += " AND org_slug = ?"
+      query += " WHERE org_slug = ?"
       params.push(orgSlug)
     }
 
