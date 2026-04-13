@@ -216,8 +216,10 @@ async function handleBuildFinished(cacheManager: any, build: any, pipelineSlug?:
   try {
     // Cache the finished build data (will be cached for 24h since it's immutable)
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    // Fetch fresh pipeline status + jobs and update SQLite cache
+    await cacheManager.refreshSinglePipeline(pipelineSlug)
   } catch (error) {
-    console.error("Error caching build:", error)
+    console.error("Error handling build finished:", error)
   }
 }
 

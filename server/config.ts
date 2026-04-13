@@ -150,7 +150,7 @@ function loadConfigFromTOML(configPath?: string): AppConfig {
       },
       polling: {
         enabled: parsed.polling?.enabled !== false, // Default to true
-        pipelineIntervalMs: Math.max(parsed.polling?.pipeline_interval_ms || 120000, 30000), // 2 minutes default, min 30s
+        pipelineIntervalMs: Math.max(parsed.polling?.pipeline_interval_ms || 600000, 30000), // 10 minutes default (safety net, webhooks handle real-time updates)
         agentIntervalMs: Math.max(parsed.polling?.agent_interval_ms || 300000, 30000), // 5 minutes default, min 30s
       },
     }

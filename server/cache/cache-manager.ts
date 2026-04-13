@@ -4,6 +4,7 @@ import {
   GET_ORGANIZATION_AGENTS,
   GET_ORGANIZATION_PIPELINES_PAGINATED,
   GET_PIPELINE_BUILDS,
+  GET_SINGLE_PIPELINE_STATUS,
   getBuildkiteClient,
 } from "../buildkite-client.ts"
 import { withRetry } from "../retry-helper.ts"
@@ -665,6 +666,42 @@ export class CacheManager {
     return await this.withLock("refresh-agents", async () => {
       return await this.fetchAgentsFromBuildkite(ORGANIZATIONS)
     })
+  }
+
+  // Refresh a single pipeline's cached data (called by webhooks)
+  async refreshSinglePipeline(pipelineSlug: string): Promise<void> {
+    const fullSlug = `divvun/${pipelineSlug}`
+    console.log(`🔄 Refreshing single pipeline: ${fullSlug}`)
+
+    try {
+      const result = await getBuildkiteClient().query(GET_SINGLE_PIPELINE_STATUS, {
+        pipelineSlug: fullSlug,
+      }).toPromise()
+
+      if (result.error) {
+        console.error(`❌ Error refreshing pipeline ${fullSlug}:`, result.error)
+        return
+      }
+
+      if (!result.data?.pipeline) {
+        console.warn(`⚠️ Pipeline ${fullSlug} not found in Buildkite`)
+        return
+      }
+
+      const pipeline = this.mapBuildkitePipelineToApp(result.data.pipeline)
+
+      // Preserve GitHub-enriched "private" tag from existing cached data
+      const existing = this.db.getCachedPipelines("divvun")
+        .find((p: AppPipeline) => p.slug === pipelineSlug)
+      if (existing?.tags?.includes("private") && !pipeline.tags.includes("private")) {
+        pipeline.tags.push("private")
+      }
+
+      this.db.cachePipeline(pipeline.slug, "divvun", pipeline, 15 * 60)
+      console.log(`✅ Refreshed pipeline ${fullSlug} (status: ${pipeline.status})`)
+    } catch (error) {
+      console.error(`❌ Failed to refresh pipeline ${fullSlug}:`, error)
+    }
   }
 
   // Individual build caching with intelligent TTL

@@ -165,6 +165,62 @@ export const GET_ORGANIZATION_PIPELINES_PAGINATED: TypedDocumentNode<
   }
 `
 
+// Lightweight query for a single pipeline's status + jobs (used by webhooks)
+export const GET_SINGLE_PIPELINE_STATUS = gql`
+  query GetSinglePipelineStatus($pipelineSlug: ID!) {
+    pipeline(slug: $pipelineSlug) {
+      id
+      name
+      slug
+      url
+      visibility
+      repository {
+        url
+      }
+      tags {
+        label
+      }
+      builds(first: 1) {
+        edges {
+          node {
+            id
+            number
+            state
+            url
+            startedAt
+            finishedAt
+            createdAt
+          }
+        }
+      }
+      latestBuildWithJobs: builds(first: 1) {
+        edges {
+          node {
+            id
+            number
+            state
+            jobs(first: 50) {
+              edges {
+                node {
+                  ... on JobTypeCommand {
+                    label
+                    state
+                    passed
+                    exitStatus
+                    step {
+                      key
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
 export const GET_PIPELINE_BUILDS: TypedDocumentNode<
   { pipeline: { builds: { edges: Array<{ node: BuildkiteBuild }> } } },
   { pipelineSlug: string; first?: number }
