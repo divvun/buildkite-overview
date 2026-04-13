@@ -125,6 +125,8 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       })
     }
 
+    const cacheControl = isPrivate ? "private, max-age=60" : "public, max-age=120"
+
     // Try exact step key match first (direct command step)
     const exactMatch = jobs.find((job) => job.stepKey === stepId)
     if (exactMatch) {
@@ -135,6 +137,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml",
+          "Cache-Control": cacheControl,
           "X-Content-Type-Options": "nosniff",
         },
       })
@@ -156,6 +159,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml",
+          "Cache-Control": cacheControl,
           "X-Content-Type-Options": "nosniff",
         },
       })
@@ -165,7 +169,10 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     const notFoundBadge = generateStepBadgeSvg(customLabel || stepId, "not found")
     return new Response(notFoundBadge, {
       status: 200,
-      headers: { "Content-Type": "image/svg+xml" },
+      headers: {
+        "Content-Type": "image/svg+xml",
+        "Cache-Control": "public, max-age=60",
+      },
     })
   } catch (error) {
     console.error("Step badge API error:", error)
@@ -173,7 +180,10 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     const errorBadge = generateStepBadgeSvg(customLabel || stepId || "unknown", "unknown")
     return new Response(errorBadge, {
       status: 200,
-      headers: { "Content-Type": "image/svg+xml" },
+      headers: {
+        "Content-Type": "image/svg+xml",
+        "Cache-Control": "public, max-age=60",
+      },
     })
   }
 }

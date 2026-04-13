@@ -49,7 +49,7 @@ export class BackgroundPoller {
       try {
         console.log("🔄 Background poll: Refreshing pipeline data...")
         const startTime = Date.now()
-        await getCacheManager().getPipelines()
+        await getCacheManager().refreshPipelines()
         const duration = Date.now() - startTime
         console.log(`✅ Pipeline data refreshed in ${duration}ms`)
       } catch (error) {
@@ -76,7 +76,7 @@ export class BackgroundPoller {
       try {
         console.log("🔄 Background poll: Refreshing agent data...")
         const startTime = Date.now()
-        await getCacheManager().getAgents()
+        await getCacheManager().refreshAgents()
         const duration = Date.now() - startTime
         console.log(`✅ Agent data refreshed in ${duration}ms`)
       } catch (error) {
@@ -103,8 +103,8 @@ export class BackgroundPoller {
       try {
         console.log("🔄 Performing initial background data refresh...")
         await Promise.all([
-          getCacheManager().getPipelines(),
-          getCacheManager().getAgents(),
+          getCacheManager().refreshPipelines(),
+          getCacheManager().refreshAgents(),
         ])
         console.log("✅ Initial background data refresh completed")
       } catch (error) {
@@ -162,8 +162,8 @@ export class BackgroundPoller {
 
     try {
       await Promise.all([
-        getCacheManager().getPipelines(),
-        getCacheManager().getAgents(),
+        getCacheManager().refreshPipelines(),
+        getCacheManager().refreshAgents(),
       ])
       const duration = Date.now() - startTime
       console.log(`✅ Manual refresh completed in ${duration}ms`)

@@ -1,46 +1,8 @@
-import type { TypedDocumentNode } from "@graphql-typed-document-node/core"
 import { makeBadge } from "badge-maker"
 import { Context } from "fresh"
-import { gql } from "graphql-tag"
-import { getBuildkiteClient } from "~/server/buildkite-client.ts"
-import type { BuildkiteBuild, BuildkitePipeline } from "~/types/buildkite.ts"
+import { getCacheManager } from "~/server/cache/cache-manager.ts"
 import { normalizeStatus } from "~/utils/formatters.ts"
 import { type AppState, isPrivatePipeline } from "~/server/middleware.ts"
-
-// Query to get a single pipeline by slug
-export const GET_SINGLE_PIPELINE: TypedDocumentNode<
-  { pipeline: BuildkitePipeline & { builds: { edges: Array<{ node: BuildkiteBuild }> } } },
-  { pipelineSlug: string }
-> = gql`
-  query GetSinglePipeline($pipelineSlug: ID!) {
-    pipeline(slug: $pipelineSlug) {
-      id
-      name
-      slug
-      url
-      visibility
-      repository {
-        url
-      }
-      tags {
-        label
-      }
-      builds(first: 1) {
-        edges {
-          node {
-            id
-            number
-            state
-            url
-            startedAt
-            finishedAt
-            createdAt
-          }
-        }
-      }
-    }
-  }
-`
 
 /**
  * Generate an SVG badge for a pipeline's build status
@@ -108,15 +70,12 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       return new Response("Pipeline slug is required", { status: 400 })
     }
 
-    // Fetch pipeline data from Buildkite
-    const fullPipelineSlug = `divvun/${slug}`
-    const client = getBuildkiteClient()
+    // Read from cache (populated by background poller)
+    const cacheManager = getCacheManager()
+    const pipelines = await cacheManager.getPipelines()
+    const pipeline = pipelines.find((p) => p.slug === slug)
 
-    const result = await client.query(GET_SINGLE_PIPELINE, {
-      pipelineSlug: fullPipelineSlug,
-    }).toPromise()
-
-    if (!result.data?.pipeline) {
+    if (!pipeline) {
       // Return a "not found" badge instead of 404 for better UX
       const notFoundBadge = generateBadgeSvg(customLabel || slug, "unknown")
       return new Response(notFoundBadge, {
@@ -128,13 +87,11 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       })
     }
 
-    const pipeline = result.data.pipeline
-
     // Check if pipeline is private and validate authorization
     const isPrivate = isPrivatePipeline({
-      repo: pipeline.repository?.url,
+      repo: pipeline.repo,
       visibility: pipeline.visibility,
-      tags: pipeline.tags?.map((tag) => tag.label) || [],
+      tags: pipeline.tags,
     })
 
     if (isPrivate && !isAuthorizedForPrivateBadge(req)) {
@@ -146,9 +103,8 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       })
     }
 
-    // Get the latest build status
-    const latestBuild = pipeline.builds?.edges?.[0]?.node
-    const status = latestBuild?.state || "unknown"
+    // Get the build status from cached pipeline data
+    const status = pipeline.status || "unknown"
 
     // Generate the SVG badge
     const badgeSvg = generateBadgeSvg(customLabel || pipeline.name, status)
@@ -159,7 +115,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
         "Content-Type": "image/svg+xml",
         "Cache-Control": isPrivate
           ? "private, max-age=60" // Private badges cache for 1 minute
-          : "public, max-age=300", // Public badges cache for 5 minutes
+          : "public, max-age=120", // Public badges cache for 2 minutes
         "X-Content-Type-Options": "nosniff",
       },
     })

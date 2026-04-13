@@ -178,11 +178,9 @@ async function handleBuildScheduled(cacheManager: any, build: any, pipelineSlug?
     return
   }
   try {
-    // Cache the build data
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, build.state)
   } catch (error) {
-    console.error("Error updating build status:", error)
+    console.error("Error caching build:", error)
   }
 }
 
@@ -192,11 +190,9 @@ async function handleBuildStarted(cacheManager: any, build: any, pipelineSlug?: 
     return
   }
   try {
-    // Cache the updated build data
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, build.state)
   } catch (error) {
-    console.error("Error updating build status:", error)
+    console.error("Error caching build:", error)
   }
 }
 
@@ -206,11 +202,9 @@ async function handleBuildRunning(cacheManager: any, build: any, pipelineSlug?: 
     return
   }
   try {
-    // Cache the updated build data
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, build.state)
   } catch (error) {
-    console.error("Error updating build status:", error)
+    console.error("Error caching build:", error)
   }
 }
 
@@ -222,11 +216,8 @@ async function handleBuildFinished(cacheManager: any, build: any, pipelineSlug?:
   try {
     // Cache the finished build data (will be cached for 24h since it's immutable)
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    await cacheManager.updatePipelineBuildStatus(pipelineSlug, build.number, build.state)
-    // Invalidate pipeline list cache to update overview
-    await cacheManager.invalidatePipelineCache(pipelineSlug)
   } catch (error) {
-    console.error("Error updating build status:", error)
+    console.error("Error caching build:", error)
   }
 }
 
@@ -272,20 +263,10 @@ async function handleJobFinished(cacheManager: any, job: any, pipelineSlug?: str
   }
 }
 
-async function handleAgentConnected(cacheManager: any, agent: any) {
-  // Update agent status in cache
-  try {
-    await cacheManager.updateAgentStatus(agent.id, "connected", agent.connected_at)
-  } catch (error) {
-    console.error("Error updating agent status:", error)
-  }
+async function handleAgentConnected(_cacheManager: any, _agent: any) {
+  // Agent data is refreshed by the background poller
 }
 
-async function handleAgentDisconnected(cacheManager: any, agent: any) {
-  // Update agent status in cache
-  try {
-    await cacheManager.updateAgentStatus(agent.id, "disconnected", agent.disconnected_at)
-  } catch (error) {
-    console.error("Error updating agent status:", error)
-  }
+async function handleAgentDisconnected(_cacheManager: any, _agent: any) {
+  // Agent data is refreshed by the background poller
 }

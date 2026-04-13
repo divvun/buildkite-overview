@@ -78,71 +78,14 @@ export class CacheManager {
     }
   }
 
-  // Get pipelines with multi-level caching
+  // Get pipelines from SQLite cache (read-only, poller writes)
   async getPipelines(): Promise<AppPipeline[]> {
-    // L1: Memory cache (1 minute) - check enriched pipelines first
-    const memCachedEnriched = this.getFromMemory<AppPipeline[]>("all-pipelines-enriched")
-    if (memCachedEnriched) {
-      console.log("Cache hit: memory (all-pipelines-enriched)")
-      return memCachedEnriched
+    const cachedPipelines: AppPipeline[] = []
+    for (const orgSlug of ORGANIZATIONS) {
+      const orgPipelines = this.db.getCachedPipelines(orgSlug)
+      cachedPipelines.push(...orgPipelines)
     }
-
-    // L2: Memory cache for basic pipelines (faster response)
-    const memCachedBasic = this.getFromMemory<AppPipeline[]>("all-pipelines-basic")
-    if (memCachedBasic) {
-      console.log("Cache hit: memory (all-pipelines-basic), triggering background enrichment")
-      // Trigger background enrichment (fire and forget)
-      this.enrichPipelinesInBackground(memCachedBasic)
-      return memCachedBasic
-    }
-
-    // Use locking for pipeline fetching (without GitHub enrichment)
-    return await this.withLock("get-pipelines-basic", async () => {
-      // Double-check memory cache after acquiring lock
-      const memCachedAfterLock = this.getFromMemory<AppPipeline[]>("all-pipelines-enriched")
-      if (memCachedAfterLock) {
-        console.log("Cache hit: memory (all-pipelines-enriched) after lock")
-        return memCachedAfterLock
-      }
-
-      const memCachedBasicAfterLock = this.getFromMemory<AppPipeline[]>("all-pipelines-basic")
-      if (memCachedBasicAfterLock) {
-        console.log("Cache hit: memory (all-pipelines-basic) after lock, triggering background enrichment")
-        this.enrichPipelinesInBackground(memCachedBasicAfterLock)
-        return memCachedBasicAfterLock
-      }
-
-      // L3: SQLite cache (check each org)
-      const cachedPipelines: AppPipeline[] = []
-      const orgsToFetch: string[] = []
-
-      for (const orgSlug of ORGANIZATIONS) {
-        const orgPipelines = this.db.getCachedPipelines(orgSlug)
-        if (orgPipelines.length > 0) {
-          console.log(`Cache hit: database (${orgSlug}, ${orgPipelines.length} pipelines)`)
-          cachedPipelines.push(...orgPipelines)
-        } else {
-          orgsToFetch.push(orgSlug)
-        }
-      }
-
-      // L4: Fetch missing orgs from Buildkite
-      if (orgsToFetch.length > 0) {
-        console.log(`Fetching fresh data for orgs: ${orgsToFetch.join(", ")}`)
-        const freshPipelines = await this.fetchPipelinesFromBuildkite(orgsToFetch)
-        cachedPipelines.push(...freshPipelines)
-      }
-
-      // Cache basic pipelines (without GitHub enrichment) for immediate response
-      this.setInMemory("all-pipelines-basic", cachedPipelines, 60) // 1 minute
-      // Clear enriched cache so stale enriched data can't outlive fresh basic data
-      this.memoryCache.delete("all-pipelines-enriched")
-
-      // Trigger background enrichment (fire and forget)
-      this.enrichPipelinesInBackground(cachedPipelines)
-
-      return cachedPipelines
-    })
+    return cachedPipelines
   }
 
   private async fetchPipelinesFromBuildkite(orgSlugs: readonly string[]): Promise<AppPipeline[]> {
@@ -234,29 +177,6 @@ export class CacheManager {
     }
 
     return allPipelines
-  }
-
-  // Background GitHub enrichment with locking
-  private enrichPipelinesInBackground(pipelines: AppPipeline[]): void {
-    // Fire and forget - don't await this
-    this.withLock("github-enrichment", async () => {
-      console.log(`🔄 Background: Starting GitHub enrichment for ${pipelines.length} pipelines`)
-      const startTime = Date.now()
-
-      try {
-        const enrichedPipelines = await this.enrichPipelinesWithGitHub(pipelines)
-
-        // Cache the enriched results
-        this.setInMemory("all-pipelines-enriched", enrichedPipelines, 60) // 1 minute
-
-        const duration = Date.now() - startTime
-        console.log(`✅ Background: GitHub enrichment completed in ${duration}ms`)
-      } catch (error) {
-        console.error("❌ Background: GitHub enrichment failed:", error)
-      }
-    }).catch((error) => {
-      console.error("❌ Background: GitHub enrichment lock failed:", error)
-    })
   }
 
   private async enrichPipelinesWithGitHub(pipelines: AppPipeline[]): Promise<AppPipeline[]> {
@@ -389,49 +309,14 @@ export class CacheManager {
   }
 
   // Get agents with caching
+  // Get agents from SQLite cache (read-only, poller writes)
   async getAgents(): Promise<AppAgent[]> {
-    // L1: Memory cache (1 minute)
-    const memCached = this.getFromMemory<AppAgent[]>("all-agents")
-    if (memCached) {
-      console.log("Cache hit: memory (all-agents)")
-      return memCached
+    const cachedAgents: AppAgent[] = []
+    for (const orgSlug of ORGANIZATIONS) {
+      const orgAgents = this.db.getCachedAgents(orgSlug)
+      cachedAgents.push(...orgAgents)
     }
-
-    // Use locking to prevent concurrent fetches
-    return await this.withLock("get-agents", async () => {
-      // Double-check memory cache after acquiring lock
-      const memCachedAfterLock = this.getFromMemory<AppAgent[]>("all-agents")
-      if (memCachedAfterLock) {
-        console.log("Cache hit: memory (all-agents) after lock")
-        return memCachedAfterLock
-      }
-
-      // L2: SQLite cache
-      const cachedAgents: AppAgent[] = []
-      const orgsToFetch: string[] = []
-
-      for (const orgSlug of ORGANIZATIONS) {
-        const orgAgents = this.db.getCachedAgents(orgSlug)
-        if (orgAgents.length > 0) {
-          console.log(`Cache hit: database (agents for ${orgSlug})`)
-          cachedAgents.push(...orgAgents)
-        } else {
-          orgsToFetch.push(orgSlug)
-        }
-      }
-
-      // L3: Fetch missing orgs from Buildkite
-      if (orgsToFetch.length > 0) {
-        console.log(`Fetching fresh agent data for orgs: ${orgsToFetch.join(", ")}`)
-        const freshAgents = await this.fetchAgentsFromBuildkite(orgsToFetch)
-        cachedAgents.push(...freshAgents)
-      }
-
-      // Cache in memory
-      this.setInMemory("all-agents", cachedAgents, 60) // 1 minute
-
-      return cachedAgents
-    })
+    return cachedAgents
   }
 
   private async fetchAgentsFromBuildkite(orgSlugs: readonly string[]): Promise<AppAgent[]> {
@@ -752,42 +637,33 @@ export class CacheManager {
     }
   }
 
-  // Manual cache refresh
+  // Manual cache refresh - fetches fresh data then atomically replaces cache
   async refreshPipelines(): Promise<AppPipeline[]> {
     console.log("Forcing refresh of all pipeline data")
 
-    // Use locking to prevent concurrent refreshes
     return await this.withLock("refresh-pipelines", async () => {
-      // Clear memory caches
-      this.memoryCache.delete("all-pipelines-basic")
-      this.memoryCache.delete("all-pipelines-enriched")
-
-      // Fetch fresh data for all orgs
+      // Fetch fresh data from Buildkite (writes to SQLite)
       const pipelines = await this.fetchPipelinesFromBuildkite(ORGANIZATIONS)
 
-      // Cache basic pipelines immediately
-      this.setInMemory("all-pipelines-basic", pipelines, 60)
+      // Enrich with GitHub private/public data inline
+      const enriched = await this.enrichPipelinesWithGitHub(pipelines)
 
-      // Trigger background enrichment (fire and forget)
-      this.enrichPipelinesInBackground(pipelines)
+      // Re-cache with enriched data (tags may have been updated by GitHub enrichment)
+      for (const orgSlug of ORGANIZATIONS) {
+        for (const pipeline of enriched) {
+          this.db.cachePipeline(pipeline.slug, orgSlug, pipeline, 15 * 60)
+        }
+      }
 
-      return pipelines
+      return enriched
     })
   }
 
   async refreshAgents(): Promise<AppAgent[]> {
     console.log("Forcing refresh of all agent data")
 
-    // Use locking to prevent concurrent refreshes
     return await this.withLock("refresh-agents", async () => {
-      // Clear memory cache
-      this.memoryCache.delete("all-agents")
-
-      // Fetch fresh data for all orgs
-      const agents = await this.fetchAgentsFromBuildkite(ORGANIZATIONS)
-
-      this.setInMemory("all-agents", agents, 60)
-      return agents
+      return await this.fetchAgentsFromBuildkite(ORGANIZATIONS)
     })
   }
 
@@ -1026,43 +902,12 @@ export class CacheManager {
   }
 
   // Webhook-triggered incremental updates
-  async updatePipelineBuildStatus(pipelineSlug: string, buildNumber: number, state: string): Promise<void> {
-    console.log(`🔄 Updating pipeline ${pipelineSlug} build #${buildNumber} to ${state}`)
-
-    // Invalidate memory cache for this specific build if it's cached
-    const memKey = `build-${pipelineSlug}-${buildNumber}`
-    this.memoryCache.delete(memKey)
-
-    // Invalidate pipeline list cache to refresh status
-    this.memoryCache.delete("all-pipelines-enriched")
-    this.memoryCache.delete("all-pipelines-basic")
-  }
-
   async updateJobStatus(jobId: string, state: string, pipelineSlug: string, buildNumber: number): Promise<void> {
     console.log(`🔄 Updating job ${jobId} in ${pipelineSlug}#${buildNumber} to ${state}`)
 
     // Invalidate memory cache for this specific job if it's cached
     const memKey = `job-${pipelineSlug}-${buildNumber}-${jobId}`
     this.memoryCache.delete(memKey)
-  }
-
-  async updateAgentStatus(agentId: string, connectionState: string, timestamp?: string): Promise<void> {
-    console.log(`🔄 Updating agent ${agentId} to ${connectionState}`)
-
-    // Invalidate agent cache to force refresh
-    this.memoryCache.delete("all-agents")
-
-    // TODO: Implement more granular agent status updates
-  }
-
-  async invalidatePipelineCache(pipelineSlug?: string): Promise<void> {
-    if (pipelineSlug) {
-      console.log(`🗑️ Invalidating cache for pipeline ${pipelineSlug}`)
-    }
-
-    this.memoryCache.delete("all-pipelines-enriched")
-    this.memoryCache.delete("all-pipelines-basic")
-    this.db.invalidatePipelines(pipelineSlug)
   }
 
   // Public methods for external cache access
