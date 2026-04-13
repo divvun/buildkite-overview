@@ -196,8 +196,9 @@ async function handleBuildRunning(cacheManager: any, build: any, pipelineSlug?: 
   }
   try {
     await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-    // Refresh pipeline so badges show "running" status during long builds
-    await cacheManager.refreshSinglePipeline(pipelineSlug)
+    // Don't refreshSinglePipeline here — the build just started and jobs don't
+    // have step keys yet, so it would overwrite good cached data with incomplete data.
+    // Pipeline refresh happens on job.finished and build.finished instead.
   } catch (error) {
     console.error("Error caching build:", error)
   }
@@ -255,6 +256,9 @@ async function handleJobFinished(cacheManager: any, job: any, pipelineSlug?: str
     // Cache the finished job data (will be cached for 24h since it's immutable)
     await cacheManager.cacheJob(pipelineSlug, buildNumber, job.id, job)
     await cacheManager.updateJobStatus(job.id, job.state, pipelineSlug, buildNumber)
+    // Refresh pipeline so step badges update as individual jobs complete.
+    // By this point all jobs exist with step keys (unlike build.running where they don't).
+    await cacheManager.refreshSinglePipeline(pipelineSlug)
   } catch (error) {
     console.error("Error updating job status:", error)
   }
