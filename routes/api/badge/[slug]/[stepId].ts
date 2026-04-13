@@ -117,6 +117,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     }
 
     const jobs = pipeline.latestBuildJobs
+    console.log(`🏷️ Badge ${slug}/${stepId}: pipeline status=${pipeline.status}, jobs=${jobs?.length || 0}, stepKeys=[${jobs?.map((j) => j.stepKey).join(", ") || "none"}]`)
     if (!jobs || jobs.length === 0) {
       const noBuildsBadge = generateStepBadgeSvg(customLabel || stepId, "no builds")
       return new Response(noBuildsBadge, {
