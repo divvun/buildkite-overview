@@ -35,6 +35,17 @@ export function getBuildkiteClient() {
           "Content-Type": "application/json",
         },
       },
+      fetch: async (input, init) => {
+        const response = await fetch(input, init)
+        // Log Buildkite rate limit headers for capacity planning
+        const remaining = response.headers.get("ratelimit-remaining")
+        const limit = response.headers.get("ratelimit-limit")
+        const reset = response.headers.get("ratelimit-reset")
+        if (remaining !== null) {
+          console.log(`📊 Buildkite rate limit: ${remaining}/${limit} remaining, resets in ${reset}s`)
+        }
+        return response
+      },
     })
   }
   return cachedClient
