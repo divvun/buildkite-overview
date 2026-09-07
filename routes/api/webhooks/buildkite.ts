@@ -245,6 +245,11 @@ async function handleJobStarted(cacheManager: any, job: any, pipelineSlug?: stri
     // Cache the updated job data
     await cacheManager.cacheJob(pipelineSlug, buildNumber, job.id, job)
     await cacheManager.updateJobStatus(job.id, "started", pipelineSlug, buildNumber)
+    // Refresh cached jobs so step badges reflect steps that just started running
+    // (build.running / job.started don't otherwise update latestBuildJobs).
+    // Debounced: a burst of job.started events collapses into one refresh, and it
+    // shares a rate-limit window with the job.finished refresh below.
+    cacheManager.refreshSinglePipelineDebounced(pipelineSlug)
   } catch (error) {
     console.error("Error updating job status:", error)
   }

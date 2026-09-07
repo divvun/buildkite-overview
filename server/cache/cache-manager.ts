@@ -20,6 +20,10 @@ export class CacheManager {
   private db: CacheDB
   private memoryCache: Map<string, MemoryCacheItem<any>> = new Map()
   private inFlightRequests: Map<string, Promise<any>> = new Map()
+  // Debounce state for refreshSinglePipelineDebounced(): last completed refresh
+  // time per slug, and any scheduled trailing refresh.
+  private pipelineRefreshTimes: Map<string, number> = new Map()
+  private pipelineRefreshTimers: Map<string, number> = new Map()
 
   constructor() {
     this.db = new CacheDB()
@@ -713,7 +717,32 @@ export class CacheManager {
       console.log(`✅ Refreshed pipeline ${fullSlug} (status: ${pipeline.status})`)
     } catch (error) {
       console.error(`❌ Failed to refresh pipeline ${fullSlug}:`, error)
+    } finally {
+      this.pipelineRefreshTimes.set(pipelineSlug, Date.now())
     }
+  }
+
+  // Rate-limited variant of refreshSinglePipeline() for high-frequency webhooks
+  // (job.started / job.finished). Refreshes immediately if the last refresh for
+  // this pipeline was more than `minIntervalMs` ago; otherwise schedules a single
+  // trailing refresh so the final state is always fetched. A burst of job events
+  // therefore collapses into at most one refresh per interval.
+  refreshSinglePipelineDebounced(pipelineSlug: string, minIntervalMs = 15_000): void {
+    if (this.pipelineRefreshTimers.has(pipelineSlug)) return // trailing refresh already queued
+
+    const last = this.pipelineRefreshTimes.get(pipelineSlug) ?? 0
+    const elapsed = Date.now() - last
+
+    if (elapsed >= minIntervalMs) {
+      void this.refreshSinglePipeline(pipelineSlug)
+      return
+    }
+
+    const timer = setTimeout(() => {
+      this.pipelineRefreshTimers.delete(pipelineSlug)
+      void this.refreshSinglePipeline(pipelineSlug)
+    }, minIntervalMs - elapsed)
+    this.pipelineRefreshTimers.set(pipelineSlug, timer)
   }
 
   // Individual build caching with intelligent TTL

@@ -137,6 +137,13 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     const buildStatusIsMeaningfulFallback = isPreRun || buildStatus === "waiting" ||
       buildStatus === "running" || buildStatus === "blocked"
 
+    // If the build is running but the resolved step still reads as pending — its
+    // jobs are queued, or the cached job snapshot lags slightly behind live — the
+    // badge should track the build rather than show "waiting" next to a running
+    // build page.
+    const trackRunningBuild = (status: string): string =>
+      buildStatus === "running" && (status === "waiting" || status === "scheduled") ? "running" : status
+
     const jobs = pipeline.latestBuildJobs
     console.log(
       `🏷️ Badge ${slug}/${stepId}: pipeline status=${pipeline.status}, jobs=${jobs?.length || 0}, stepKeys=[${
@@ -173,14 +180,15 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     // Try exact step key match first (direct command step)
     const exactMatch = jobs.find((job) => job.stepKey === stepId)
     if (exactMatch) {
-      const status = getJobStatus(exactMatch)
+      const rawStatus = getJobStatus(exactMatch)
+      const status = trackRunningBuild(rawStatus)
       const jobLabel = customLabel || exactMatch.label || stepId
       const badgeSvg = generateStepBadgeSvg(jobLabel, status)
       return new Response(badgeSvg, {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml",
-          "Cache-Control": cacheControl,
+          "Cache-Control": status === rawStatus ? cacheControl : pendingCacheControl,
           "X-Content-Type-Options": "nosniff",
         },
       })
@@ -193,14 +201,15 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     const childJobs = jobs.filter((job) => job.stepKey?.endsWith(segment) || job.stepKey?.includes(`${segment}-`))
 
     if (childJobs.length > 0) {
-      const status = aggregateJobStatuses(childJobs)
+      const rawStatus = aggregateJobStatuses(childJobs)
+      const status = trackRunningBuild(rawStatus)
       const displayLabel = customLabel || stepId.charAt(0).toUpperCase() + stepId.slice(1)
       const badgeSvg = generateStepBadgeSvg(displayLabel, status)
       return new Response(badgeSvg, {
         status: 200,
         headers: {
           "Content-Type": "image/svg+xml",
-          "Cache-Control": cacheControl,
+          "Cache-Control": status === rawStatus ? cacheControl : pendingCacheControl,
           "X-Content-Type-Options": "nosniff",
         },
       })
