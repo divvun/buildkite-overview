@@ -24,11 +24,16 @@ function aggregateJobStatuses(jobs: AppPipelineJob[]): string {
   return "unknown"
 }
 
+// Synthetic statuses produced by this endpoint that are not real build/job
+// states — they must not be run through normalizeStatus(), which would collapse
+// any unrecognized string to "unknown".
+const SYNTHETIC_STATUSES = new Set(["not found", "no builds", "unknown"])
+
 /**
  * Generate an SVG badge for a job/step status
  */
 function generateStepBadgeSvg(stepLabel: string, status: string): string {
-  const statusNormalized = normalizeStatus(status)
+  const statusNormalized = SYNTHETIC_STATUSES.has(status) ? status : normalizeStatus(status)
 
   const colorMap: Record<string, string> = {
     "passed": "brightgreen",
@@ -116,17 +121,54 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       })
     }
 
+    const cacheControl = isPrivate ? "private, max-age=60" : "public, max-age=120"
+    // Shorter cache while the build hasn't produced real step data yet, so the
+    // badge picks up the actual step status soon after the build starts.
+    const pendingCacheControl = isPrivate ? "private, max-age=30" : "public, max-age=30"
+
+    // Overall status of the latest build (see determinePipelineStatus in
+    // cache-manager.ts): "scheduled" | "waiting" | "running" | "blocked" | ...
+    const buildStatus = normalizeStatus(pipeline.status || "unknown")
+    // A scheduled build hasn't run its bootstrap job yet, so it has no per-step
+    // data and any cached jobs belong to the previous build — don't trust them.
+    const isPreRun = buildStatus === "scheduled"
+    // States where the build-level status is a better answer than "not found" /
+    // "no builds" when we cannot resolve the requested step from the jobs.
+    const buildStatusIsMeaningfulFallback = isPreRun || buildStatus === "waiting" ||
+      buildStatus === "running" || buildStatus === "blocked"
+
     const jobs = pipeline.latestBuildJobs
-    console.log(`🏷️ Badge ${slug}/${stepId}: pipeline status=${pipeline.status}, jobs=${jobs?.length || 0}, stepKeys=[${jobs?.map((j) => j.stepKey).join(", ") || "none"}]`)
-    if (!jobs || jobs.length === 0) {
-      const noBuildsBadge = generateStepBadgeSvg(customLabel || stepId, "no builds")
-      return new Response(noBuildsBadge, {
+    console.log(
+      `🏷️ Badge ${slug}/${stepId}: pipeline status=${pipeline.status}, jobs=${jobs?.length || 0}, stepKeys=[${
+        jobs?.map((j) => j.stepKey).join(", ") || "none"
+      }]`,
+    )
+
+    // Dynamic pipelines upload their steps from a bootstrap job, so a build that
+    // hasn't started yet has no per-step data (and any cached jobs belong to the
+    // previous build). Report the build-level status instead of "unknown".
+    if (isPreRun) {
+      return new Response(generateStepBadgeSvg(customLabel || stepId, buildStatus), {
         status: 200,
-        headers: { "Content-Type": "image/svg+xml" },
+        headers: {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": pendingCacheControl,
+          "X-Content-Type-Options": "nosniff",
+        },
       })
     }
 
-    const cacheControl = isPrivate ? "private, max-age=60" : "public, max-age=120"
+    if (!jobs || jobs.length === 0) {
+      const fallbackStatus = buildStatusIsMeaningfulFallback ? buildStatus : "no builds"
+      const noBuildsBadge = generateStepBadgeSvg(customLabel || stepId, fallbackStatus)
+      return new Response(noBuildsBadge, {
+        status: 200,
+        headers: {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": buildStatusIsMeaningfulFallback ? pendingCacheControl : cacheControl,
+        },
+      })
+    }
 
     // Try exact step key match first (direct command step)
     const exactMatch = jobs.find((job) => job.stepKey === stepId)
@@ -148,9 +190,7 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
     // child steps within a group keyed "build" have keys containing "-build" as a
     // segment (e.g. "speller-build" or "speller-build-windows")
     const segment = `-${stepId}`
-    const childJobs = jobs.filter((job) =>
-      job.stepKey?.endsWith(segment) || job.stepKey?.includes(`${segment}-`)
-    )
+    const childJobs = jobs.filter((job) => job.stepKey?.endsWith(segment) || job.stepKey?.includes(`${segment}-`))
 
     if (childJobs.length > 0) {
       const status = aggregateJobStatuses(childJobs)
@@ -166,13 +206,16 @@ export const handler = async (ctx: Context<AppState>): Promise<Response> => {
       })
     }
 
-    // Step not found
-    const notFoundBadge = generateStepBadgeSvg(customLabel || stepId, "not found")
+    // Step not found among the build's jobs. If the build is still starting up
+    // (steps not uploaded yet) report the build-level status; otherwise the
+    // requested step genuinely doesn't exist.
+    const fallbackStatus = buildStatusIsMeaningfulFallback ? buildStatus : "not found"
+    const notFoundBadge = generateStepBadgeSvg(customLabel || stepId, fallbackStatus)
     return new Response(notFoundBadge, {
       status: 200,
       headers: {
         "Content-Type": "image/svg+xml",
-        "Cache-Control": "public, max-age=60",
+        "Cache-Control": buildStatusIsMeaningfulFallback ? pendingCacheControl : "public, max-age=60",
       },
     })
   } catch (error) {
