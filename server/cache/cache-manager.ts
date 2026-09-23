@@ -136,6 +136,9 @@ export class CacheManager {
           if (result.data?.organization?.pipelines) {
             const pageData = result.data.organization.pipelines
             const pipelines = pageData.edges.map((edge: any) => this.mapBuildkitePipelineToApp(edge.node))
+            for (const edge of pageData.edges) {
+              await this.cacheLatestBuild(edge.node)
+            }
 
             allOrgPipelines.push(...pipelines)
             console.log(`Fetched ${pipelines.length} pipelines from ${orgSlug} page ${pageCount}`)
@@ -705,6 +708,7 @@ export class CacheManager {
       }
 
       const pipeline = this.mapBuildkitePipelineToApp(result.data.pipeline)
+      await this.cacheLatestBuild(result.data.pipeline)
 
       // Preserve GitHub-enriched "private" tag from existing cached data
       const existing = this.db.getCachedPipelines("divvun")
@@ -720,6 +724,19 @@ export class CacheManager {
     } finally {
       this.pipelineRefreshTimes.set(pipelineSlug, Date.now())
     }
+  }
+
+  // Store the pipeline's latest build (already fetched by the pipeline queries) in
+  // the builds cache, so a build whose webhooks were missed still shows up in the
+  // pipeline's build list without an extra API call.
+  private async cacheLatestBuild(pipelineNode: any): Promise<void> {
+    const build = pipelineNode?.builds?.edges?.[0]?.node
+    if (!build || !pipelineNode.slug) return
+
+    await this.cacheBuild(pipelineNode.slug, build.number, {
+      ...build,
+      pipeline: { id: pipelineNode.id, name: pipelineNode.name, slug: pipelineNode.slug },
+    })
   }
 
   // Rate-limited variant of refreshSinglePipeline() for high-frequency webhooks
@@ -770,7 +787,7 @@ export class CacheManager {
   async cacheBuild(pipelineSlug: string, buildNumber: number, build: any): Promise<void> {
     // Determine TTL based on build state
     let ttlSeconds: number
-    if (["PASSED", "FAILED", "CANCELED", "WAITING_FAILED"].includes(build.state)) {
+    if (["PASSED", "FAILED", "CANCELED", "WAITING_FAILED"].includes(build.state?.toUpperCase())) {
       // Finished builds are immutable - cache for 24 hours (effectively forever)
       ttlSeconds = 24 * 60 * 60
     } else {

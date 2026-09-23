@@ -2,6 +2,7 @@ import { Context, RouteHandler } from "fresh"
 import { getCacheManager } from "~/server/cache/cache-manager.ts"
 import { type AppState } from "~/server/middleware.ts"
 import { getBuildkiteWebhookToken } from "~/server/config.ts"
+import type { BuildkiteBuild } from "~/types/buildkite.ts"
 
 interface BuildkiteWebhookEvent {
   event: string
@@ -164,6 +165,29 @@ export const handler: RouteHandler<unknown, AppState> = {
   },
 }
 
+// Webhook payloads use the REST API shape (lowercase states, snake_case fields).
+// Everything else in the builds cache comes from GraphQL, so convert before caching.
+function webhookBuildToGraphQL(build: any, pipelineSlug: string): BuildkiteBuild {
+  return {
+    id: build.graphql_id,
+    uuid: build.id,
+    number: build.number,
+    state: build.state?.toUpperCase(),
+    url: build.web_url,
+    createdAt: build.created_at,
+    startedAt: build.started_at ?? undefined,
+    finishedAt: build.finished_at ?? undefined,
+    message: build.message,
+    branch: build.branch,
+    commit: build.commit,
+    pipeline: {
+      id: build.pipeline?.graphql_id,
+      name: build.pipeline?.name,
+      slug: pipelineSlug,
+    },
+  }
+}
+
 // Event handlers
 async function handleBuildScheduled(cacheManager: any, build: any, pipelineSlug?: string) {
   if (!pipelineSlug) {
@@ -171,7 +195,7 @@ async function handleBuildScheduled(cacheManager: any, build: any, pipelineSlug?
     return
   }
   try {
-    await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    await cacheManager.cacheBuild(pipelineSlug, build.number, webhookBuildToGraphQL(build, pipelineSlug))
     cacheManager.updatePipelineStatusFromBuild(pipelineSlug, build.state)
   } catch (error) {
     console.error("Error caching build:", error)
@@ -184,7 +208,7 @@ async function handleBuildStarted(cacheManager: any, build: any, pipelineSlug?: 
     return
   }
   try {
-    await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    await cacheManager.cacheBuild(pipelineSlug, build.number, webhookBuildToGraphQL(build, pipelineSlug))
     cacheManager.updatePipelineStatusFromBuild(pipelineSlug, build.state)
   } catch (error) {
     console.error("Error caching build:", error)
@@ -197,7 +221,7 @@ async function handleBuildRunning(cacheManager: any, build: any, pipelineSlug?: 
     return
   }
   try {
-    await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    await cacheManager.cacheBuild(pipelineSlug, build.number, webhookBuildToGraphQL(build, pipelineSlug))
     // Update the pipeline status from the build state without fetching from API.
     // Don't refreshSinglePipeline here — the build just started and jobs don't
     // have step keys yet, which would overwrite good cached job data.
@@ -213,8 +237,8 @@ async function handleBuildFinished(cacheManager: any, build: any, pipelineSlug?:
     return
   }
   try {
-    // Cache the finished build data (will be cached for 24h since it's immutable)
-    await cacheManager.cacheBuild(pipelineSlug, build.number, build)
+    // Cache the finished build data (cached for 24h since it's immutable)
+    await cacheManager.cacheBuild(pipelineSlug, build.number, webhookBuildToGraphQL(build, pipelineSlug))
     // Fetch fresh pipeline status + jobs and update SQLite cache
     await cacheManager.refreshSinglePipeline(pipelineSlug)
   } catch (error) {

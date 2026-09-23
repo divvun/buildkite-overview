@@ -84,6 +84,9 @@ export const GET_ORGANIZATION_PIPELINES: TypedDocumentNode<
                   startedAt
                   finishedAt
                   createdAt
+                  message
+                  branch
+                  commit
                 }
               }
             }
@@ -131,6 +134,9 @@ export const GET_ORGANIZATION_PIPELINES_PAGINATED: TypedDocumentNode<
                   startedAt
                   finishedAt
                   createdAt
+                  message
+                  branch
+                  commit
                 }
               }
             }
@@ -190,6 +196,9 @@ export const GET_SINGLE_PIPELINE_STATUS = gql`
             startedAt
             finishedAt
             createdAt
+            message
+            branch
+            commit
           }
         }
       }
