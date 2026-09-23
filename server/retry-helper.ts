@@ -14,6 +14,13 @@ export interface RetryableError {
   retryAfter?: number // seconds to wait before retrying
 }
 
+export function isRateLimitError(error: any): boolean {
+  return error?.graphQLErrors?.some((e: any) =>
+    e.message?.includes("exceeded the limit") ||
+    e.message?.includes("rate limit")
+  ) || error?.response?.status === 429
+}
+
 export function isRetryableGraphQLError(error: any): RetryableError {
   // Handle GraphQL rate limiting errors from Buildkite API
   if (

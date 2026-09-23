@@ -37,11 +37,14 @@ export const handler: RouteHandler<unknown, AppState> = {
       }
 
       const cacheManager = getCacheManager()
-      const builds = await cacheManager.fetchAndCacheBuilds(pipelineSlug, limit)
+      const { builds, staleReason } = await cacheManager.fetchAndCacheBuilds(pipelineSlug, limit)
 
-      return new Response(JSON.stringify(builds), {
-        headers: { "Content-Type": "application/json" },
-      })
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (staleReason) {
+        headers["X-Data-Stale"] = staleReason
+      }
+
+      return new Response(JSON.stringify(builds), { headers })
     } catch (error) {
       console.error("Error fetching pipeline builds:", error)
       return new Response(

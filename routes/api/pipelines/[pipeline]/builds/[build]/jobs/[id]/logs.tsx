@@ -107,7 +107,7 @@ export const handler: RouteHandler<unknown, AppState> = {
     if (!cachedJob) {
       console.log(`No cached job info for ${uuid}, fetching build to get job details`)
       // We need to find the build ID first - try to get it from the build number
-      const builds = await cacheManager.fetchAndCacheBuilds(pipelineSlug, 50)
+      const { builds } = await cacheManager.fetchAndCacheBuilds(pipelineSlug, 50)
       const targetBuild = builds.find((build) => build.number === parseInt(buildNumber))
 
       if (targetBuild?.id) {

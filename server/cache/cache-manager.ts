@@ -7,9 +7,17 @@ import {
   GET_SINGLE_PIPELINE_STATUS,
   getBuildkiteClient,
 } from "../buildkite-client.ts"
-import { withRetry } from "../retry-helper.ts"
+import { isRateLimitError, withRetry } from "../retry-helper.ts"
 import { ORGANIZATIONS } from "~/utils/formatters.ts"
 import type { AppAgent, AppPipeline, AppPipelineJob } from "~/types/app.ts"
+
+// Why a build list is being served from cache after a failed API fetch
+export type BuildListStaleReason = "rate-limited" | "unavailable"
+
+export interface BuildListResult {
+  builds: any[]
+  staleReason: BuildListStaleReason | null
+}
 
 interface MemoryCacheItem<T> {
   data: T
@@ -908,7 +916,7 @@ export class CacheManager {
   }
 
   // Cache-aware fetch methods that try cache first, then API
-  async fetchAndCacheBuilds(pipelineSlug: string, limit = 20): Promise<any[]> {
+  async fetchAndCacheBuilds(pipelineSlug: string, limit = 20): Promise<BuildListResult> {
     // Use locking to prevent concurrent fetches for the same pipeline
     return await this.withLock(`fetch-builds-${pipelineSlug}-${limit}`, async () => {
       // Try cache first
@@ -933,10 +941,13 @@ export class CacheManager {
         )
 
         if (result.error) {
-          // Serve whatever is cached rather than failing (e.g. when rate limited)
-          if (builds.length > 0) {
-            console.error(`Failed to fetch builds for ${pipelineSlug}, using cache:`, result.error)
-            return builds
+          // Serve whatever is cached rather than failing, and say why so the page
+          // can warn that it may be out of date. When rate limited, do so even with
+          // nothing cached, so the page doesn't show a misleading generic error.
+          const staleReason = isRateLimitError(result.error) ? "rate-limited" : "unavailable"
+          if (builds.length > 0 || staleReason === "rate-limited") {
+            console.error(`Failed to fetch builds for ${pipelineSlug} (${staleReason}), using cache:`, result.error)
+            return { builds, staleReason }
           }
           throw new Error(`Failed to fetch builds for ${pipelineSlug}: ${result.error}`)
         }
@@ -953,7 +964,7 @@ export class CacheManager {
         console.log(`Using ${builds.length} cached builds for pipeline ${pipelineSlug}`)
       }
 
-      return builds
+      return { builds, staleReason: null }
     })
   }
 

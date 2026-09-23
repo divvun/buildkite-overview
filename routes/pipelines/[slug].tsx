@@ -5,7 +5,7 @@ import NewBuildButton from "~/islands/NewBuildButton.tsx"
 import type { BuildkiteBuild } from "~/types/buildkite.ts"
 import { fetchAllPipelines } from "~/server/buildkite-data.ts"
 import type { AppPipeline } from "~/types/app.ts"
-import { getCacheManager } from "~/server/cache/cache-manager.ts"
+import { type BuildListStaleReason, getCacheManager } from "~/server/cache/cache-manager.ts"
 import {
   formatTimeAgo,
   getBadgeVariant,
@@ -21,6 +21,7 @@ interface PipelineDetailProps {
   session?: SessionData | null
   pipeline?: AppPipeline
   builds?: BuildkiteBuild[]
+  staleReason?: BuildListStaleReason | null
   error?: string
 }
 
@@ -53,13 +54,14 @@ export const handler = {
         )
       }
 
-      const builds = await getCacheManager().fetchAndCacheBuilds(pipelineSlug, 20)
+      const { builds, staleReason } = await getCacheManager().fetchAndCacheBuilds(pipelineSlug, 20)
 
       return page(
         {
           session: ctx.state.session,
           pipeline,
           builds,
+          staleReason,
         } satisfies PipelineDetailProps,
       )
     } catch (error) {
@@ -76,7 +78,7 @@ export const handler = {
 }
 
 export default function PipelineDetail(props: { data: PipelineDetailProps; state: AppState }) {
-  const { session, pipeline, builds = [], error } = props.data
+  const { session, pipeline, builds = [], staleReason, error } = props.data
 
   // Get the most recent build for display
   const latestBuild = builds.length > 0 ? builds[0] : null
@@ -244,6 +246,12 @@ export default function PipelineDetail(props: { data: PipelineDetailProps; state
 
         <section>
           <h2 class="wa-heading-m">{props.state.t("recent-builds-title")}</h2>
+          {staleReason && (
+            <wa-callout variant="warning" size="small" style="margin-bottom: var(--wa-space-s)">
+              <wa-icon slot="icon" name="error"></wa-icon>
+              {props.state.t(staleReason === "rate-limited" ? "builds-stale-rate-limited" : "builds-stale-unavailable")}
+            </wa-callout>
+          )}
           <PipelineBuilds pipelineSlug={pipeline.slug} initialBuilds={builds} repositoryName={pipeline.repo} />
         </section>
       </div>

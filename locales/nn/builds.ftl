@@ -48,6 +48,8 @@ pipeline-not-found = Kommandokø ikkje funne
 access-denied = Tilgang nekta
 unable-to-load-builds = Kan ikkje lasta bygg: {$error}
 unable-to-load-build-history = Kan ikkje lasta byggjehistorikk. Ver grei og oppdater sida eller sjekk tilkoplinga.
+builds-stale-rate-limited = Buildkite avgrensar talet på førespurnader akkurat no, så denne lista kan vera utdatert. Prøv igjen om nokre minutt.
+builds-stale-unavailable = Fekk ikkje kontakt med Buildkite akkurat no, så denne lista kan vera utdatert. Prøv igjen om nokre minutt.
 
 # Byggstatus-omsetjingar
 status-PASSED = Fullført

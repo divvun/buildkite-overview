@@ -48,6 +48,8 @@ pipeline-not-found = Pipeline not found
 access-denied = Access denied
 unable-to-load-builds = Unable to load builds: {$error}
 unable-to-load-build-history = Unable to load build history. Please refresh the page or check your connection.
+builds-stale-rate-limited = Buildkite is rate limiting requests right now, so this list may be out of date. Try again in a few minutes.
+builds-stale-unavailable = Couldn't reach Buildkite right now, so this list may be out of date. Try again in a few minutes.
 
 # Build status translations
 status-PASSED = Passed
