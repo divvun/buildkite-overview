@@ -146,7 +146,7 @@ function loadConfigFromTOML(configPath?: string): AppConfig {
         isProduction: parsed.app?.is_production === true,
         requireAuth: parsed.app?.require_auth === true,
         bypassOrgCheck: parsed.app?.bypass_org_check === true,
-        dataDir: parsed.app?.data_dir || ".",
+        dataDir: parsed.app?.data_dir || Deno.env.get("DATA_DIR") || ".",
       },
       polling: {
         enabled: parsed.polling?.enabled !== false, // Default to true

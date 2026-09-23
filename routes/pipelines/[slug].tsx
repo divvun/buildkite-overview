@@ -2,7 +2,6 @@ import { Context, page } from "fresh"
 import Layout from "~/components/Layout.tsx"
 import PipelineBuilds from "~/islands/PipelineBuilds.tsx"
 import NewBuildButton from "~/islands/NewBuildButton.tsx"
-import { GET_PIPELINE_BUILDS, getBuildkiteClient } from "~/server/buildkite-client.ts"
 import type { BuildkiteBuild } from "~/types/buildkite.ts"
 import { fetchAllPipelines } from "~/server/buildkite-data.ts"
 import type { AppPipeline } from "~/types/app.ts"
@@ -15,7 +14,6 @@ import {
   isRunningStatus,
 } from "~/utils/formatters.ts"
 import { type AppState, canAccessPipeline } from "~/server/middleware.ts"
-import { withRetry } from "~/server/retry-helper.ts"
 import { userHasPermission } from "~/server/session.ts"
 import type { SessionData } from "~/types/session.ts"
 
@@ -55,33 +53,7 @@ export const handler = {
         )
       }
 
-      // Try to get builds from cache first
-      const cacheManager = getCacheManager()
-      let builds = await cacheManager.getCachedBuildsForPipeline(pipelineSlug, 20)
-
-      if (builds.length === 0) {
-        // No cached builds, fetch from API
-        console.log(`No cached builds for ${pipelineSlug}, fetching from API`)
-        const fullPipelineSlug = `divvun/${pipelineSlug}`
-        const result = await withRetry(
-          async () =>
-            await getBuildkiteClient().query(GET_PIPELINE_BUILDS, {
-              pipelineSlug: fullPipelineSlug,
-              first: 20,
-            }).toPromise(),
-          { maxRetries: 3, initialDelay: 1000, maxDelay: 300000 },
-        )
-
-        builds = result.data?.pipeline?.builds?.edges?.map((edge: { node: BuildkiteBuild }) => edge.node) || []
-        console.log(`Fetched ${builds.length} builds for pipeline ${fullPipelineSlug}`)
-
-        // Cache each build
-        for (const build of builds) {
-          await cacheManager.cacheBuild(pipelineSlug, build.number, build)
-        }
-      } else {
-        console.log(`Using ${builds.length} cached builds for pipeline ${pipelineSlug}`)
-      }
+      const builds = await getCacheManager().fetchAndCacheBuilds(pipelineSlug, 20)
 
       return page(
         {

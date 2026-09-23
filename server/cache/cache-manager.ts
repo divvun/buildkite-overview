@@ -914,9 +914,14 @@ export class CacheManager {
       // Try cache first
       let builds = await this.getCachedBuildsForPipeline(pipelineSlug, limit)
 
-      if (builds.length === 0) {
-        // No cached builds, fetch from API
-        console.log(`No cached builds for ${pipelineSlug}, fetching from API`)
+      // The cache can be non-empty without holding the full list: webhooks and the
+      // background poller only add one build at a time. Fetch the list once per
+      // pipeline (per process, refreshed daily), then rely on those incremental updates.
+      const listFetchedKey = `builds-list-fetched-${pipelineSlug}`
+      const listFetchedLimit = this.getFromMemory<number>(listFetchedKey) ?? 0
+
+      if (builds.length === 0 || listFetchedLimit < limit) {
+        console.log(`Build list for ${pipelineSlug} not fetched yet, fetching from API`)
         const fullPipelineSlug = `divvun/${pipelineSlug}`
         const result = await withRetry(
           async () =>
@@ -928,6 +933,11 @@ export class CacheManager {
         )
 
         if (result.error) {
+          // Serve whatever is cached rather than failing (e.g. when rate limited)
+          if (builds.length > 0) {
+            console.error(`Failed to fetch builds for ${pipelineSlug}, using cache:`, result.error)
+            return builds
+          }
           throw new Error(`Failed to fetch builds for ${pipelineSlug}: ${result.error}`)
         }
 
@@ -938,6 +948,7 @@ export class CacheManager {
         for (const build of builds) {
           await this.cacheBuild(pipelineSlug, build.number, build)
         }
+        this.setInMemory(listFetchedKey, limit, 24 * 60 * 60)
       } else {
         console.log(`Using ${builds.length} cached builds for pipeline ${pipelineSlug}`)
       }
